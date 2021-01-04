@@ -1,0 +1,41 @@
+image: owan/libsia:latest
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script: 
+    - mkdir build && cd build
+    - cmake -DCMAKE_BUILD_TYPE=Debug ..
+    - cmake -DTEST_COVERAGE=ON ..
+    - make
+    - make install
+    - pip install --upgrade ..
+    - python -c "import pysia"
+    - cp /usr/local/lib/python3.6/dist-packages/pysia.cpython-36m-x86_64-linux-gnu.so  $CI_PROJECT_DIR/lib/pysia.cpython-36m-x86_64-linux-gnu.so
+  artifacts:
+    paths:
+      - build/
+      - bin/
+      - lib/
+    expire_in: 1 week
+
+test:
+  stage: test
+  variables:
+    CODECOV_TOKEN: deb604d3-5269-493c-ae33-34971aa43a15
+  script:
+    - export PYTHONPATH=$CI_PROJECT_DIR/lib
+    - export LD_LIBRARY_PATH=$CI_PROJECT_DIR/lib
+    - cd build/
+    - make test
+    - make coverage
+  after_script:
+    - lcov --capture --directory . --output-file coverage.info
+    - lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
+    - lcov --list coverage.info
+    - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+  dependencies:
+    - build
