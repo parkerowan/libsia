@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/distribution.h"
@@ -28,6 +28,15 @@ Distribution::Distribution(Generator& generator)
 Distribution& Distribution::operator=(const Distribution& other) {
   m_generator = other.m_generator;
   return *this;
+}
+
+std::vector<Eigen::VectorXd> Distribution::samples(std::size_t num_samples) {
+  std::vector<Eigen::VectorXd> samples;
+  samples.reserve(num_samples);
+  for (std::size_t i = 0; i < num_samples; ++i) {
+    samples.emplace_back(sample());
+  }
+  return samples;
 }
 
 }  // namespace sia

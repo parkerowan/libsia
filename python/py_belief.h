@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -52,6 +52,16 @@ class PyDistribution : public sia::Distribution {
   const Eigen::MatrixXd covariance() const override {
     PYBIND11_OVERRIDE_PURE(const Eigen::MatrixXd, sia::Distribution,
                            covariance);
+  }
+
+  // Trampoline (need one for each virtual function)
+  const Eigen::VectorXd vectorize() const override {
+    PYBIND11_OVERRIDE_PURE(const Eigen::VectorXd, sia::Distribution, vectorize);
+  }
+
+  // Trampoline (need one for each virtual function)
+  bool devectorize(const Eigen::VectorXd& data) override {
+    PYBIND11_OVERRIDE_PURE(bool, sia::Distribution, devectorize, data);
   }
 };
 

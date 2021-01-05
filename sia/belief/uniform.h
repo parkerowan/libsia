@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -31,6 +31,9 @@ class Uniform : public Distribution {
   /// upper ranges.  This method returns the mean as the mode.
   const Eigen::VectorXd mode() const override;
   const Eigen::MatrixXd covariance() const override;
+  const Eigen::VectorXd vectorize() const override;
+  bool devectorize(const Eigen::VectorXd& data) override;
+
   const Eigen::VectorXd& lower() const;
   const Eigen::VectorXd& upper() const;
   bool setLower(const Eigen::VectorXd& lower);

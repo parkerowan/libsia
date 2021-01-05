@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -42,6 +42,10 @@ class Distribution {
   virtual const Eigen::VectorXd mean() const = 0;
   virtual const Eigen::VectorXd mode() const = 0;
   virtual const Eigen::MatrixXd covariance() const = 0;
+  virtual const Eigen::VectorXd vectorize() const = 0;
+  virtual bool devectorize(const Eigen::VectorXd& data) = 0;
+
+  std::vector<Eigen::VectorXd> samples(std::size_t num_samples);
 
  protected:
   std::default_random_engine& m_generator;

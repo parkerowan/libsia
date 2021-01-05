@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -23,6 +23,14 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
                             const std::vector<std::size_t>& rows,
                             const std::vector<std::size_t>& cols);
 
+/// Computes the LLT decomposition of positive definite matrix A, returns true
+/// on success.
+bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L);
+
+/// Computes the factorization M M' = A for positive semi-definite matrix A
+/// using LDLT decomposition.  Returns true on success.
+bool ldltSqrt(const Eigen::MatrixXd& A, Eigen::MatrixXd& M);
+
 /// Computes the SVD of matrix A.  If the singular values are less than the
 /// tolerance, returns false.  Otherwise returns true.
 bool svd(const Eigen::MatrixXd& A,
@@ -30,6 +38,11 @@ bool svd(const Eigen::MatrixXd& A,
          Eigen::VectorXd& S,
          Eigen::MatrixXd& V,
          double tolerance = DEFAULT_SINGULAR_TOLERANCE);
+
+/// Computes the matrix inverse from SVD matrices
+const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
+                                 const Eigen::VectorXd& S,
+                                 const Eigen::MatrixXd& V);
 
 /// Computes the SVD-based inverse of matrix A.  If the singular values are
 /// less than the tolerance, returns false.  Otherwise returns true.

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -51,7 +51,7 @@ struct UniformKernel : public Kernel {
   double m_constant;
 };
 
-/// Multivariate  standard normal kernel, domain is infinite.
+/// Multivariate standard normal kernel, domain is infinite.
 struct GaussianKernel : public Kernel {
   explicit GaussianKernel(std::size_t dimension);
   double evaluate(const Eigen::VectorXd& x) const override;
@@ -61,7 +61,7 @@ struct GaussianKernel : public Kernel {
   double m_constant;
 };
 
-/// Multivariate Epanechnikov kernel, domain L2(x) <= 1.
+/// Multivariate spherical Epanechnikov kernel, domain L2(x)^2 <= 1.
 struct EpanechnikovKernel : public Kernel {
   explicit EpanechnikovKernel(std::size_t dimension);
   double evaluate(const Eigen::VectorXd& x) const override;
@@ -71,35 +71,23 @@ struct EpanechnikovKernel : public Kernel {
   double m_constant;
 };
 
-/// Returns the multivariate bandwidth using Silverman's rule of thumb, where
-/// sigma is a vector of the diagonalized sample standard deviations and
-/// num_samples is the number of samples that comprise the kernel density.
-Eigen::VectorXd bandwidthSilverman(const Eigen::VectorXd& sigma,
-                                   std::size_t num_samples);
-
-/// Returns the multivariate bandwidth using Scott's rule of thumb, where sigma
-/// is a vector of the diagonalized sample standard deviations and num_samples
-/// is the number of samples that comprise the kernel density.
-Eigen::VectorXd bandwidthScott(const Eigen::VectorXd& sigma,
-                               std::size_t num_samples);
-
 /// Kernel density estimator to smooth a weighted particle density.  If
 /// bandwidth mode is USER_SPECIFIED, kernel bandwidth is initialized using
-/// Silverman's rule.
+/// Scott's rule.
 class KernelDensity : public Particles {
  public:
   /// Determines how the bandwidth is computed
-  enum BandwidthMode { SILVERMAN, SCOTT, USER_SPECIFIED };
+  enum BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
 
   explicit KernelDensity(const Eigen::MatrixXd& values,
                          const Eigen::VectorXd& weights,
                          Kernel::Type type = Kernel::EPANECHNIKOV,
-                         BandwidthMode mode = SILVERMAN,
+                         BandwidthMode mode = SCOTT_RULE,
                          double bandwidth_scaling = 1.0);
 
   explicit KernelDensity(const Particles& particles,
                          Kernel::Type type = Kernel::EPANECHNIKOV,
-                         BandwidthMode mode = SILVERMAN,
+                         BandwidthMode mode = SCOTT_RULE,
                          double bandwidth_scaling = 1.0);
 
   virtual ~KernelDensity();
@@ -113,6 +101,8 @@ class KernelDensity : public Particles {
   const Eigen::VectorXd mean() const override;
   const Eigen::VectorXd mode() const override;
   const Eigen::MatrixXd covariance() const override;
+  const Eigen::VectorXd vectorize() const override;
+  bool devectorize(const Eigen::VectorXd& data) override;
 
   /// Sets new samples and updates the bandwidth if mode is not USER_SPECIFIED.
   void setValues(const Eigen::MatrixXd& values) override;
@@ -124,7 +114,7 @@ class KernelDensity : public Particles {
   /// Sets the multivariate bandwidth, sets mode to USER_SPECIFIED, and
   /// bandwidth scaling to 1.
   void setBandwidth(const Eigen::VectorXd& h);
-  const Eigen::VectorXd getBandwidth() const;
+  const Eigen::MatrixXd& bandwidth() const;
 
   /// Sets a factor to inflate/deflate the scaling if not USER_SPECIFIED
   void setBandwidthScaling(double scaling);
@@ -137,8 +127,14 @@ class KernelDensity : public Particles {
   Kernel::Type getKernelType() const;
 
  protected:
+  void setBandwidthMatrix(const Eigen::MatrixXd& H);
+  void autoUpdateBandwidth();
+  void bandwidthScottRule(const Eigen::MatrixXd& Sigma);
+
   Kernel* m_kernel;
-  Eigen::VectorXd m_bandwidth;
+  Eigen::MatrixXd m_bandwidth;
+  Eigen::MatrixXd m_bandwidth_inv;
+  double m_bandwidth_det;
   BandwidthMode m_mode;
   double m_bandwidth_scaling;
 };

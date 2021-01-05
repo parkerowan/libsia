@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -10,7 +10,8 @@
 namespace sia {
 
 /// Gaussian (normal) distribution defined by mean and covariance.  Uses the
-/// fast Cholesky decomposition (LLT) of the covariance matrix.
+/// fast Cholesky decomposition (LDLT) of the covariance matrix.  Supports
+/// positive semi-definite covariance matrices.
 class Gaussian : public Distribution {
  public:
   /// Creates a standard multivariate normal (mu = 0, sigma = 1).
@@ -30,6 +31,9 @@ class Gaussian : public Distribution {
   const Eigen::VectorXd mean() const override;
   const Eigen::VectorXd mode() const override;
   const Eigen::MatrixXd covariance() const override;
+  const Eigen::VectorXd vectorize() const override;
+  bool devectorize(const Eigen::VectorXd& data) override;
+
   bool setMean(const Eigen::VectorXd& mean);
 
   /// The covariance matrix must be symmetric and positive semi-definite.
@@ -41,7 +45,7 @@ class Gaussian : public Distribution {
                        const Eigen::MatrixXd& sigma) const;
 
  protected:
-  /// Computes the Cholesky (LLT) decomposition of the covariance matrix and
+  /// Computes the Cholesky (LDLT) decomposition of the covariance matrix and
   /// caches the resultant L matrix.
   bool cacheSigmaChol();
 

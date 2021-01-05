@@ -25,7 +25,7 @@ build:
 test:
   stage: test
   variables:
-    CODECOV_TOKEN: deb604d3-5269-493c-ae33-34971aa43a15
+    CODECOV_TOKEN: 0df5e030-4952-4335-a58f-4b31e0e844a3
   script:
     - export PYTHONPATH=$CI_PROJECT_DIR/lib
     - export LD_LIBRARY_PATH=$CI_PROJECT_DIR/lib

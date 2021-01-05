@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <gtest/gtest.h>
@@ -48,6 +48,11 @@ TEST(Belief, gaussian) {
   EXPECT_TRUE(c.mean().isApprox(mu));
   EXPECT_TRUE(c.mode().isApprox(mu));
   EXPECT_TRUE(c.covariance().isApprox(sigma));
+
+  const auto v = c.vectorize();
+  EXPECT_TRUE(c.devectorize(v));
+  EXPECT_TRUE(c.mean().isApprox(mu));
+  EXPECT_TRUE(c.covariance().isApprox(sigma));
 }
 
 TEST(Belief, uniform) {
@@ -94,6 +99,11 @@ TEST(Belief, uniform) {
   ASSERT_EQ(c.dimension(), 2);
   EXPECT_TRUE(c.lower().isApprox(lower));
   EXPECT_TRUE(c.upper().isApprox(upper));
+
+  const auto v = c.vectorize();
+  EXPECT_TRUE(c.devectorize(v));
+  EXPECT_TRUE(c.lower().isApprox(lower));
+  EXPECT_TRUE(c.upper().isApprox(upper));
 }
 
 TEST(Belief, particles) {
@@ -120,6 +130,11 @@ TEST(Belief, particles) {
   EXPECT_EQ(b.values().cols(), 3);
   EXPECT_DOUBLE_EQ(b.weight(0), 1.0 / 3.0);
   EXPECT_TRUE(b.weights().isApprox(Eigen::VectorXd::Ones(3) / 3));
+
+  const auto v = b.vectorize();
+  EXPECT_TRUE(b.devectorize(v));
+  EXPECT_TRUE(b.values().isApprox(values));
+  EXPECT_TRUE(b.weights().isApprox(weights));
 
   // Assign deterministic weights and check lookups
   b.setWeights(Eigen::Vector3d(0, 1, 0));
@@ -183,13 +198,6 @@ TEST(Belief, kernel) {
   EXPECT_GT(c.evaluate(z), c.evaluate(z + dz));
   EXPECT_GT(c.evaluate(z), c.evaluate(z - dz));
   EXPECT_DOUBLE_EQ(c.evaluate(z + dz), c.evaluate(z - dz));
-
-  auto bw1 = sia::bandwidthSilverman(0.1 * Eigen::VectorXd::Ones(1), 10);
-  EXPECT_DOUBLE_EQ(
-      bw1(0), pow(pow(4.0 / 3.0, 1.0 / 5.0) * pow(10, -1.0 / 5.0) * 0.1, 2));
-
-  auto bw2 = sia::bandwidthScott(0.1 * Eigen::VectorXd::Ones(1), 10);
-  EXPECT_DOUBLE_EQ(bw2(0), pow(pow(10, -1.0 / 5.0) * 0.1, 2));
 }
 
 TEST(Belief, kernelDensity) {
@@ -207,38 +215,36 @@ TEST(Belief, kernelDensity) {
   EXPECT_FALSE(a.covariance().isApprox(Eigen::Matrix2d::Zero()));
   EXPECT_FALSE(a.covariance().isApprox(Eigen::Matrix2d::Identity()));
 
-  const auto h = a.getBandwidth();
+  const auto h = a.bandwidth();
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
-  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SILVERMAN);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT_RULE);
   a.setValues(a.values());
-  EXPECT_TRUE(a.getBandwidth().isApprox(h));
+  EXPECT_TRUE(a.bandwidth().isApprox(h));
 
   a.setBandwidthScaling(1.5);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.5);
-  EXPECT_TRUE(a.getBandwidth().isApprox(1.5 * h));
-
-  a.setBandwidthMode(sia::KernelDensity::SCOTT);
-  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT);
+  EXPECT_TRUE(a.bandwidth().isApprox(1.5 * h));
 
   a.setBandwidth(1.0);
-  EXPECT_TRUE(a.getBandwidth().isApprox(Eigen::Vector2d::Ones()));
+  EXPECT_TRUE(a.bandwidth().isApprox(Eigen::Matrix2d::Identity()));
   EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
 
   a.setKernelType(sia::Kernel::UNIFORM);
   EXPECT_EQ(a.getKernelType(), sia::Kernel::UNIFORM);
 
-  sia::KernelDensity b(samples, sia::Kernel::UNIFORM, sia::KernelDensity::SCOTT,
-                       1.2);
-  EXPECT_EQ(b.getKernelType(), sia::Kernel::UNIFORM);
-  EXPECT_EQ(b.getBandwidthMode(), sia::KernelDensity::SCOTT);
-  EXPECT_DOUBLE_EQ(b.getBandwidthScaling(), 1.2);
-
   // Expect if user specified that silverman is used as initialize bandwidth
   sia::KernelDensity c(samples, sia::Kernel::GAUSSIAN,
                        sia::KernelDensity::USER_SPECIFIED);
   EXPECT_EQ(c.getKernelType(), sia::Kernel::GAUSSIAN);
   EXPECT_EQ(c.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
-  EXPECT_TRUE(c.getBandwidth().isApprox(h));
+  EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);
+
+  const auto H = c.bandwidth();
+  const auto v = c.vectorize();
+  EXPECT_TRUE(c.devectorize(v));
+  EXPECT_TRUE(c.values().isApprox(samples.values()));
+  EXPECT_TRUE(c.weights().isApprox(samples.weights()));
+  EXPECT_TRUE(c.bandwidth().isApprox(H));
 }
