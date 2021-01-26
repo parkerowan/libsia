@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -40,7 +40,7 @@ class NonlinearGaussian : public MarkovProcess {
 
   /// Returns the Jacobian (linearization) of the deterministic discrete time
   /// state transition (dynamics) predicted by the system, i.e.
-  /// $G = df(x_k-1, u_k) / dx_k-1$.
+  /// $F = df(x_k-1, u_k) / dx_k-1$.
   virtual const Eigen::MatrixXd F(const Eigen::VectorXd& state,
                                   const Eigen::VectorXd& control) const;
 

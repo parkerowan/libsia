@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <gtest/gtest.h>
@@ -223,4 +223,63 @@ TEST(Models, nonlinearGaussianCT) {
   observation = a.measurement(x);
   EXPECT_TRUE(state.covariance().isApprox(C * Q * C.transpose() * dt2));
   EXPECT_TRUE(observation.covariance().isApprox(R / dt2));
+}
+
+TEST(Models, simulate) {
+  Eigen::Matrix<double, 1, 1> F, G, C, H, Q, R;
+  F << -0.1;
+  G << 0.1;
+  C << 0.2;
+  H << 2;
+  Q << 1;
+  R << 0.1;
+
+  sia::LinearGaussian system(F, G, C, H, Q, R);
+
+  Eigen::VectorXd x(1);
+  x << 0;
+  std::vector<Eigen::VectorXd> states;
+  states.emplace_back(x);
+  states.emplace_back(x);
+
+  Eigen::MatrixXd u(1, 3);
+  u << 1, -2, 1;
+  std::vector<Eigen::MatrixXd> controls;
+  controls.emplace_back(u);
+  controls.emplace_back(u);
+
+  sia::Trajectory traj = sia::simulate(system, x, u, false);
+  for (std::size_t k = 0; k < static_cast<std::size_t>(u.cols()); ++k) {
+    x = F * x + G * u.col(k);
+    Eigen::VectorXd y = H * x;
+    ASSERT_TRUE(traj.states.col(k).isApprox(x));
+    ASSERT_TRUE(traj.controls.col(k).isApprox(u.col(k)));
+    ASSERT_TRUE(traj.measurements.col(k).isApprox(y));
+  }
+
+  sia::Trajectories trajs = sia::simulate(system, states, u, false);
+  EXPECT_EQ(trajs.size(), 2);
+  for (std::size_t i = 0; i < trajs.data().size(); ++i) {
+    x << states.at(i);
+    for (std::size_t k = 0; k < static_cast<std::size_t>(u.cols()); ++k) {
+      x = F * x + G * u.col(k);
+      Eigen::VectorXd y = H * x;
+      ASSERT_TRUE(trajs.states(k).col(i).isApprox(x));
+      ASSERT_TRUE(trajs.controls(k).col(i).isApprox(u.col(k)));
+      ASSERT_TRUE(trajs.measurements(k).col(i).isApprox(y));
+    }
+  }
+
+  trajs = sia::simulate(system, states, controls, false);
+  EXPECT_EQ(trajs.size(), 2);
+  for (std::size_t i = 0; i < trajs.data().size(); ++i) {
+    x << states.at(i);
+    for (std::size_t k = 0; k < static_cast<std::size_t>(u.cols()); ++k) {
+      x = F * x + G * controls.at(i).col(k);
+      Eigen::VectorXd y = H * x;
+      ASSERT_TRUE(trajs.states(k).col(i).isApprox(x));
+      ASSERT_TRUE(trajs.controls(k).col(i).isApprox(u.col(k)));
+      ASSERT_TRUE(trajs.measurements(k).col(i).isApprox(y));
+    }
+  }
 }

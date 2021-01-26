@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -15,6 +15,18 @@ using EstimatorMap = std::map<std::string, RecursiveBayesEstimator&>;
 
 // Forward declaration
 class Runner;
+
+// TODO: Update this to replace each trace with the buffer object.  Remove the
+// Runner friend class.  Example:
+//
+// const Buffer& observations() const;
+// const Buffer& controls() const;
+// const Buffer& states() const;
+// const Buffer& estimates() const;  // This returns the vectorized distribution
+// const Distribution& estimate(k);  // Do we need a buffer for distributions?
+// const Eigen::MatrixXd& estimateMeans();
+// const Eigen::MatrixXd& getEstimateModes();
+// const Eigen::MatrixXd& getEstimateVariances();
 
 /// Buffer for recording estimator traces.  Records added to the buffer are
 /// accesible via the get<Name>() routines as M x N matrices where M is the

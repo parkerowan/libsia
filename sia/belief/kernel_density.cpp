@@ -1,9 +1,10 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/kernel_density.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/helpers.h"
+#include "sia/math/math.h"
 
 #include <glog/logging.h>
 #include <cmath>
@@ -67,33 +68,6 @@ Kernel::Type EpanechnikovKernel::type() const {
   return Kernel::EPANECHNIKOV;
 }
 
-// From eqn. 3.69 Hardle et. al., 2004.
-Eigen::VectorXd bandwidthSilverman(const Eigen::VectorXd& sigma,
-                                   std::size_t num_samples) {
-  std::size_t dim = sigma.size();
-  double d = static_cast<double>(dim);
-  double n = static_cast<double>(num_samples);
-  Eigen::VectorXd h = Eigen::VectorXd::Zero(dim);
-  for (std::size_t i = 0; i < dim; ++i) {
-    double power = 1 / (d + 4);
-    h(i) = pow(pow(4 / (d + 2), power) * pow(n, -power) * sigma(i), 2);
-  }
-  return h;
-}
-
-// From eqn. 3.70 Hardle et. al., 2004.
-Eigen::VectorXd bandwidthScott(const Eigen::VectorXd& sigma,
-                               std::size_t num_samples) {
-  std::size_t dim = sigma.size();
-  double d = static_cast<double>(dim);
-  double n = static_cast<double>(num_samples);
-  Eigen::VectorXd h = Eigen::VectorXd::Zero(dim);
-  for (std::size_t i = 0; i < dim; ++i) {
-    h(i) = pow(pow(n, -1 / (d + 4)) * sigma(i), 2);
-  }
-  return h;
-}
-
 KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
                              const Eigen::VectorXd& weights,
                              Kernel::Type type,
@@ -104,11 +78,12 @@ KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
       m_bandwidth_scaling(bandwidth_scaling) {
   m_kernel = Kernel::create(type, values.rows());
 
-  // If user specified, set the initial bandwidth using silverman
+  // If user specified, set the initial bandwidth using Scott's rule
   if (mode == USER_SPECIFIED) {
-    m_mode = SILVERMAN;
+    m_mode = SCOTT_RULE;
   }
-  setValues(values);
+
+  autoUpdateBandwidth();
   m_mode = mode;
 }
 
@@ -129,14 +104,12 @@ KernelDensity::~KernelDensity() {
 double KernelDensity::probability(const Eigen::VectorXd& x) const {
   double p = 0;
   std::size_t n = m_weights.size();
-  const Eigen::VectorXd h = m_bandwidth.array().sqrt();
   for (std::size_t i = 0; i < n; ++i) {
     const auto& c = m_values.col(i);
-    double kh = m_kernel->evaluate((x - c).cwiseQuotient(h));
+    double kh = m_kernel->evaluate(m_bandwidth_inv * (x - c));
     p += m_weights(i) * kh;
   }
-  p /= h.prod();
-  return p;
+  return p / m_bandwidth_det;
 }
 
 std::size_t KernelDensity::dimension() const {
@@ -184,22 +157,34 @@ const Eigen::MatrixXd KernelDensity::covariance() const {
   return ewe / (1 - p.array().square().sum());
 }
 
+const Eigen::VectorXd KernelDensity::vectorize() const {
+  std::size_t n = dimension();
+  std::size_t p = numParticles();
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(p * (n + 1) + n * n);
+  data.head(n * p) = Eigen::VectorXd::Map(m_values.data(), n * p);
+  data.segment(n * p, p) = m_weights;
+  data.tail(n * n) = Eigen::VectorXd::Map(m_bandwidth.data(), n * n);
+  return data;
+}
+
+bool KernelDensity::devectorize(const Eigen::VectorXd& data) {
+  std::size_t n = dimension();
+  std::size_t p = numParticles();
+  std::size_t d = data.size();
+  if (d != p * (n + 1) + n * n) {
+    LOG(WARNING) << "Devectorization failed, expected vector size "
+                 << p * (n + 1) + n * n << ", received " << d;
+    return false;
+  }
+  setValues(Eigen::MatrixXd::Map(data.head(n * p).data(), n, p));
+  setWeights(data.segment(n * p, p));
+  setBandwidthMatrix(Eigen::MatrixXd::Map(data.tail(n * n).data(), n, n));
+  return true;
+}
+
 void KernelDensity::setValues(const Eigen::MatrixXd& values) {
   m_values = values;
-  if (m_mode == USER_SPECIFIED) {
-    return;
-  }
-
-  // If not user-specified, update the bandwidth based on the new sample
-  // covariance.  Apply scaling.
-  const Eigen::VectorXd sigma =
-      Particles::covariance().diagonal().array().sqrt();
-  if (m_mode == SILVERMAN) {
-    m_bandwidth = bandwidthSilverman(sigma, numParticles());
-  } else if (m_mode == SCOTT) {
-    m_bandwidth = bandwidthScott(sigma, numParticles());
-  }
-  m_bandwidth *= m_bandwidth_scaling;
+  autoUpdateBandwidth();
 }
 
 void KernelDensity::setBandwidth(double h) {
@@ -207,19 +192,20 @@ void KernelDensity::setBandwidth(double h) {
 }
 
 void KernelDensity::setBandwidth(const Eigen::VectorXd& h) {
-  m_bandwidth = h;
+  m_bandwidth = h.asDiagonal();
+  m_bandwidth_inv = h.array().inverse().matrix().asDiagonal();
+  m_bandwidth_det = h.prod();
   m_bandwidth_scaling = 1.0;
   m_mode = USER_SPECIFIED;
-  setValues(values());
 }
 
-const Eigen::VectorXd KernelDensity::getBandwidth() const {
+const Eigen::MatrixXd& KernelDensity::bandwidth() const {
   return m_bandwidth;
 }
 
 void KernelDensity::setBandwidthScaling(double scaling) {
   m_bandwidth_scaling = scaling;
-  setValues(values());
+  autoUpdateBandwidth();
 }
 
 double KernelDensity::getBandwidthScaling() const {
@@ -228,7 +214,7 @@ double KernelDensity::getBandwidthScaling() const {
 
 void KernelDensity::setBandwidthMode(KernelDensity::BandwidthMode mode) {
   m_mode = mode;
-  setValues(values());
+  autoUpdateBandwidth();
 }
 
 KernelDensity::BandwidthMode KernelDensity::getBandwidthMode() const {
@@ -241,6 +227,38 @@ void KernelDensity::setKernelType(Kernel::Type type) {
 
 Kernel::Type KernelDensity::getKernelType() const {
   return m_kernel->type();
+}
+
+void KernelDensity::setBandwidthMatrix(const Eigen::MatrixXd& H) {
+  m_bandwidth = H;
+  if (not svdInverse(m_bandwidth, m_bandwidth_inv)) {
+    LOG(ERROR) << "Failed to compute inverse of bandwidth matrix";
+  }
+  m_bandwidth_det = m_bandwidth.determinant();
+}
+
+void KernelDensity::autoUpdateBandwidth() {
+  switch (m_mode) {
+    case USER_SPECIFIED:
+      break;
+    case SCOTT_RULE:
+      const Eigen::MatrixXd Sigma = Particles::covariance();
+      bandwidthScottRule(Sigma);
+      break;
+  }
+}
+
+// From eqn. 3.71 Hardle et. al., 2004.
+void KernelDensity::bandwidthScottRule(const Eigen::MatrixXd& Sigma) {
+  double d = static_cast<double>(Sigma.rows());
+  double n = static_cast<double>(numParticles());
+  double c = m_bandwidth_scaling * pow(n, -1.0 / (d + 4));
+  Eigen::MatrixXd H;
+  if (not llt(Sigma, H)) {
+    LOG(ERROR) << "Failed to compute LLT of covariance matrix";
+  }
+  H *= c;
+  setBandwidthMatrix(H);
 }
 
 }  // namespace sia

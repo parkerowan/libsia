@@ -117,7 +117,7 @@ plt.show()
 Non-parameteric techniques are needed to represent more complex distributions, but suffer from increased complexity.  `sia` provides several native non-parameteric distributions, including samples and kernel densities.
 
 ### Particles
-The `sia.Particles` distribution is simply a collection of $`i = \{1,\ldots,N\}`$ random samples $`s_i \sim p(x)`$.  The particle distribution is used by Monte Carlo-style algorithms such as the particle filter for representing complex distributions, e.g. non-Gaussian and potentially with multiple modes.
+The `sia.Particles` distribution is simply a collection of $`i = \{1,\ldots,N\}`$ random samples $`s_i \sim p(x)`$.  The particle distribution is used by monte carlo-style algorithms such as the particle filter for representing complex distributions, e.g. non-Gaussian and potentially with multiple modes.
 
 Each particle is represented by a sample and a corresponding weight, $`\{s_i, w_i\}_i`$, where $`\sum_i w_i = 1`$.  Unless explicitly specified, weights are chosen to be equal (uniform).  The class allows to choose whether the weights are used in the statistics computations.  The following table shows how the metrics are computes for samples $`s_i`$ and weights $`w_i`$.  Note that covariance is unbiased using Bessel's correction.
 
@@ -188,9 +188,9 @@ The `sia.KernelDensity` distribution is a specialization of the particle distrib
 ```
 The function $`K_H`$ is a scaled kernel
 ```math
-K_H(x) = |H|^{-1/2} K(H^{-1/2} x)
+K_H(x) = \frac{1}{|H|} K(H^{-1} x)
 ```
-with bandwidth matrix $`H > 0`$ and kernel function $`K(x)`$.  Available kernel functions include the uniform, Gaussian, and Epanechnikov kernels.  The bandwidth $`H`$ affects the smoothing, with higher values increases the smoothing.  Out of the box, Silverman's rule of thumb method is used to find the bandwidth.  Other methods available include Scott's rule or user specified.
+with bandwidth matrix $`H > 0`$ and kernel function $`K(x)`$.  Available kernel functions include the uniform, Gaussian, and Epanechnikov kernels.  The bandwidth $`H`$ affects the smoothing, with higher values increases the smoothing.  By default, the Scott's generalized rule of thumb is used to find the bandwidth.  Bandwidth can also be user specified.
 
 This example shows several kernel densities for samples drawn from the standard normal distribution.
 
@@ -198,7 +198,7 @@ This example shows several kernel densities for samples drawn from the standard 
 ```python
 # Test cases
 Nsamples = 100
-bandwidths = [0.2, 1.0, 5.0]
+bandwidths = [0.5, 1.0, 2.0]
 kernels = [sia.Kernel.UNIFORM, sia.Kernel.GAUSSIAN, sia.Kernel.EPANECHNIKOV]
 
 # Define the standard normal and sample from it
@@ -220,7 +220,7 @@ for i in range(ncols):
             # Create a kernel density and set the bandwidth scaling
             dist = sia.KernelDensity(sample, 
                                      type=kernels[j - 1], 
-                                     mode=sia.KernelDensity.SILVERMAN,
+                                     mode=sia.KernelDensity.SCOTT_RULE,
                                      bandwidth_scaling=bandwidths[i])
             name = kernels[j - 1].name
             
@@ -272,7 +272,7 @@ for i in range(nrows):
             # Create a kernel density and set the bandwidth scaling
             dist = sia.KernelDensity(sample, 
                                      type=kernels[j - 1], 
-                                     mode=sia.KernelDensity.SCOTT,
+                                     mode=sia.KernelDensity.SCOTT_RULE,
                                      bandwidth_scaling=bandwidths[i])
             name = dist.getKernelType().name
             

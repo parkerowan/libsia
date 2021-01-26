@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_belief.h"
@@ -24,7 +24,10 @@ void export_py_belief(py::module& m_sup) {
            py::arg("x"))
       .def("mean", &sia::Distribution::mean)
       .def("mode", &sia::Distribution::mode)
-      .def("covariance", &sia::Distribution::covariance);
+      .def("covariance", &sia::Distribution::covariance)
+      .def("vectorize", &sia::Distribution::vectorize)
+      .def("devectorize", &sia::Distribution::devectorize, py::arg("data"))
+      .def("samples", &sia::Distribution::samples, py::arg("num_samples"));
 
   m.def("logProb", &sia::logProb, py::arg("distribution"), py::arg("x"));
 
@@ -44,6 +47,9 @@ void export_py_belief(py::module& m_sup) {
       .def("mean", &sia::Gaussian::mean)
       .def("mode", &sia::Gaussian::mode)
       .def("covariance", &sia::Gaussian::covariance)
+      .def("vectorize", &sia::Gaussian::vectorize)
+      .def("devectorize", &sia::Gaussian::devectorize, py::arg("data"))
+      .def("samples", &sia::Gaussian::samples, py::arg("num_samples"))
       .def("setMean", &sia::Gaussian::setMean, py::arg("mean"))
       .def("setCovariance", &sia::Gaussian::setCovariance,
            py::arg("covariance"))
@@ -61,6 +67,9 @@ void export_py_belief(py::module& m_sup) {
       .def("mean", &sia::Uniform::mean)
       .def("mode", &sia::Uniform::mode)
       .def("covariance", &sia::Uniform::covariance)
+      .def("vectorize", &sia::Uniform::vectorize)
+      .def("devectorize", &sia::Uniform::devectorize, py::arg("data"))
+      .def("samples", &sia::Uniform::samples, py::arg("num_samples"))
       .def("lower", &sia::Uniform::lower)
       .def("upper", &sia::Uniform::upper)
       .def("setLower", &sia::Uniform::setLower, py::arg("lower"))
@@ -87,6 +96,9 @@ void export_py_belief(py::module& m_sup) {
       .def("mean", &sia::Particles::mean)
       .def("mode", &sia::Particles::mode)
       .def("covariance", &sia::Particles::covariance)
+      .def("vectorize", &sia::Particles::vectorize)
+      .def("devectorize", &sia::Particles::devectorize, py::arg("data"))
+      .def("samples", &sia::Particles::samples, py::arg("num_samples"))
       .def("getUseWeightedStats", &sia::Particles::getUseWeightedStats)
       .def("setUseWeightedStats", &sia::Particles::setUseWeightedStats,
            py::arg("weighted_stats"))
@@ -129,16 +141,9 @@ void export_py_belief(py::module& m_sup) {
       m, "KernelDensity");
 
   py::enum_<sia::KernelDensity::BandwidthMode>(kernel_density, "BandwidthMode")
-      .value("SILVERMAN", sia::KernelDensity::SILVERMAN)
-      .value("SCOTT", sia::KernelDensity::SCOTT)
+      .value("SCOTT_RULE", sia::KernelDensity::SCOTT_RULE)
       .value("USER_SPECIFIED", sia::KernelDensity::USER_SPECIFIED)
       .export_values();
-
-  m.def("bandwidthSilverman", &sia::bandwidthSilverman, py::arg("sigma"),
-        py::arg("num_samples"));
-
-  m.def("bandwidthScott", &sia::bandwidthScott, py::arg("sigma"),
-        py::arg("num_samples"));
 
   kernel_density
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXd&,
@@ -146,12 +151,12 @@ void export_py_belief(py::module& m_sup) {
                     double>(),
            py::arg("values"), py::arg("weights"),
            py::arg("type") = sia::Kernel::EPANECHNIKOV,
-           py::arg("mode") = sia::KernelDensity::SILVERMAN,
+           py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
       .def(py::init<const sia::Particles&, sia::Kernel::Type,
                     sia::KernelDensity::BandwidthMode, double>(),
            py::arg("particles"), py::arg("type") = sia::Kernel::EPANECHNIKOV,
-           py::arg("mode") = sia::KernelDensity::SILVERMAN,
+           py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
       .def("probability", &sia::KernelDensity::probability, py::arg("x"))
       .def("dimension", &sia::KernelDensity::dimension)
@@ -160,6 +165,9 @@ void export_py_belief(py::module& m_sup) {
       .def("mean", &sia::KernelDensity::mean)
       .def("mode", &sia::KernelDensity::mode)
       .def("covariance", &sia::KernelDensity::covariance)
+      .def("vectorize", &sia::KernelDensity::vectorize)
+      .def("devectorize", &sia::KernelDensity::devectorize, py::arg("data"))
+      .def("samples", &sia::KernelDensity::samples, py::arg("num_samples"))
       .def("numParticles", &sia::KernelDensity::numParticles)
       .def("setValues", &sia::KernelDensity::setValues, py::arg("values"))
       .def("values", &sia::KernelDensity::values)
@@ -175,7 +183,7 @@ void export_py_belief(py::module& m_sup) {
            static_cast<void (sia::KernelDensity::*)(const Eigen::VectorXd&)>(
                &sia::KernelDensity::setBandwidth),
            py::arg("h"))
-      .def("getBandwidth", &sia::KernelDensity::getBandwidth)
+      .def("bandwidth", &sia::KernelDensity::bandwidth)
       .def("setBandwidthScaling", &sia::KernelDensity::setBandwidthScaling,
            py::arg("scaling"))
       .def("getBandwidthScaling", &sia::KernelDensity::getBandwidthScaling)

@@ -30,12 +30,10 @@ pip install --upgrade .
 ```
 
 ## Python examples
-- [Belief representations/probability distributions](./examples/belief/README.md)
-- TODO: System modeling
-- TODO: Comparison of estimators
+- [Belief/distribution representations](./examples/belief/README.md)
+- [System modeling](./examples/models/README.md)
+- [Comparison of estimators](./examples/estimators/README.md)
 - [Lorenz attractor bimodal particle filtering](./examples/lorenz/README.md)
-- TODO: Duffing oscillator parameter estimation
-- TODO: Compartmental epidemiology estimation and forecasting
 
 ## Basic usage
 
@@ -54,7 +52,7 @@ Create an initial belief.  Options include Gaussian, Uniform, and Particles.  He
 
 
 ```python
-Sigma = np.identity(2)
+Sigma = np.identity(1)
 mu = np.array([0])
 prior = sia.Gaussian(mean=mu, covariance=Sigma)
 

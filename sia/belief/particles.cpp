@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/particles.h"
@@ -91,6 +91,29 @@ const Eigen::MatrixXd Particles::covariance() const {
   }
   double n = static_cast<double>(m_values.cols());
   return e * e.transpose() / (n - 1);
+}
+
+const Eigen::VectorXd Particles::vectorize() const {
+  std::size_t n = dimension();
+  std::size_t p = numParticles();
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(p * (n + 1));
+  data.head(n * p) = Eigen::VectorXd::Map(m_values.data(), n * p);
+  data.tail(p) = m_weights;
+  return data;
+}
+
+bool Particles::devectorize(const Eigen::VectorXd& data) {
+  std::size_t n = dimension();
+  std::size_t p = numParticles();
+  std::size_t d = data.size();
+  if (d != p * (n + 1)) {
+    LOG(WARNING) << "Devectorization failed, expected vector size "
+                 << p * (n + 1) << ", received " << d;
+    return false;
+  }
+  setValues(Eigen::MatrixXd::Map(data.head(n * p).data(), n, p));
+  setWeights(data.tail(p));
+  return true;
 }
 
 bool Particles::getUseWeightedStats() const {

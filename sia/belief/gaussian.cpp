@@ -1,7 +1,8 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gaussian.h"
+#include "sia/math/math.h"
 
 #include <glog/logging.h>
 
@@ -64,6 +65,26 @@ const Eigen::MatrixXd Gaussian::covariance() const {
   return m_sigma;
 }
 
+const Eigen::VectorXd Gaussian::vectorize() const {
+  std::size_t n = dimension();
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(n * (n + 1));
+  data.head(n) = m_mu;
+  data.tail(n * n) = Eigen::VectorXd::Map(m_sigma.data(), n * n);
+  return data;
+}
+
+bool Gaussian::devectorize(const Eigen::VectorXd& data) {
+  std::size_t n = dimension();
+  std::size_t d = data.size();
+  if (d != n * (n + 1)) {
+    LOG(WARNING) << "Devectorization failed, expected vector size "
+                 << n * (n + 1) << ", received " << d;
+    return false;
+  }
+  setMean(data.head(n));
+  return setCovariance(Eigen::MatrixXd::Map(data.tail(n * n).data(), n, n));
+}
+
 bool Gaussian::setMean(const Eigen::VectorXd& mean) {
   if (not checkDimensions(mean, m_sigma)) {
     return false;
@@ -99,15 +120,14 @@ bool Gaussian::checkDimensions(const Eigen::VectorXd& mu,
 }
 
 bool Gaussian::cacheSigmaChol() {
-  Eigen::LLT<Eigen::MatrixXd> llt_of_sigma(m_sigma);
-  m_cached_sigma_L = llt_of_sigma.matrixL();
+  bool result = true;
+  if (not ldltSqrt(m_sigma, m_cached_sigma_L)) {
+    LOG(WARNING) << "Failed to compute LDLT of covariance matrix";
+    result = false;
+  }
   m_cached_sigma_L_inv = m_cached_sigma_L.triangularView<Eigen::Lower>().solve(
       Eigen::MatrixXd::Identity(dimension(), dimension()));
-  if (llt_of_sigma.info() != Eigen::ComputationInfo::Success) {
-    LOG(WARNING) << "LLT transform of covariance matrix failed";
-    return false;
-  }
-  return true;
+  return result;
 }
 
 }  // namespace sia

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/uniform.h"
@@ -63,6 +63,27 @@ const Eigen::VectorXd Uniform::mode() const {
 
 const Eigen::MatrixXd Uniform::covariance() const {
   return ((upper() - lower()).array().pow(2) / 12.0).matrix().asDiagonal();
+}
+
+const Eigen::VectorXd Uniform::vectorize() const {
+  std::size_t n = dimension();
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(2 * n);
+  data.head(n) = lower();
+  data.tail(n) = upper();
+  return data;
+}
+
+bool Uniform::devectorize(const Eigen::VectorXd& data) {
+  std::size_t n = dimension();
+  std::size_t d = data.size();
+  if (d != 2 * n) {
+    LOG(WARNING) << "Devectorization failed, expected vector size " << 2 * n
+                 << ", received " << d;
+    return false;
+  }
+  setLower(data.head(n));
+  setUpper(data.tail(n));
+  return true;
 }
 
 const Eigen::VectorXd& Uniform::lower() const {

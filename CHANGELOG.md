@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2021-01-25
+### Added
+- Example notebooks and reamdes for modeling and estimation classes
+- Methods for simulating models forward in time
+- Methods to vectorize/devectorize distributions
+- Buffer class for collecting snapshots of vectors
+
 ## [0.1.0] - 2021-01-03
 ### Added
 - C++ library `math` for Runge-Kutta integration and SVD matrix inversion

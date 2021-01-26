@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <gtest/gtest.h>
@@ -34,8 +34,8 @@ TEST(Math, sliceMatrix) {
 }
 
 TEST(Math, svd) {
-  Eigen::MatrixXd A(2, 3);
-  A << 0, 1, 2, 3, 4, 5;
+  Eigen::MatrixXd A(2, 2);
+  A << 0, 1, 2, 3;
   Eigen::MatrixXd U, V;
   Eigen::VectorXd S;
   EXPECT_TRUE(sia::svd(A, U, S, V));
@@ -43,6 +43,25 @@ TEST(Math, svd) {
   // Expect the SVD to reconstruct matrix A
   Eigen::MatrixXd Abar = U * S.asDiagonal() * V.transpose();
   EXPECT_TRUE(Abar.isApprox(A));
+
+  // Compute the inverse from SVD
+  Eigen::MatrixXd AAinv = A * sia::svdInverse(U, S, V);
+  EXPECT_TRUE(Eigen::Matrix2d::Identity().isApprox(AAinv));
+
+  // Compute the LLT decomposition
+  A << 2, 0.1, 0.1, 1;
+  Eigen::MatrixXd L;
+  EXPECT_TRUE(sia::llt(A, L));
+  EXPECT_TRUE(A.isApprox(L * L.transpose()));
+
+  // Compute sqrt using the LDLT composition
+  Eigen::MatrixXd M;
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
+
+  A << 2.1, 0, 0, 0;  // positive semi-definite
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
 }
 
 TEST(Math, svdInverse) {

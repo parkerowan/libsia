@@ -1,10 +1,32 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "tests/helpers.h"
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
+#include <iostream>
+
+TEST(Runner, buffer) {
+  sia::Buffer buffer(2, 10);
+  EXPECT_EQ(buffer.length(), 10);
+  EXPECT_EQ(buffer.dimension(), 2);
+  EXPECT_TRUE(buffer.data().isApprox(Eigen::MatrixXd::Zero(2, 10)));
+
+  Eigen::Vector2d x(1.0, 2.0);
+  EXPECT_TRUE(buffer.record(x));
+
+  Eigen::MatrixXd X = x.asDiagonal() * Eigen::MatrixXd::Ones(2, 10);
+  EXPECT_TRUE(buffer.data().isApprox(X));
+
+  Eigen::Vector2d y(3.0, 4.0);
+  EXPECT_TRUE(buffer.record(y));
+  EXPECT_TRUE(buffer.previous(0).isApprox(y));
+  EXPECT_TRUE(buffer.previous(1).isApprox(x));
+
+  EXPECT_TRUE(buffer.future(0).isApprox(x));
+  EXPECT_TRUE(buffer.future(1).isApprox(x));
+}
 
 TEST(Runner, runner) {
   sia::LinearGaussian system = createTestSystem();

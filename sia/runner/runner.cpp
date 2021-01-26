@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/runner/runner.h"
@@ -22,9 +22,9 @@ void Runner::estimate(const Eigen::VectorXd& observation,
 
   // Step each estimator and add the state
   for (const auto& it : m_estimators) {
-    const auto& name = it.first;
-    auto& estimator = it.second;
-    const auto& b = estimator.estimate(observation, control);
+    const std::string& name = it.first;
+    RecursiveBayesEstimator& estimator = it.second;
+    const Distribution& b = estimator.estimate(observation, control);
 
     // Record the belief
     m_recorder.record(m_recorder.estimate_mean[name], b.mean());
@@ -42,8 +42,8 @@ const Eigen::VectorXd Runner::stepAndEstimate(MarkovProcess& system,
                                               const Eigen::VectorXd& state,
                                               const Eigen::VectorXd& control) {
   // Propogate the state and take a measurement
-  const auto x = system.dynamics(state, control).sample();
-  const auto observation = system.measurement(x).sample();
+  const Eigen::VectorXd x = system.dynamics(state, control).sample();
+  const Eigen::VectorXd observation = system.measurement(x).sample();
 
   // Record the state
   m_recorder.record(m_recorder.state, x);

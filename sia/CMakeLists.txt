@@ -1,13 +1,15 @@
-# Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
 # Library target
 # ------------------------------------------------------------------------------
 set(lib_target "sia")
+
 set(lib_libs
   glog
 )
+
 set(lib_header
   sia.h
   belief/distribution.h
@@ -27,9 +29,12 @@ set(lib_header
   models/models.h
   models/nonlinear_gaussian.h
   models/nonlinear_gaussian_ct.h
+  models/simulate.h
+  runner/buffer.h
   runner/recorder.h
   runner/runner.h
 )
+
 set(lib_source
   belief/distribution.cpp
   belief/gaussian.cpp
@@ -45,9 +50,12 @@ set(lib_source
   models/linear_gaussian_ct.cpp
   models/nonlinear_gaussian.cpp
   models/nonlinear_gaussian_ct.cpp
+  models/simulate.cpp
+  runner/buffer.cpp
   runner/recorder.cpp
   runner/runner.cpp
 )
+
 FUNCTIONS_CREATE_CPP_SHARED_LIB(
   TARGET ${lib_target}
   LIBRARIES ${lib_libs}

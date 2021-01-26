@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2020, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/math/math.h"
@@ -29,6 +29,32 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
   return Y;
 }
 
+bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L) {
+  Eigen::LLT<Eigen::MatrixXd> llt(A);
+  L = llt.matrixL();
+  if (llt.info() != Eigen::ComputationInfo::Success) {
+    LOG(WARNING) << "LLT decomposition of matrix A = " << A << " failed with "
+                 << llt.info();
+    return false;
+  }
+  return true;
+}
+
+bool ldltSqrt(const Eigen::MatrixXd& A, Eigen::MatrixXd& M) {
+  Eigen::LDLT<Eigen::MatrixXd> ldlt(A);
+  const Eigen::MatrixXd I = Eigen::MatrixXd::Identity(A.rows(), A.cols());
+  const Eigen::MatrixXd P = ldlt.transpositionsP() * I;
+  const Eigen::MatrixXd L = ldlt.matrixL();
+  const Eigen::VectorXd D = ldlt.vectorD();
+  M = P.transpose() * L * D.array().sqrt().matrix().asDiagonal();
+  if (ldlt.info() != Eigen::ComputationInfo::Success) {
+    LOG(WARNING) << "LDLT decomposition of matrix A = " << A << " failed with "
+                 << ldlt.info();
+    return false;
+  }
+  return true;
+}
+
 bool svd(const Eigen::MatrixXd& A,
          Eigen::MatrixXd& U,
          Eigen::VectorXd& S,
@@ -56,6 +82,12 @@ bool svd(const Eigen::MatrixXd& A,
   return result;
 }
 
+const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
+                                 const Eigen::VectorXd& S,
+                                 const Eigen::MatrixXd& V) {
+  return V * S.array().inverse().matrix().asDiagonal() * U.transpose();
+}
+
 bool svdInverse(const Eigen::MatrixXd& A,
                 Eigen::MatrixXd& Ainv,
                 double tolerance) {
@@ -64,8 +96,13 @@ bool svdInverse(const Eigen::MatrixXd& A,
   bool result = svd(A, U, S, V, tolerance);
 
   // Compute the generalized inverse using SVD
-  Ainv = V * S.array().inverse().matrix().asDiagonal() * U.transpose();
+  Ainv = svdInverse(U, S, V);
   return result;
+}
+
+const Eigen::MatrixXd lltSqrt(const Eigen::MatrixXd& A) {
+  Eigen::LLT<Eigen::MatrixXd> llt(A);
+  return llt.matrixL();
 }
 
 const Eigen::VectorXd rk4(
