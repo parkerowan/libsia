@@ -21,13 +21,12 @@ class Generator {
  public:
   static Generator& instance();
   void seed(unsigned seed = DEFAULT_SEED);
-
- protected:
-  std::default_random_engine& engine();
+  std::mt19937& engine();
 
  private:
   Generator();
-  std::default_random_engine m_generator;
+
+  static std::mt19937 m_rng;
 };
 
 /// Base probability distribution describing a random variable
@@ -48,7 +47,7 @@ class Distribution {
   std::vector<Eigen::VectorXd> samples(std::size_t num_samples);
 
  protected:
-  std::default_random_engine& m_generator;
+  std::mt19937& m_rng;
 };
 
 }  // namespace sia

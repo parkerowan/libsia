@@ -107,10 +107,10 @@ TEST(Controllers, FunctionalCost) {
 }
 
 TEST(Controllers, LQR) {
-  sia::LinearGaussian system = createIntegratorSystem();
+  sia::LinearGaussianDynamics dynamics = createIntegratorDynamics();
   sia::QuadraticCost cost = createTestCost();
   std::size_t horizon = 2;
-  sia::LQR mpc(system, cost, horizon);
+  sia::LQR mpc(dynamics, cost, horizon);
 
   // Simulate a step forward and check the cost is at a local minima using a
   // stencil around the optimal control
@@ -122,9 +122,9 @@ TEST(Controllers, LQR) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
-  auto xm = system.f(state.mean(), u);
-  auto xp = system.f(state.mean(), u + eps);
-  auto xn = system.f(state.mean(), u - eps);
+  auto xm = dynamics.f(state.mean(), u);
+  auto xp = dynamics.f(state.mean(), u + eps);
+  auto xn = dynamics.f(state.mean(), u - eps);
 
   // Compute the cost for each point in the stencil
   double cm = cost.eval(std::vector<Eigen::VectorXd>{xm},
@@ -140,13 +140,13 @@ TEST(Controllers, LQR) {
 }
 
 TEST(Controllers, iLQR) {
-  sia::LinearGaussian system = createIntegratorSystem();
+  sia::LinearGaussianDynamics dynamics = createIntegratorDynamics();
   sia::QuadraticCost cost = createTestCost();
   std::size_t max_iter = 10;
   std::size_t max_backsteps = 10;
   Eigen::VectorXd zero = Eigen::VectorXd::Zero(1);
   std::vector<Eigen::VectorXd> u0{zero, zero};
-  sia::iLQR mpc(system, cost, u0, max_iter, max_backsteps);
+  sia::iLQR mpc(dynamics, cost, u0, max_iter, max_backsteps);
 
   // Simulate a step forward and check the cost is at a local minima using a
   // stencil around the optimal control
@@ -158,9 +158,9 @@ TEST(Controllers, iLQR) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
-  auto xm = system.f(state.mean(), u);
-  auto xp = system.f(state.mean(), u + eps);
-  auto xn = system.f(state.mean(), u - eps);
+  auto xm = dynamics.f(state.mean(), u);
+  auto xp = dynamics.f(state.mean(), u + eps);
+  auto xn = dynamics.f(state.mean(), u - eps);
 
   // Compute the cost for each point in the stencil
   double cm = cost.eval(std::vector<Eigen::VectorXd>{xm},
@@ -176,14 +176,14 @@ TEST(Controllers, iLQR) {
 }
 
 TEST(Controllers, MPPI) {
-  sia::LinearGaussian system = createIntegratorSystem();
+  sia::LinearGaussianDynamics dynamics = createIntegratorDynamics();
   sia::QuadraticCost cost = createTestCost();
   std::size_t num_samples = 100;
   Eigen::VectorXd zero = Eigen::VectorXd::Zero(1);
   std::vector<Eigen::VectorXd> u0{zero, zero};
   Eigen::MatrixXd sigma(1, 1);
   sigma << 1;
-  sia::MPPI mpc(system, cost, u0, num_samples, sigma);
+  sia::MPPI mpc(dynamics, cost, u0, num_samples, sigma);
 
   // Simulate a step forward and check the cost is at a local minima using a
   // stencil around the optimal control
@@ -198,9 +198,9 @@ TEST(Controllers, MPPI) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
-  auto xm = system.f(state.mean(), u);
-  auto xp = system.f(state.mean(), u + eps);
-  auto xn = system.f(state.mean(), u - eps);
+  auto xm = dynamics.f(state.mean(), u);
+  auto xp = dynamics.f(state.mean(), u + eps);
+  auto xn = dynamics.f(state.mean(), u - eps);
 
   // Compute the cost for each point in the stencil
   double cm = cost.eval(std::vector<Eigen::VectorXd>{xm},

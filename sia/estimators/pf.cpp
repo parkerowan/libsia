@@ -1,19 +1,21 @@
 /// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
+#include "sia/estimators/pf.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/uniform.h"
-#include "sia/estimators/pf.h"
 
 #include <glog/logging.h>
 
 namespace sia {
 
-PF::PF(MarkovProcess& system,
+PF::PF(DynamicsModel& dynamics,
+       MeasurementModel& measurement,
        const Particles& particles,
        double resample_threshold,
        double roughening_factor)
-    : m_system(system),
+    : m_dynamics(dynamics),
+      m_measurement(measurement),
       m_belief(particles),
       m_resample_threshold(resample_threshold),
       m_roughening_factor(roughening_factor) {}
@@ -60,7 +62,7 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
 
   // Propogate the particles using the proposal density
   for (std::size_t i = 0; i < m_belief.numParticles(); ++i) {
-    xp.col(i) = m_system.dynamics(xp.col(i), control).sample();
+    xp.col(i) = m_dynamics.dynamics(xp.col(i), control).sample();
   }
   return m_belief;
 }
@@ -72,7 +74,7 @@ const Particles& PF::correct(const Eigen::VectorXd& observation) {
 
   // Compute the likelihood of each particle given the observation
   for (std::size_t i = 0; i < m_belief.numParticles(); ++i) {
-    lp(i) = m_system.measurement(xp.col(i)).logProb(observation);
+    lp(i) = m_measurement.measurement(xp.col(i)).logProb(observation);
   }
 
   // Correction step: update the weights usinfg Bayes' rule

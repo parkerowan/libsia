@@ -40,7 +40,8 @@ class Trajectories {
 
 /// Simulates a Markov process forward in time, starting from an initial state
 /// vector $x$ and sequence of control $\{u\}_k$.  Returns a single trajectory.
-Trajectory simulate(MarkovProcess& system,
+Trajectory simulate(DynamicsModel& dynamics,
+                    MeasurementModel& measurement,
                     const Eigen::VectorXd& state,
                     const Eigen::MatrixXd& controls,
                     bool sample = true);
@@ -48,7 +49,8 @@ Trajectory simulate(MarkovProcess& system,
 /// Simulates a Markov process forward in time, starting from a set of initial
 /// state vectors $\{x\}_i$ and sequence of control $\{u\}_k$.  Returns a
 /// trajectory for each initial state.
-Trajectories simulate(MarkovProcess& system,
+Trajectories simulate(DynamicsModel& dynamics,
+                      MeasurementModel& measurement,
                       const std::vector<Eigen::VectorXd>& states,
                       const Eigen::MatrixXd& controls,
                       bool sample = true);
@@ -56,7 +58,8 @@ Trajectories simulate(MarkovProcess& system,
 /// Simulates a Markov process forward in time, starting from a set of initial
 /// state vectors $\{x\}_i$ and set of control sequences $\{\{u\}_k\}_i$.
 /// Returns a trajectory for each initial state/control pair.
-Trajectories simulate(MarkovProcess& system,
+Trajectories simulate(DynamicsModel& dynamics,
+                      MeasurementModel& measurement,
                       const std::vector<Eigen::VectorXd>& states,
                       const std::vector<Eigen::MatrixXd>& controls,
                       bool sample = true);

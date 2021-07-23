@@ -7,8 +7,6 @@ hub_prefix=owan
 image=libsia
 target_dir=libsia
 dir="$( cd "$(dirname "$0")" ; pwd -P )"
-IP="$(ipconfig getifaddr en0)"
-display_env=$IP:0
 
 # functions
 build()
@@ -19,15 +17,9 @@ build()
 bash()
 {
   # https://cntnr.io/running-guis-with-docker-on-mac-os-x-a14df6a76efc
-  xhost + $IP
   docker run --rm -it \
     -v $dir/..:/$target_dir \
-    -v /dev:/dev \
-    -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -e DISPLAY=$display_env \
-    --privileged \
     $image /bin/bash
-  xhost -
 }
 
 push()

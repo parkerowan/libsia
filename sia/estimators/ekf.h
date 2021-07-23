@@ -5,7 +5,7 @@
 
 #include "sia/belief/gaussian.h"
 #include "sia/estimators/estimators.h"
-#include "sia/models/nonlinear_gaussian.h"
+#include "sia/models/models.h"
 
 #include <Eigen/Dense>
 
@@ -19,7 +19,9 @@ namespace sia {
 /// correction.
 class EKF : public Estimator {
  public:
-  explicit EKF(NonlinearGaussian& system, const Gaussian& state);
+  explicit EKF(LinearizableDynamics& dynamics,
+               LinearizableMeasurement& measurement,
+               const Gaussian& state);
   virtual ~EKF() = default;
   void reset(const Gaussian& state);
   const Gaussian& getBelief() const override;
@@ -35,7 +37,8 @@ class EKF : public Estimator {
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
  private:
-  NonlinearGaussian& m_system;
+  LinearizableDynamics& m_dynamics;
+  LinearizableMeasurement& m_measurement;
   Gaussian m_belief;
 };
 

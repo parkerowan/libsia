@@ -60,7 +60,7 @@ class iLQR : public Controller {
     std::size_t alpha{0};
   };
 
-  explicit iLQR(NonlinearGaussian& system,
+  explicit iLQR(LinearizableDynamics& dynamics,
                 DifferentiableCost& cost,
                 const std::vector<Eigen::VectorXd>& u0,
                 std::size_t max_iter = 1,
@@ -80,7 +80,7 @@ class iLQR : public Controller {
   const Metrics& getMetrics() const;
 
  private:
-  NonlinearGaussian& m_system;
+  LinearizableDynamics& m_dynamics;
   DifferentiableCost& m_cost;
   std::size_t m_horizon;
   std::size_t m_max_iter;

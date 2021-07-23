@@ -41,6 +41,9 @@ class Gaussian : public Distribution {
 
   /// Computes the distance $\sqrt{(x-\mu)^\top \Sigma^{-1} (x-\mu)}$.
   double mahalanobis(const Eigen::VectorXd& x) const;
+
+  /// Returns the log probability when $x = \mu$.
+  double maxLogProb() const;
   bool checkDimensions(const Eigen::VectorXd& mu,
                        const Eigen::MatrixXd& sigma) const;
 
@@ -50,6 +53,7 @@ class Gaussian : public Distribution {
   bool cacheSigmaChol();
 
  private:
+  Gaussian() = default;
   Eigen::VectorXd m_mu;
   Eigen::MatrixXd m_sigma;
   Eigen::MatrixXd m_cached_sigma_L;

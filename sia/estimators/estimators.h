@@ -4,10 +4,8 @@
 #pragma once
 
 #include "sia/belief/distribution.h"
-#include "sia/models/models.h"
 
 #include <Eigen/Dense>
-#include <map>
 
 namespace sia {
 
@@ -18,8 +16,8 @@ namespace sia {
 /// belief based on the measurement, which in general descreases the belief
 /// uncertainty.
 /// - Predict: $ p(x_k) = \int p(x_k | k_k-1, u_k) d x_k-1$
-/// - Correct: $ p(x_k | z_0:k) \propto p(z | x) \int p(x_k)$
-/// where $x$ is state, $z$ is measurement, and $u$ is control.  In the
+/// - Correct: $ p(x_k | z_0:k) \propto p(y | x) \int p(x_k)$
+/// where $x$ is state, $y$ is measurement, and $u$ is control.  In the
 /// literature, the predict/correct steps are typically shown together, however
 /// in practice it is useful to call them separately, e.g. when measurements
 /// don't arrive every time step.

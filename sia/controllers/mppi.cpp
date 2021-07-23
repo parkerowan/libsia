@@ -9,13 +9,13 @@ namespace sia {
 
 using Trajectory = std::vector<Eigen::VectorXd>;
 
-MPPI::MPPI(NonlinearGaussian& system,
+MPPI::MPPI(DynamicsModel& dynamics,
            CostFunction& cost,
            const std::vector<Eigen::VectorXd>& u0,
            std::size_t num_samples,
            const Eigen::MatrixXd& sigma,
            double lam)
-    : m_system(system),
+    : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
       m_num_samples(num_samples),
@@ -47,7 +47,7 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
       const auto& u = m_controls.at(i);
       const auto& e = samples.at(i);
       const auto uhat = u + e;
-      x = m_system.f(x, uhat);
+      x = m_dynamics.dynamics(x, uhat).mean();
       S(k) += m_cost.c(x, uhat, i) + m_lambda * u.transpose() * m_sigma_inv * e;
     }
     S(k) += m_cost.cf(x);

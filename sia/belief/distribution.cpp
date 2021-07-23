@@ -5,6 +5,8 @@
 
 namespace sia {
 
+std::mt19937 Generator::m_rng;
+
 Generator::Generator() {
   seed(DEFAULT_SEED);
 }
@@ -15,18 +17,17 @@ Generator& Generator::instance() {
 }
 
 void Generator::seed(unsigned seed) {
-  m_generator.seed(seed);
+  m_rng.seed(seed);
 }
 
-std::default_random_engine& Generator::engine() {
-  return m_generator;
+std::mt19937& Generator::engine() {
+  return m_rng;
 }
 
-Distribution::Distribution(Generator& generator)
-    : m_generator(generator.engine()) {}
+Distribution::Distribution(Generator& generator) : m_rng(generator.engine()) {}
 
 Distribution& Distribution::operator=(const Distribution& other) {
-  m_generator = other.m_generator;
+  m_rng = other.m_rng;
   return *this;
 }
 

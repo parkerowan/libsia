@@ -192,4 +192,68 @@ void export_py_belief(py::module& m_sup) {
       .def("getBandwidthMode", &sia::KernelDensity::getBandwidthMode)
       .def("setKernelType", &sia::KernelDensity::setKernelType, py::arg("type"))
       .def("getKernelType", &sia::KernelDensity::getKernelType);
+
+  py::class_<sia::GMM, sia::Distribution> gmm(m, "GMM");
+
+  gmm.def(py::init<std::size_t, std::size_t>(), py::arg("K"),
+          py::arg("dimension"))
+      .def(py::init<const std::vector<sia::Gaussian>&,
+                    const std::vector<double>&>(),
+           py::arg("gaussians"), py::arg("weights"))
+      .def(py::init<const Eigen::MatrixXd&, std::size_t, double>(),
+           py::arg("samples"), py::arg("K"), py::arg("regularization") = 1e-6)
+      .def("dimension", &sia::GMM::dimension)
+      .def("sample", &sia::GMM::sample)
+      .def("logProb", &sia::GMM::logProb, py::arg("x"))
+      .def("mean", &sia::GMM::mean)
+      .def("mode", &sia::GMM::mode)
+      .def("covariance", &sia::GMM::covariance)
+      .def("vectorize", &sia::GMM::vectorize)
+      .def("devectorize", &sia::GMM::devectorize, py::arg("data"))
+      .def("classify", &sia::GMM::classify, py::arg("x"))
+      .def("numClusters", &sia::GMM::numClusters)
+      .def("prior", &sia::GMM::prior, py::arg("i"))
+      .def("priors", &sia::GMM::priors)
+      .def("gaussian", &sia::GMM::gaussian, py::arg("i"))
+      .def("gaussians", &sia::GMM::gaussians)
+      .def_static("fit", &sia::GMM::fit, py::arg("samples"),
+                  py::arg("gaussians"), py::arg("priors"), py::arg("K"),
+                  py::arg("fit_method"), py::arg("init_method"),
+                  py::arg("regularization"));
+
+  py::enum_<sia::GMM::FitMethod>(gmm, "FitMethod")
+      .value("KMEANS", sia::GMM::FitMethod::KMEANS)
+      .value("GAUSSIAN_LIKELIHOOD", sia::GMM::FitMethod::GAUSSIAN_LIKELIHOOD)
+      .export_values();
+
+  py::enum_<sia::GMM::InitMethod>(gmm, "InitMethod")
+      .value("STANDARD_RANDOM", sia::GMM::InitMethod::STANDARD_RANDOM)
+      .value("WARM_START", sia::GMM::InitMethod::WARM_START)
+      .export_values();
+
+  py::class_<sia::GMR, sia::GMM, sia::Distribution>(m, "GMR")
+      .def(py::init<const std::vector<sia::Gaussian>&,
+                    const std::vector<double>&, std::vector<std::size_t>,
+                    std::vector<std::size_t>, double>(),
+           py::arg("gaussians"), py::arg("weights"), py::arg("input_indices"),
+           py::arg("output_indices"), py::arg("regularization") = 1e-6)
+      .def(py::init<const sia::GMM&, std::vector<std::size_t>,
+                    std::vector<std::size_t>, double>(),
+           py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
+           py::arg("regularization") = 1e-6)
+      .def("dimension", &sia::GMR::dimension)
+      .def("sample", &sia::GMR::sample)
+      .def("logProb", &sia::GMR::logProb, py::arg("x"))
+      .def("mean", &sia::GMR::mean)
+      .def("mode", &sia::GMR::mode)
+      .def("covariance", &sia::GMR::covariance)
+      .def("vectorize", &sia::GMR::vectorize)
+      .def("devectorize", &sia::GMR::devectorize, py::arg("data"))
+      .def("classify", &sia::GMR::classify, py::arg("x"))
+      .def("numClusters", &sia::GMR::numClusters)
+      .def("prior", &sia::GMR::prior, py::arg("i"))
+      .def("gaussian", &sia::GMR::gaussian, py::arg("i"))
+      .def("priors", &sia::GMR::priors)
+      .def("gaussians", &sia::GMR::gaussians)
+      .def("predict", &sia::GMR::predict, py::arg("x"));
 }

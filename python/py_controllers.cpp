@@ -93,16 +93,17 @@ void export_py_controllers(py::module& m_sup) {
       .def("cfxx", &sia::FunctionalCost::cfxx, py::arg("x"));
 
   py::class_<sia::LQR, sia::Controller>(m, "LQR")
-      .def(py::init<sia::LinearGaussian&, sia::QuadraticCost&, std::size_t>(),
-           py::arg("system"), py::arg("cost"), py::arg("horizon"))
+      .def(py::init<sia::LinearGaussianDynamics&, sia::QuadraticCost&,
+                    std::size_t>(),
+           py::arg("dynamics"), py::arg("cost"), py::arg("horizon"))
       .def("policy", &sia::LQR::policy, py::arg("state"));
 
   auto ilqr =
       py::class_<sia::iLQR, sia::Controller>(m, "iLQR")
-          .def(py::init<sia::NonlinearGaussian&, sia::DifferentiableCost&,
+          .def(py::init<sia::LinearizableDynamics&, sia::DifferentiableCost&,
                         const std::vector<Eigen::VectorXd>&, std::size_t,
                         std::size_t, double, double, double, double>(),
-               py::arg("system"), py::arg("cost"), py::arg("u0"),
+               py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
                py::arg("max_iter") = 1, py::arg("max_backsteps") = 1,
                py::arg("epsilon") = 1e-1, py::arg("tau") = 0.5,
                py::arg("min_z") = 1e-1, py::arg("mu") = 0)
@@ -125,10 +126,10 @@ void export_py_controllers(py::module& m_sup) {
       .def_readwrite("alpha", &sia::iLQR::Metrics::alpha);
 
   py::class_<sia::MPPI, sia::Controller>(m, "MPPI")
-      .def(py::init<sia::NonlinearGaussian&, sia::CostFunction&,
+      .def(py::init<sia::DynamicsModel&, sia::CostFunction&,
                     const std::vector<Eigen::VectorXd>&, std::size_t,
                     const Eigen::MatrixXd&, double>(),
-           py::arg("system"), py::arg("cost"), py::arg("u0"),
+           py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
            py::arg("num_samples"), py::arg("sigma"), py::arg("lam") = 1.0)
       .def("policy", &sia::MPPI::policy, py::arg("state"));
 }

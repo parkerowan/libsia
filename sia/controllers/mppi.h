@@ -7,7 +7,7 @@
 #include "sia/belief/gaussian.h"
 #include "sia/controllers/controllers.h"
 #include "sia/controllers/cost.h"
-#include "sia/models/nonlinear_gaussian.h"
+#include "sia/models/models.h"
 
 #include <Eigen/Dense>
 
@@ -37,7 +37,7 @@ namespace sia {
 /// https://homes.cs.washington.edu/~bboots/files/InformationTheoreticMPC.pdf
 class MPPI : public Controller {
  public:
-  explicit MPPI(NonlinearGaussian& system,
+  explicit MPPI(DynamicsModel& dynamics,
                 CostFunction& cost,
                 const std::vector<Eigen::VectorXd>& u0,
                 std::size_t num_samples,
@@ -51,7 +51,7 @@ class MPPI : public Controller {
  private:
   void cacheSigmaInv();
 
-  NonlinearGaussian& m_system;
+  DynamicsModel& m_dynamics;
   CostFunction& m_cost;
   std::size_t m_horizon;
   std::size_t m_num_samples;

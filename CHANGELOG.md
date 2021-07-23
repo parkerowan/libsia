@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2021-08-09
+### Added
+- Gaussian mixture models (GMM) and Gaussian mixture regression (GMR) to belief library
+### Changed
+- Refactored the models library to split dynamics and measurement models into distinct classes
+- Updated dependent libraries, examples, and python docs to reflect the refactor
+- Fix Gaussian LDLT cholesky covariance decomposition bug
+- Fix random number generator seed issue, updates rng to mersene twister
+- Updated README
+
 ## [0.2.1] - 2021-07-30
 ### Added
 - C++ library `controllers` for model predictive control (MPC), including LQR, iLQR and model predictive path integrals (MPPI)

@@ -17,8 +17,9 @@ void export_py_estimators(py::module& m_sup) {
            py::return_value_policy::reference_internal);
 
   py::class_<sia::KF, sia::Estimator>(m, "KF")
-      .def(py::init<sia::LinearGaussian&, const sia::Gaussian&>(),
-           py::arg("system"), py::arg("state"))
+      .def(py::init<sia::LinearGaussianDynamics&,
+                    sia::LinearGaussianMeasurement&, const sia::Gaussian&>(),
+           py::arg("dynamics"), py::arg("measurement"), py::arg("state"))
       .def("reset", &sia::KF::reset, py::arg("state"))
       .def("getBelief", &sia::KF::getBelief)
       .def("estimate", &sia::KF::estimate, py::arg("observation"),
@@ -29,8 +30,9 @@ void export_py_estimators(py::module& m_sup) {
            py::return_value_policy::reference_internal);
 
   py::class_<sia::EKF, sia::Estimator>(m, "EKF")
-      .def(py::init<sia::NonlinearGaussian&, const sia::Gaussian&>(),
-           py::arg("system"), py::arg("state"))
+      .def(py::init<sia::LinearizableDynamics&, sia::LinearizableMeasurement&,
+                    const sia::Gaussian&>(),
+           py::arg("dynamics"), py::arg("measurement"), py::arg("state"))
       .def("reset", &sia::EKF::reset, py::arg("state"))
       .def("getBelief", &sia::EKF::getBelief)
       .def("estimate", &sia::EKF::estimate, py::arg("observation"),
@@ -41,9 +43,9 @@ void export_py_estimators(py::module& m_sup) {
            py::return_value_policy::reference_internal);
 
   py::class_<sia::PF, sia::Estimator>(m, "PF")
-      .def(py::init<sia::MarkovProcess&, const sia::Particles&, double,
-                    double>(),
-           py::arg("system"), py::arg("particles"),
+      .def(py::init<sia::DynamicsModel&, sia::MeasurementModel&,
+                    const sia::Particles&, double, double>(),
+           py::arg("dynamics"), py::arg("measurement"), py::arg("particles"),
            py::arg("resample_threshold") = 1, py::arg("roughening_factor") = 0)
       .def("reset", &sia::PF::reset, py::arg("particles"))
       .def("getBelief", &sia::PF::getBelief)

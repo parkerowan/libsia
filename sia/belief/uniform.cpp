@@ -33,7 +33,7 @@ const Eigen::VectorXd Uniform::sample() {
   // Sample from standard uniform
   Eigen::VectorXd x = Eigen::VectorXd::Zero(dimension());
   for (std::size_t i = 0; i < dimension(); ++i) {
-    x(i) = m_standard_uniform(m_generator);
+    x(i) = m_standard_uniform(m_rng);
   }
 
   // Project x onto the defined distribution using affine transform

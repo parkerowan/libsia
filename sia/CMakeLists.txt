@@ -14,6 +14,8 @@ set(lib_header
   sia.h
   belief/distribution.h
   belief/gaussian.h
+  belief/gmm.h
+  belief/gmr.h
   belief/helpers.h
   belief/kernel_density.h
   belief/particles.h
@@ -30,10 +32,8 @@ set(lib_header
   math/math.h
   math/math_impl.h
   models/linear_gaussian.h
-  models/linear_gaussian_ct.h
   models/models.h
   models/nonlinear_gaussian.h
-  models/nonlinear_gaussian_ct.h
   models/simulate.h
   runner/buffer.h
   runner/recorder.h
@@ -43,6 +43,8 @@ set(lib_header
 set(lib_source
   belief/distribution.cpp
   belief/gaussian.cpp
+  belief/gmm.cpp
+  belief/gmr.cpp
   belief/helpers.cpp
   belief/kernel_density.cpp
   belief/particles.cpp
@@ -56,9 +58,8 @@ set(lib_source
   estimators/pf.cpp
   math/math.cpp
   models/linear_gaussian.cpp
-  models/linear_gaussian_ct.cpp
+  models/models.cpp
   models/nonlinear_gaussian.cpp
-  models/nonlinear_gaussian_ct.cpp
   models/simulate.cpp
   runner/buffer.cpp
   runner/recorder.cpp

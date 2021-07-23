@@ -22,8 +22,9 @@ void export_py_runner(py::module& m_sup) {
       .def("reset", &sia::Runner::reset)
       .def("estimate", &sia::Runner::estimate, py::arg("observation"),
            py::arg("control"))
-      .def("stepAndEstimate", &sia::Runner::stepAndEstimate, py::arg("system"),
-           py::arg("state"), py::arg("control"))
+      .def("stepAndEstimate", &sia::Runner::stepAndEstimate,
+           py::arg("dynamics"), py::arg("measurement"), py::arg("state"),
+           py::arg("control"))
       .def("recorder", &sia::Runner::recorder,
            py::return_value_policy::reference_internal);
 

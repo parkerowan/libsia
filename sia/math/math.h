@@ -118,6 +118,14 @@ const Eigen::MatrixXd numericalJacobian(
     const Eigen::VectorXd& x,
     Args... args);
 
+/// Computes the normalized frobenius norm of a square matrix, such that the
+/// norm squared = 1 for the identity matrix.
+double frobNormSquared(const Eigen::MatrixXd& A);
+
+/// Estimate the sample covariance using Ledoit and Wolf shrinkage estimator.
+/// Each column is a sample.  Assumes that samples are centered (i.e mean is 0).
+const Eigen::MatrixXd estimateCovariance(const Eigen::MatrixXd& samples);
+
 }  // namespace sia
 
 #include "sia/math/math_impl.h"

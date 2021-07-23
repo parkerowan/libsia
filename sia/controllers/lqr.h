@@ -29,7 +29,7 @@ namespace sia {
 /// [1] https://web.mst.edu/~bohner/papers/tlqtots.pdf
 class LQR : public Controller {
  public:
-  explicit LQR(LinearGaussian& system,
+  explicit LQR(LinearGaussianDynamics& dynamics,
                QuadraticCost& cost,
                std::size_t horizon);
   virtual ~LQR() = default;
@@ -38,7 +38,7 @@ class LQR : public Controller {
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
  private:
-  LinearGaussian& m_system;
+  LinearGaussianDynamics& m_dynamics;
   QuadraticCost& m_cost;
   Eigen::VectorXd m_control;
   std::size_t m_horizon;

@@ -5,6 +5,7 @@
 
 #include "sia/belief/particles.h"
 #include "sia/estimators/estimators.h"
+#include "sia/models/models.h"
 
 #include <Eigen/Dense>
 
@@ -22,7 +23,8 @@ class PF : public Estimator {
   /// The resample_threshold is [0, 1], represents a trigger threshold
   /// percentage of number of effective particles.  0 means no resampling is
   /// performed, 1 means it is always performed.
-  explicit PF(MarkovProcess& system,
+  explicit PF(DynamicsModel& dynamics,
+              MeasurementModel& measurement,
               const Particles& particles,
               double resample_threshold = 1.0,
               double roughening_factor = 0.0);
@@ -44,7 +46,8 @@ class PF : public Estimator {
   void systematicResampling(Eigen::VectorXd& wp, Eigen::MatrixXd& xp) const;
   void roughenParticles(Eigen::MatrixXd& xp) const;
 
-  MarkovProcess& m_system;
+  DynamicsModel& m_dynamics;
+  MeasurementModel& m_measurement;
   Particles m_belief;
   double m_resample_threshold;
   double m_roughening_factor;

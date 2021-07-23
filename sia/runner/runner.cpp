@@ -38,12 +38,13 @@ void Runner::estimate(const Eigen::VectorXd& observation,
   }
 }
 
-const Eigen::VectorXd Runner::stepAndEstimate(MarkovProcess& system,
+const Eigen::VectorXd Runner::stepAndEstimate(DynamicsModel& dynamics,
+                                              MeasurementModel& measurement,
                                               const Eigen::VectorXd& state,
                                               const Eigen::VectorXd& control) {
   // Propogate the state and take a measurement
-  const Eigen::VectorXd x = system.dynamics(state, control).sample();
-  const Eigen::VectorXd observation = system.measurement(x).sample();
+  const Eigen::VectorXd x = dynamics.dynamics(state, control).sample();
+  const Eigen::VectorXd observation = measurement.measurement(x).sample();
 
   // Record the state
   m_recorder.record(m_recorder.state, x);

@@ -4,6 +4,8 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
+#include <iostream>
+
 TEST(Math, Infinity) {
   EXPECT_DOUBLE_EQ(log(0), -INFINITY);
 }

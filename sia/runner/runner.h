@@ -4,6 +4,7 @@
 #pragma once
 
 #include "sia/estimators/estimators.h"
+#include "sia/models/models.h"
 #include "sia/runner/recorder.h"
 
 #include <Eigen/Dense>
@@ -25,7 +26,8 @@ class Runner {
 
   /// Steps the dynamics to generate a ground truth state and observation.
   /// Calls estimate() internally.
-  const Eigen::VectorXd stepAndEstimate(MarkovProcess& system,
+  const Eigen::VectorXd stepAndEstimate(DynamicsModel& dynamics,
+                                        MeasurementModel& measurement,
                                         const Eigen::VectorXd& state,
                                         const Eigen::VectorXd& control);
 

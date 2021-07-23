@@ -23,7 +23,7 @@ These distributions $p(x|\theta)$ represent a random variable $x \in \mathbb{R}$
 - `sia.Gaussian`.  Gaussians are the statistical equivalent of linear systems, i.e. the probabilities obey superposition.  They are fully represented by statistical parameters $\theta = \{\mu, \sigma^2\}$.  Due to linearity, they are often used in conjunction with linear systems.
 - `sia.Uniform`.  Uniform distributions are useful as a prior belief for non-linear filters when we are completely uncertain about the initial state but have some idea of reasonable lower and upper bounds $\theta = \{a, b\}$.  In this case, all samples in the distribution are equally probable.  Another way to say this is the uniform distribution has the highest Shannon entropy out of possible distributions.
 
-In this example we show a couple 1D parameterizations with their statistics.
+In this example we show a couple 1D parameterizations with their statistics, and sampling from them.
 
 
 ```python
@@ -52,6 +52,10 @@ for name, dist in distributions.items():
     # Add plusses for the distribution modes
     mode = dist.mode()
     plt.plot(mode, np.exp(dist.logProb(mode)), "+k", ms=15)
+    
+    # Draw samples and plot a histogram
+    s_sia = dist.samples(10000)
+    plt.hist(np.array(s_sia), 50, density=True, color="k", edgecolor=None,  alpha=0.15)
 
 plt.legend()
 plt.show()
@@ -198,7 +202,7 @@ This example shows several kernel densities for samples drawn from the standard 
 
 ```python
 # Test cases
-Nsamples = 100
+Nsamples = 50
 bandwidths = [0.5, 1.0, 2.0]
 kernels = [sia.Kernel.UNIFORM, sia.Kernel.GAUSSIAN, sia.Kernel.EPANECHNIKOV]
 
@@ -295,5 +299,174 @@ plt.show()
 
     
 ![png](belief_files/belief_11_0.png)
+    
+
+
+### Gaussian mixture models (GMM)
+
+Sia provides a `sia.GMM` implementation for multimodal clustering and classification.  The GMM is a weighted combination of $N$ Gaussian clusters with a log likelihood defined by
+$$
+\log f(x) = \log \sum_i^N w_i \mathcal{N}(\mu_i,\Sigma_i)
+$$
+
+where the sum of priors (weights) $\sum_i w_i = 1$.  Sia provides a method to classify a sample by cluster using `sia.GMM.classify`.   This example shows a mixture model for a 2D GMM with 3 clusters.  The first plot shows the distribution mean and mode, and the second plot shows samples drawn from the model with colors determined by class.
+
+
+```python
+gaussians = [
+    sia.Gaussian(mean=np.array([-2.0, 0.5]),
+                 covariance=np.array([[2, 0.2], [0.2, 0.5]])),
+    sia.Gaussian(mean=np.array([0.0, 0.0]),
+                 covariance=np.array([[0.5, -0.3], [-0.3, 0.25]])),
+    sia.Gaussian(mean=np.array([2.5, 0.0]),
+                 covariance=np.array([[2.0, 0.7], [0.7, 0.4]]))
+]
+priors = [0.5, 0.1, 0.4]
+gmm = sia.GMM(gaussians, priors)
+
+# Draw samples from the distribution and classify
+num_samples = 5000
+samples = gmm.samples(num_samples)
+classes = [gmm.classify(x) for x in samples]
+samples = np.array(samples)
+
+# Plot the probabilities
+f, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+# Evaluate the probability using sia.Distribution.logProb(x)
+x = np.linspace(-3, 3, 51)
+y = np.linspace(-3, 3, 51)
+xx, yy = np.meshgrid(x, y)
+for i in range(2):
+    
+    # Helper to evaluate the probability for multiple samples
+    prob = np.exp(sia.logProb2d(gmm, xx.flatten(), yy.flatten()))
+    ax[i].contourf(xx, yy, np.reshape(prob, xx.shape), levels=100)
+    
+    # Show the mean '.' and mode '+' in the first plot
+    if i == 0:
+        # NOTE: The mode computation is clearly wrong
+        mean = gmm.mean()
+        ax[i].plot(mean[0], mean[1], ".k", ms=12)
+        mode = gmm.mode()
+        ax[i].plot(mode[0], mode[1], "+k", ms=15)
+        
+    # Plot samples and classes by color
+    elif i == 1:
+        ax[i].scatter(samples[:, 0], samples[:, 1], s=1, c=classes)
+    
+    ax[i].set_xlim((-3, 3))
+    ax[i].set_ylim((-3, 3))
+    ax[i].axis("off")
+    i+=1
+
+plt.show()
+```
+
+
+    
+![png](belief_files/belief_13_0.png)
+    
+
+
+For convenience, `sia.GMM` also provides a constructor for fitting the model to sample data using the Expectation-Maximization (EM) algorithm initialized via kmeans.  If more flexilibility is needed, the `sia.GMM.fit` routine offers options for warm start initialization versus random initialization.  For functionality beyond this, a more advanced and focused Machine Learning library such as `scikit-learn` is recommended.  The following example shows fitting the data above with a new model learning from EM.
+
+
+```python
+# Add regularization to the covariances to make sure they are positive definite
+gmm_fits = [
+    sia.GMM(samples.T, K=3, regularization=1e-2),
+    sia.GMM(samples.T, K=2, regularization=1e-3),
+]
+
+# Plot the probabilities
+f, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+# Evaluate the probability using sia.Distribution.logProb(x)
+x = np.linspace(-3, 3, 51)
+y = np.linspace(-3, 3, 51)
+xx, yy = np.meshgrid(x, y)
+for i in range(2):
+    # Helper to evaluate the probability for multiple samples
+    prob_fit = np.exp(sia.logProb2d(gmm_fits[i], xx.flatten(), yy.flatten()))
+    ax[i].contourf(xx, yy, np.reshape(prob_fit, xx.shape), levels=100)
+    ax[i].set_xlim((-3, 3))
+    ax[i].set_ylim((-3, 3))
+    ax[i].axis("off")
+    i+=1
+
+plt.show()
+```
+
+
+    
+![png](belief_files/belief_15_0.png)
+    
+
+
+### Gaussian mixture regression (GMR)
+
+`sia.GMR` implements regression that extends GMM to conditional distributions.  It treats some of the state space as an input $x$ and some of it as an output $y$, and therefore only makes sense for distributions with 2 dimensions or more (1 axis for input, 1 for output).  With this separation, GMM is a generative model over the joint probability
+$$
+p(x, y)
+$$
+Gaussian mixture regression conditions on this model to predict
+$$
+p(y|x) = \mathcal{N}(\mu(x), \Sigma(x))
+$$
+where $\mu(x)$ and $\Sigma(x)$ are determined via Gaussian conditioning on the mixture.  The model is locally linear.  The covariance over the input space and mixture weights determine the contribution of each model, making it similar to a Kernel method.  GMR is particularly useful for learning models of dynamics or sensor measurements.  This example shows the GMM above now with conditioning applied.  On the left case, it is $p(x_2 | x_1)$ and the right case is $p(x_1 | x_2)$.  Note that the multiple intercepts along $y$ are blended in the right case.  This is shown to indicate that applying GMR over arbitrary inputs/outputs to a GMM does not make sense, you need to know the causality of your data to choose this appropriately.
+
+
+```python
+# Plot the probabilities
+f, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+x = np.linspace(-3, 3, 51)
+y = np.linspace(-3, 3, 51)
+
+# Case 1: condition on the first variable 'x' to predict the second variable 'y'
+gmr1 = sia.GMR(gmm, [0], [1])
+gmr1_mu = np.zeros(len(x))
+gmr1_sig = np.zeros(len(x))
+for i in range(len(x)):
+    gaussian = gmr1.predict(np.array([x[i]]))
+    gmr1_mu[i] = gaussian.mean()[0]
+    gmr1_sig[i] = gaussian.covariance()[0, 0]
+ax[0].contourf(xx, yy, np.reshape(prob, xx.shape), levels=100)
+ax[0].fill_between(x, gmr1_mu + 3 * gmr1_sig, gmr1_mu - 3 * gmr1_sig, alpha=0.4)
+ax[0].plot(x, gmr1_mu, 'w', lw=3)
+ax[0].set_xlim((-3, 3))
+ax[0].set_ylim((-3, 3))
+ax[0].axis("off")
+ax[0].set_title("This regression p(y|x) makes sense for this data")
+
+# Case 2: condition on the second variable 'y' to predict the first variable 'x'
+gmr2 = sia.GMR(gmm, [1], [0])
+gmr2_mu = np.zeros(len(y))
+gmr2_sig = np.zeros(len(y))
+for i in range(len(y)):
+    gaussian = gmr2.predict(np.array([y[i]]))
+    gmr2_mu[i] = gaussian.mean()[0]
+    gmr2_sig[i] = gaussian.covariance()[0, 0]
+ax[1].contourf(xx, yy, np.reshape(prob, xx.shape), levels=100)
+ax[1].fill_betweenx(y, gmr2_mu + 3 * gmr2_sig, gmr2_mu - 3 * gmr2_sig,  alpha=0.4)
+ax[1].plot(gmr2_mu, y, 'w', lw=3)
+ax[1].set_xlim((-3, 3))
+ax[1].set_ylim((-3, 3))
+ax[1].axis("off")
+ax[1].set_title("This regression p(x|y) makes no sense")
+
+plt.show()
+```
+
+
+    
+![png](belief_files/belief_17_0.png)
     
 

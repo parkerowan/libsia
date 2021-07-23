@@ -6,10 +6,13 @@
 #include <sia/sia.h>
 
 // Create a 1st order low pass filter system for test
-sia::LinearGaussian createTestSystem();
+sia::LinearGaussianDynamics createTestDynamics();
 
 // Create a 1st order integrator system for test
-sia::LinearGaussian createIntegratorSystem();
+sia::LinearGaussianDynamics createIntegratorDynamics();
+
+// Create a 1st order direct measurement system for test
+sia::LinearGaussianMeasurement createTestMeasurement();
 
 // Create a quadratic cost for test
 sia::QuadraticCost createTestCost();

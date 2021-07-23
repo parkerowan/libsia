@@ -8,8 +8,10 @@
 
 namespace sia {
 
-KF::KF(LinearGaussian& system, const Gaussian& state)
-    : m_system(system), m_belief(state) {}
+KF::KF(LinearGaussianDynamics& dynamics,
+       LinearGaussianMeasurement& measurement,
+       const Gaussian& state)
+    : m_dynamics(dynamics), m_measurement(measurement), m_belief(state) {}
 
 void KF::reset(const Gaussian& state) {
   m_belief = state;
@@ -31,14 +33,13 @@ const Gaussian& KF::predict(const Eigen::VectorXd& control) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& u = control;
-  const auto& F = m_system.F();
-  const auto& G = m_system.G();
-  const auto& C = m_system.C();
-  const auto& Q = m_system.Q();
+  const auto& F = m_dynamics.F();
+  const auto& G = m_dynamics.G();
+  const auto& Q = m_dynamics.Q();
 
   // Propogate
   x = F * x + G * u;
-  P = F * P * F.transpose() + C * Q * C.transpose();
+  P = F * P * F.transpose() + Q;
 
   m_belief.setMean(x);
   m_belief.setCovariance(P);
@@ -50,8 +51,8 @@ const Gaussian& KF::correct(const Eigen::VectorXd& observation) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& y = observation;
-  const auto& H = m_system.H();
-  const auto& R = m_system.R();
+  const auto& H = m_measurement.H();
+  const auto& R = m_measurement.R();
 
   // Gain
   Eigen::MatrixXd HPHTRinv;
