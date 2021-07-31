@@ -7,7 +7,7 @@
 #include <sia/sia.h>
 #include <iostream>
 
-TEST(Runner, buffer) {
+TEST(Runner, Buffer) {
   sia::Buffer buffer(2, 10);
   EXPECT_EQ(buffer.length(), 10);
   EXPECT_EQ(buffer.dimension(), 2);
@@ -28,11 +28,11 @@ TEST(Runner, buffer) {
   EXPECT_TRUE(buffer.future(1).isApprox(x));
 }
 
-TEST(Runner, runner) {
+TEST(Runner, Runner) {
   sia::LinearGaussian system = createTestSystem();
   sia::Gaussian prior(0, 10);
-  sia::KalmanFilter a(system, prior);
-  sia::KalmanFilter b(system, prior);
+  sia::KF a(system, prior);
+  sia::KF b(system, prior);
 
   Eigen::Matrix<double, 1, 1> u = Eigen::Matrix<double, 1, 1>::Ones();
   Eigen::VectorXd x0 = Eigen::VectorXd::Ones(1);

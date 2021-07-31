@@ -2,10 +2,13 @@
 
 bin/
 build/
+_build/
 lib/
 dist/
 *.egg-info
 
+*.csv
+*.mp4
 *.pyc
 .cache/
 *.log

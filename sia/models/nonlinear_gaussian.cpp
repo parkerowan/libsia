@@ -58,7 +58,15 @@ const Eigen::MatrixXd NonlinearGaussian::F(
     const Eigen::VectorXd& control) const {
   using namespace std::placeholders;
   DynamicsEquation f = std::bind(&NonlinearGaussian::f, this, _1, _2);
-  return numericalJacobian<const Eigen::VectorXd&>(f, state, control);
+  return dfdx(f, state, control);
+}
+
+const Eigen::MatrixXd NonlinearGaussian::G(
+    const Eigen::VectorXd& state,
+    const Eigen::VectorXd& control) const {
+  using namespace std::placeholders;
+  DynamicsEquation f = std::bind(&NonlinearGaussian::f, this, _1, _2);
+  return dfdu(f, state, control);
 }
 
 const Eigen::VectorXd NonlinearGaussian::h(const Eigen::VectorXd& state) const {

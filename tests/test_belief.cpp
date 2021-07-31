@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
-TEST(Belief, gaussian) {
+TEST(Belief, Gaussian) {
   sia::Gaussian a(1);
   ASSERT_EQ(a.dimension(), 1);
   EXPECT_DOUBLE_EQ(a.mean()(0), 0);
@@ -55,7 +55,7 @@ TEST(Belief, gaussian) {
   EXPECT_TRUE(c.covariance().isApprox(sigma));
 }
 
-TEST(Belief, uniform) {
+TEST(Belief, Uniform) {
   sia::Uniform a(1);
   ASSERT_EQ(a.dimension(), 1);
   EXPECT_DOUBLE_EQ(a.lower()(0), 0);
@@ -106,7 +106,7 @@ TEST(Belief, uniform) {
   EXPECT_TRUE(c.upper().isApprox(upper));
 }
 
-TEST(Belief, particles) {
+TEST(Belief, Particles) {
   sia::Particles a(2, 100);
   EXPECT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -177,7 +177,7 @@ TEST(Belief, particles) {
   EXPECT_NEAR(d.covariance()(0, 0), u.covariance()(0, 0), 5e-2);
 }
 
-TEST(Belief, kernel) {
+TEST(Belief, Kernel) {
   Eigen::VectorXd z = Eigen::VectorXd::Zero(3);
   Eigen::VectorXd dz = 0.01 * Eigen::VectorXd::Ones(3);
 
@@ -200,7 +200,7 @@ TEST(Belief, kernel) {
   EXPECT_DOUBLE_EQ(c.evaluate(z + dz), c.evaluate(z - dz));
 }
 
-TEST(Belief, kernelDensity) {
+TEST(Belief, KernelDensity) {
   auto samples = sia::Particles::uniform(Eigen::Vector2d(-1, -2),
                                          Eigen::Vector2d(3, 4), 100);
 

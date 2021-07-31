@@ -118,4 +118,158 @@ const Eigen::VectorXd rk4(
   return x + dt / 6 * (f1 + 2 * f2 + 2 * f3 + f4);
 }
 
+const Eigen::VectorXd dfdx(std::function<double(const Eigen::VectorXd&)> f,
+                           const Eigen::VectorXd& x) {
+  std::size_t n = x.size();
+  Eigen::VectorXd df = Eigen::VectorXd::Zero(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd dx = Eigen::VectorXd::Zero(n);
+    dx(i) = NUMERICAL_DERIVATIVE_STEP;
+    double fp = f(x + dx);
+    double fn = f(x - dx);
+    df(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  return df;
+}
+
+const Eigen::VectorXd dfdx(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = x.size();
+  Eigen::VectorXd df = Eigen::VectorXd::Zero(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd dx = Eigen::VectorXd::Zero(n);
+    dx(i) = NUMERICAL_DERIVATIVE_STEP;
+    double fp = f(x + dx, u);
+    double fn = f(x - dx, u);
+    df(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  return df;
+}
+
+const Eigen::MatrixXd dfdx(
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                  const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = x.size();
+  Eigen::MatrixXd Df;
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd dx = Eigen::VectorXd::Zero(n);
+    dx(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = f(x + dx, u);
+    Eigen::VectorXd fn = f(x - dx, u);
+    if (i == 0) {
+      Df = Eigen::MatrixXd::Zero(fp.size(), n);
+    }
+    Df.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  return Df;
+}
+
+const Eigen::VectorXd dfdu(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = u.size();
+  Eigen::VectorXd df = Eigen::VectorXd::Zero(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
+    du(i) = NUMERICAL_DERIVATIVE_STEP;
+    double fp = f(x, u + du);
+    double fn = f(x, u - du);
+    df(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  return df;
+}
+
+const Eigen::MatrixXd dfdu(
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                  const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = u.size();
+  Eigen::MatrixXd Df;
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
+    du(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = f(x, u + du);
+    Eigen::VectorXd fn = f(x, u - du);
+    if (i == 0) {
+      Df = Eigen::MatrixXd::Zero(fp.size(), n);
+    }
+    Df.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  return Df;
+}
+
+const Eigen::MatrixXd d2fdxx(std::function<double(const Eigen::VectorXd&)> f,
+                             const Eigen::VectorXd& x) {
+  std::size_t n = x.size();
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd dx = Eigen::VectorXd::Zero(n);
+    dx(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = dfdx(f, x + dx);
+    Eigen::VectorXd fn = dfdx(f, x - dx);
+    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  // Ensure that the Hessian is necessarily symmetric
+  return (H + H.transpose()) / 2.0;
+}
+
+const Eigen::MatrixXd d2fdxx(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = x.size();
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd dx = Eigen::VectorXd::Zero(n);
+    dx(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = dfdx(f, x + dx, u);
+    Eigen::VectorXd fn = dfdx(f, x - dx, u);
+    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  // Ensure that the Hessian is necessarily symmetric
+  return (H + H.transpose()) / 2.0;
+}
+
+const Eigen::MatrixXd d2fduu(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t n = u.size();
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
+    du(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = dfdu(f, x, u + du);
+    Eigen::VectorXd fn = dfdu(f, x, u - du);
+    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  // Ensure that the Hessian is necessarily symmetric
+  return (H + H.transpose()) / 2.0;
+}
+
+const Eigen::MatrixXd d2fdux(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u) {
+  std::size_t m = x.size();
+  std::size_t n = u.size();
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m, n);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
+    du(i) = NUMERICAL_DERIVATIVE_STEP;
+    Eigen::VectorXd fp = dfdx(f, x, u + du);
+    Eigen::VectorXd fn = dfdx(f, x, u - du);
+    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+  }
+  // Ensure that the Hessian is necessarily symmetric
+  // return (H + H.transpose()) / 2.0;
+  return H;
+}
+
 }  // namespace sia

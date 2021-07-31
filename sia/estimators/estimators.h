@@ -23,8 +23,10 @@ namespace sia {
 /// literature, the predict/correct steps are typically shown together, however
 /// in practice it is useful to call them separately, e.g. when measurements
 /// don't arrive every time step.
-class RecursiveBayesEstimator {
+class Estimator {
  public:
+  Estimator() = default;
+  virtual ~Estimator() = default;
   virtual const Distribution& getBelief() const = 0;
 
   /// Performs the combined prediction and correction.

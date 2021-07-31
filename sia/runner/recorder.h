@@ -11,7 +11,7 @@
 namespace sia {
 
 /// Map of estimators
-using EstimatorMap = std::map<std::string, RecursiveBayesEstimator&>;
+using EstimatorMap = std::map<std::string, Estimator&>;
 
 // Forward declaration
 class Runner;

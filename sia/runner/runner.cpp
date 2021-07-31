@@ -23,7 +23,7 @@ void Runner::estimate(const Eigen::VectorXd& observation,
   // Step each estimator and add the state
   for (const auto& it : m_estimators) {
     const std::string& name = it.first;
-    RecursiveBayesEstimator& estimator = it.second;
+    Estimator& estimator = it.second;
     const Distribution& b = estimator.estimate(observation, control);
 
     // Record the belief

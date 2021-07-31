@@ -38,9 +38,16 @@ class LinearGaussian : public NonlinearGaussian {
   const Eigen::VectorXd f(const Eigen::VectorXd& state,
                           const Eigen::VectorXd& control) const override;
 
-  /// Returns the Jacobian (linearization) of the dynamics, which for the linear
-  /// case is equivalent to the F matrix, i.e. $F = df(x_k-1, u_k)/dx_k-1$.
+  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $x$, which for
+  /// the linear case is equivalent to the F matrix, i.e. $F = df(x_k-1,
+  /// u_k)/dx_k-1$.
   const Eigen::MatrixXd F(const Eigen::VectorXd& state,
+                          const Eigen::VectorXd& control) const override;
+
+  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $u$, which for
+  /// the linear case is equivalent to the G matrix, i.e. $F = df(x_k-1,
+  /// u_k)/du_k$.
+  const Eigen::MatrixXd G(const Eigen::VectorXd& state,
                           const Eigen::VectorXd& control) const override;
 
   /// Returns the deterministic measurement (observation) predicted by the

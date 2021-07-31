@@ -34,7 +34,15 @@ const Eigen::MatrixXd NonlinearGaussianCT::F(
     const Eigen::VectorXd& control) const {
   using namespace std::placeholders;
   DynamicsEquation f = std::bind(&NonlinearGaussianCT::f, this, _1, _2);
-  return numericalJacobian<const Eigen::VectorXd&>(f, state, control);
+  return dfdx(f, state, control);
+}
+
+const Eigen::MatrixXd NonlinearGaussianCT::G(
+    const Eigen::VectorXd& state,
+    const Eigen::VectorXd& control) const {
+  using namespace std::placeholders;
+  DynamicsEquation f = std::bind(&NonlinearGaussianCT::f, this, _1, _2);
+  return dfdu(f, state, control);
 }
 
 void NonlinearGaussianCT::setC(const Eigen::MatrixXd& C) {

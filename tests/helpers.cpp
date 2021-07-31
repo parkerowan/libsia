@@ -13,3 +13,22 @@ sia::LinearGaussian createTestSystem() {
   R << 0.01;
   return sia::LinearGaussian(A, B, C, H, Q, R);
 }
+
+sia::LinearGaussian createIntegratorSystem() {
+  Eigen::Matrix<double, 1, 1> A, B, C, H, Q, R;
+  A << 0;
+  B << 1;
+  C << 1;
+  H << 1;
+  Q << 0.1;
+  R << 0.01;
+  return sia::LinearGaussian(A, B, C, H, Q, R);
+}
+
+sia::QuadraticCost createTestCost() {
+  Eigen::Matrix<double, 1, 1> Q, Qf, R;
+  Q << 1;
+  Qf << 10;
+  R << 0.1;
+  return sia::QuadraticCost(Qf, Q, R);
+}

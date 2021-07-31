@@ -59,7 +59,9 @@ void export_py_models(py::module& m_sup) {
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("f", &sia::NonlinearGaussian::f, py::arg("state"),
            py::arg("control"))
-      .def("F", &sia::NonlinearGaussian::f, py::arg("state"),
+      .def("F", &sia::NonlinearGaussian::F, py::arg("state"),
+           py::arg("control"))
+      .def("G", &sia::NonlinearGaussian::G, py::arg("state"),
            py::arg("control"))
       .def("h", &sia::NonlinearGaussian::h, py::arg("state"))
       .def("H", &sia::NonlinearGaussian::H, py::arg("state"))
@@ -84,6 +86,8 @@ void export_py_models(py::module& m_sup) {
       .def("f", &sia::NonlinearGaussianCT::f, py::arg("state"),
            py::arg("control"))
       .def("F", &sia::NonlinearGaussianCT::F, py::arg("state"),
+           py::arg("control"))
+      .def("G", &sia::NonlinearGaussianCT::G, py::arg("state"),
            py::arg("control"))
       .def("h", &sia::NonlinearGaussianCT::h, py::arg("state"))
       .def("H", &sia::NonlinearGaussianCT::H, py::arg("state"))
@@ -114,6 +118,11 @@ void export_py_models(py::module& m_sup) {
                const Eigen::VectorXd&, const Eigen::VectorXd&) const>(
                &sia::LinearGaussian::F),
            py::arg("state"), py::arg("control"))
+      .def("G",
+           static_cast<const Eigen::MatrixXd (sia::LinearGaussian::*)(
+               const Eigen::VectorXd&, const Eigen::VectorXd&) const>(
+               &sia::LinearGaussian::G),
+           py::arg("state"), py::arg("control"))
       .def("h", &sia::LinearGaussian::h, py::arg("state"))
       .def("H",
            static_cast<const Eigen::MatrixXd (sia::LinearGaussian::*)(
@@ -123,7 +132,9 @@ void export_py_models(py::module& m_sup) {
            static_cast<const Eigen::MatrixXd& (sia::LinearGaussian::*)(void)
                            const>(&sia::LinearGaussian::F))
       .def("setF", &sia::LinearGaussian::setF, py::arg("F"))
-      .def("G", &sia::LinearGaussian::G)
+      .def("G",
+           static_cast<const Eigen::MatrixXd& (sia::LinearGaussian::*)(void)
+                           const>(&sia::LinearGaussian::G))
       .def("setG", &sia::LinearGaussian::setG, py::arg("G"))
       .def("H",
            static_cast<const Eigen::MatrixXd& (sia::LinearGaussian::*)(void)
@@ -136,7 +147,8 @@ void export_py_models(py::module& m_sup) {
       .def("R", &sia::LinearGaussian::R)
       .def("setR", &sia::LinearGaussian::setR, py::arg("R"));
 
-  py::class_<sia::LinearGaussianCT, sia::LinearGaussian, sia::MarkovProcess>
+  py::class_<sia::LinearGaussianCT, sia::LinearGaussian, sia::NonlinearGaussian,
+             sia::MarkovProcess>
       lgct(m, "LinearGaussianCT");
 
   py::enum_<sia::LinearGaussianCT::Type>(lgct, "Type")
@@ -170,7 +182,9 @@ void export_py_models(py::module& m_sup) {
            static_cast<const Eigen::MatrixXd& (sia::LinearGaussianCT::*)(void)
                            const>(&sia::LinearGaussianCT::F))
       .def("setF", &sia::LinearGaussianCT::setF, py::arg("F"))
-      .def("G", &sia::LinearGaussianCT::G)
+      .def("G",
+           static_cast<const Eigen::MatrixXd& (sia::LinearGaussianCT::*)(void)
+                           const>(&sia::LinearGaussianCT::G))
       .def("setG", &sia::LinearGaussianCT::setG, py::arg("G"))
       .def("H",
            static_cast<const Eigen::MatrixXd& (sia::LinearGaussianCT::*)(void)
