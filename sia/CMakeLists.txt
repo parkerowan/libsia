@@ -18,10 +18,15 @@ set(lib_header
   belief/kernel_density.h
   belief/particles.h
   belief/uniform.h
+  controllers/controllers.h
+  controllers/cost.h
+  controllers/ilqr.h
+  controllers/lqr.h
+  controllers/mppi.h
   estimators/estimators.h
-  estimators/extended_kalman_filter.h
-  estimators/kalman_filter.h
-  estimators/particle_filter.h
+  estimators/ekf.h
+  estimators/kf.h
+  estimators/pf.h
   math/math.h
   math/math_impl.h
   models/linear_gaussian.h
@@ -42,9 +47,13 @@ set(lib_source
   belief/kernel_density.cpp
   belief/particles.cpp
   belief/uniform.cpp
-  estimators/extended_kalman_filter.cpp
-  estimators/kalman_filter.cpp
-  estimators/particle_filter.cpp
+  controllers/cost.cpp
+  controllers/ilqr.cpp
+  controllers/lqr.cpp
+  controllers/mppi.cpp
+  estimators/ekf.cpp
+  estimators/kf.cpp
+  estimators/pf.cpp
   math/math.cpp
   models/linear_gaussian.cpp
   models/linear_gaussian_ct.cpp

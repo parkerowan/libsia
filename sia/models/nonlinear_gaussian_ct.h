@@ -40,10 +40,14 @@ class NonlinearGaussianCT : public NonlinearGaussian {
   const Eigen::VectorXd f(const Eigen::VectorXd& state,
                           const Eigen::VectorXd& control) const override;
 
-  /// Returns the Jacobian (linearization) of the deterministic discrete time
-  /// state transition (dynamics) predicted by the system, i.e.
+  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $x$, i.e.
   /// $F = df(x_k-1, u_k) / dx_k-1$.
   const Eigen::MatrixXd F(const Eigen::VectorXd& state,
+                          const Eigen::VectorXd& control) const override;
+
+  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $u$, i.e.
+  /// $F = df(x_k-1, u_k) / du_k$.
+  const Eigen::MatrixXd G(const Eigen::VectorXd& state,
                           const Eigen::VectorXd& control) const override;
 
   void setC(const Eigen::MatrixXd& C) override;

@@ -59,6 +59,58 @@ const Eigen::VectorXd rk4(
     const Eigen::VectorXd& u,
     double dt);
 
+/// Compute gradient df(x)/dx via central difference for scalar f(x)
+const Eigen::VectorXd dfdx(std::function<double(const Eigen::VectorXd&)> f,
+                           const Eigen::VectorXd& x);
+
+/// Compute gradient df(x, u)/dx via central difference for scalar f(x, u)
+const Eigen::VectorXd dfdx(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute gradient df(x, u)/dx via central difference for vector f(x, u)
+const Eigen::MatrixXd dfdx(
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                  const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute gradient df(x, u/du via central difference for scalar f(x, u)
+const Eigen::VectorXd dfdu(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute gradient df(x, u)/du via central difference for vector f(x, u)
+const Eigen::MatrixXd dfdu(
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&,
+                                  const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute Hessian d2f(x)/dx2 via central difference for scalar f(x)
+const Eigen::MatrixXd d2fdxx(std::function<double(const Eigen::VectorXd&)> f,
+                             const Eigen::VectorXd& x);
+
+/// Compute Hessian d2f(x, u)/dx2 via central difference for scalar f(x, u)
+const Eigen::MatrixXd d2fdxx(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute Hessian d2f(x, u)/du2 via central difference for scalar f(x, u)
+const Eigen::MatrixXd d2fduu(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
+/// Compute Hessian d2f(x, u)/dudx via central difference for scalar f(x, u)
+const Eigen::MatrixXd d2fdux(
+    std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)> f,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& u);
+
 /// Computes a numerical Jacobian df(x) / dx using 1st order central difference
 template <typename... Args>
 const Eigen::MatrixXd numericalJacobian(

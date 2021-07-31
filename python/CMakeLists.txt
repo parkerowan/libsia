@@ -10,6 +10,7 @@ set(py_libs
 )
 set(py_sources
   py_belief.cpp
+  py_controllers.cpp
   py_estimators.cpp
   py_math.cpp
   py_models.cpp

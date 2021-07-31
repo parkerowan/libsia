@@ -11,6 +11,7 @@ set(test_source
   helpers.h
   helpers.cpp
   test_belief.cpp
+  test_controllers.cpp
   test_estimators.cpp
   test_math.cpp
   test_models.cpp

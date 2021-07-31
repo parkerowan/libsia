@@ -3,30 +3,23 @@ Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
 Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 """
 
-import logging
-import argparse
+# Import the libSIA python bindings and numpy
 import pysia as sia
-
 import numpy as np
+import argparse
+
+# Import plotting helpers
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import animation, rc
 from mpl_toolkits.mplot3d import Axes3D
-import time
-
-logging.basicConfig(
-    level=logging.INFO,
-    format=
-    "%(asctime)s %(process)s [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()])
 
 # Colormap for particles
 cmap = cm.plasma
 
 
-def createLorenzAttractor(q: float = 1e0,
-                          r: float = 1e2) -> sia.NonlinearGaussianCT:
-    """Creates a system for the Lorenz attractor"""
+def create_system(q: float = 1e0, r: float = 1e2) -> sia.NonlinearGaussianCT:
+    """Creates the system model"""
     # Lorenz attractor chaotic parameters
     rho = 28
     sig = 10
@@ -60,16 +53,16 @@ def createLorenzAttractor(q: float = 1e0,
     return sia.NonlinearGaussianCT(f, h, C, Q, R, dt)
 
 
-def setupEstimators(system: sia.NonlinearGaussianCT, num_particles: int,
-                    resample_threshold: float, roughening_factor: float,
-                    buffer_size: int):
-    """Sets up the estimators given the system"""
+def create_estimators(system: sia.NonlinearGaussianCT, num_particles: int,
+                      resample_threshold: float, roughening_factor: float,
+                      buffer_size: int):
+    """Creates the estimators"""
     # Initialize a gaussian belief
     gaussian = sia.Gaussian(mean=np.array([0, 0, 20]),
                             covariance=1e3 * np.identity(3))
 
     # Initialize the extended kalman filter
-    ekf = sia.ExtendedKalmanFilter(system=system, state=gaussian)
+    ekf = sia.EKF(system=system, state=gaussian)
 
     # Initialize a particle belief
     particles = sia.Particles.uniform(lower=np.array([-30, -30, -10]),
@@ -78,10 +71,10 @@ def setupEstimators(system: sia.NonlinearGaussianCT, num_particles: int,
                                       weighted_stats=True)
 
     # Initialize the particle filter
-    pf = sia.ParticleFilter(system=system,
-                            particles=particles,
-                            resample_threshold=resample_threshold,
-                            roughening_factor=roughening_factor)
+    pf = sia.PF(system=system,
+                particles=particles,
+                resample_threshold=resample_threshold,
+                roughening_factor=roughening_factor)
 
     # Initial true state
     x = np.array([-10, 5, 20])
@@ -123,7 +116,6 @@ def create_animate_3d_sim(system, runner, state, ekf, pf, num_steps, dpi):
 
     plt.tight_layout()
     plt.axis('off')
-    logging.info("Completed initialization for 3d_sim plot")
 
     # Render the animation
     return animation.FuncAnimation(fig,
@@ -138,7 +130,6 @@ def create_animate_3d_sim(system, runner, state, ekf, pf, num_steps, dpi):
 def step_animate_3d_sim(i, system, runner, state, ekf, pf, scatter, line,
                         point, num_steps):
     """Animation function for 3d sim. This is called sequentially."""
-    logging.info("{0} of {1}".format(i + 1, num_steps))
     recorder = runner.recorder()
     particles = pf.getBelief()
 
@@ -207,10 +198,45 @@ def plot_estimates(system, runner, state, ekf, pf, num_steps, dpi):
         ax[i].set_yticks([])
 
 
-def main():
-    """Run a particle filter for the Lorenz attractor"""
+def main(num_steps: int, process_noise: float, measurement_noise: float,
+         num_particles: int, resample_threshold: float,
+         roughening_factor: float, video_name: str, dpi: int,
+         show_plots: bool):
+    """"Run estimators on a Lorenz attractor estimation problem"""
+
+    # Create the system
+    system = create_system(process_noise, measurement_noise)
+
+    # Setup the estimators
+    runner, state, ekf, pf = create_estimators(system, num_particles,
+                                               resample_threshold,
+                                               roughening_factor, num_steps)
+
+    # Create the animation function
+    anim = create_animate_3d_sim(system, runner, state, ekf, pf, num_steps,
+                                 dpi)
+
+    # Render and save the animation
+    Writer = animation.writers['ffmpeg']
+    writer = Writer(fps=30,
+                    metadata=dict(title='Particle filter Lorenz attractor',
+                                  artist='Parker Owan'),
+                    bitrate=5000,
+                    extra_args=['-vcodec', 'libx264'])
+
+    anim.save(video_name, writer=writer, dpi=dpi)
+
+    # Plot the estimates
+    plot_estimates(system, runner, state, ekf, pf, num_steps, dpi)
+
+    # Show the animation
+    if show_plots:
+        plt.show()
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Run a particle filter for the Lorenz attractor")
+        description="Run estimators on a Lorenz attractor estimation problem")
     parser.add_argument('--num_steps',
                         action="store",
                         dest="num_steps",
@@ -266,39 +292,13 @@ def main():
                         type=bool,
                         help="Show and animate plots")
     args = parser.parse_args()
-    logging.info("Arguments: %s", args)
-    logging.info("Starting the Lorenz attractor particle filter")
 
-    # Create the system
-    system = createLorenzAttractor(args.process_noise, args.measurement_noise)
-
-    # Setup the estimators
-    runner, state, ekf, pf = setupEstimators(system, args.num_particles,
-                                             args.resample_threshold,
-                                             args.roughening_factor,
-                                             args.num_steps)
-
-    # Create the animation function
-    anim = create_animate_3d_sim(system, runner, state, ekf, pf,
-                                 args.num_steps, args.dpi)
-
-    # Render and save the animation
-    Writer = animation.writers['ffmpeg']
-    writer = Writer(fps=30,
-                    metadata=dict(title='Particle filter Lorenz attractor',
-                                  artist='Parker Owan'),
-                    bitrate=5000,
-                    extra_args=['-vcodec', 'libx264'])
-
-    anim.save(args.video_name, writer=writer, dpi=args.dpi)
-
-    # Plot the estimates
-    plot_estimates(system, runner, state, ekf, pf, args.num_steps, args.dpi)
-
-    # Show the animation
-    if args.show_plots:
-        plt.show()
-
-
-if __name__ == "__main__":
-    main()
+    main(num_steps=args.num_steps,
+         process_noise=args.process_noise,
+         measurement_noise=args.measurement_noise,
+         num_particles=args.num_particles,
+         resample_threshold=args.resample_threshold,
+         roughening_factor=args.roughening_factor,
+         video_name=args.video_name,
+         dpi=args.dpi,
+         show_plots=args.show_plots)

@@ -10,7 +10,7 @@
 namespace sia {
 
 // Forward declaration
-class ParticleFilter;
+class PF;
 
 /// Constant for tolerance around 1.0 to renormalize weights
 static const double RENORMALIZE_WEIGHTS_TOLERANCE = 1e-6;
@@ -20,7 +20,7 @@ static const double RENORMALIZE_WEIGHTS_TOLERANCE = 1e-6;
 /// specified, and normalized to one when set.  Weights are used to compute
 /// mean, mode, and covariance if weighted_stats is set.
 class Particles : public Distribution {
-  friend class ParticleFilter;
+  friend class PF;
 
  public:
   /// Creates zero-vector particles with uniform weights.

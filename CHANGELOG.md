@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2021-07-30
+### Added
+- C++ library `controllers` for model predictive control (MPC), including LQR, iLQR and model predictive path integrals (MPPI)
+- Controller examples 'motor', 'navigator', and 'cartpole'
+- Numerical derivatives for vector functions
+- Sphinx doc folder for tutorials
+- Unit tests for added components
+### Changed
+- Moved 'belief', 'models', 'estimators', and new 'controllers' tutorial notebooks to docs
+- Removed support for graphics from the Docker container for security
+- Updated README
+- Bux fixes
 
 ## [0.1.1] - 2021-01-25
 ### Added

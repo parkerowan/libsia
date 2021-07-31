@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
-TEST(Models, linearGaussian) {
+TEST(Models, LinearGaussian) {
   Eigen::Matrix<double, 1, 1> F, G, C, H, Q, R;
   F << -0.1;
   G << 0.1;
@@ -57,7 +57,7 @@ TEST(Models, linearGaussian) {
   EXPECT_TRUE(observation.covariance().isApprox(R));
 }
 
-TEST(Models, linearGaussianCT) {
+TEST(Models, LinearGaussianCT) {
   Eigen::Matrix<double, 1, 1> A, B, C, H, Q, R;
   A << -0.1;
   B << 0.1;
@@ -118,7 +118,7 @@ TEST(Models, linearGaussianCT) {
   EXPECT_TRUE(observation.covariance().isApprox(R / dt));
 }
 
-TEST(Models, nonlinearGaussian) {
+TEST(Models, NonlinearGaussian) {
   Eigen::Matrix<double, 1, 1> F, G, C, H, Q, R;
   F << -0.1;
   G << 0.1;
@@ -165,7 +165,7 @@ TEST(Models, nonlinearGaussian) {
   EXPECT_TRUE(observation.covariance().isApprox(R));
 }
 
-TEST(Models, nonlinearGaussianCT) {
+TEST(Models, NonlinearGaussianCT) {
   Eigen::Matrix<double, 1, 1> A, B, C, H, Q, R;
   A << -0.1;
   B << 0.1;
@@ -225,7 +225,7 @@ TEST(Models, nonlinearGaussianCT) {
   EXPECT_TRUE(observation.covariance().isApprox(R / dt2));
 }
 
-TEST(Models, simulate) {
+TEST(Models, Simulate) {
   Eigen::Matrix<double, 1, 1> F, G, C, H, Q, R;
   F << -0.1;
   G << 0.1;

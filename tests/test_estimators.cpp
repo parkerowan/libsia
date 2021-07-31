@@ -6,10 +6,10 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
-TEST(Estimators, kf) {
+TEST(Estimators, KF) {
   sia::LinearGaussian system = createTestSystem();
   sia::Gaussian prior(0, 10);
-  sia::KalmanFilter kf(system, prior);
+  sia::KF kf(system, prior);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
@@ -24,10 +24,10 @@ TEST(Estimators, kf) {
   EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
 
-TEST(Estimators, ekf) {
+TEST(Estimators, EKF) {
   sia::LinearGaussian system = createTestSystem();
   sia::Gaussian prior(0, 10);
-  sia::ExtendedKalmanFilter ekf(system, prior);
+  sia::EKF ekf(system, prior);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
@@ -42,13 +42,13 @@ TEST(Estimators, ekf) {
   EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
 
-TEST(Estimators, pf) {
+TEST(Estimators, PF) {
   sia::LinearGaussian system = createTestSystem();
   Eigen::Matrix<double, 1, 1> mu, sigma;
   mu << 0;
   sigma << 10;
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
-  sia::ParticleFilter pf(system, prior, 1.0, 0.01);
+  sia::PF pf(system, prior, 1.0, 0.01);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;

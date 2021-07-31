@@ -7,3 +7,9 @@
 
 // Create a 1st order low pass filter system for test
 sia::LinearGaussian createTestSystem();
+
+// Create a 1st order integrator system for test
+sia::LinearGaussian createIntegratorSystem();
+
+// Create a quadratic cost for test
+sia::QuadraticCost createTestCost();

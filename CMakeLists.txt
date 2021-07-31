@@ -12,6 +12,7 @@ cmake_policy(SET CMP0054 NEW)
 # Command line options
 option(TEST_COVERAGE "Generate a make coverage command" OFF)
 option(PYTHON_BINDINGS "Make the python bindings" OFF)
+option(SPHINX_DOCS "Make the sphinx documentation" OFF)
 
 # CTest
 enable_testing()
@@ -34,6 +35,18 @@ set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
 set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
 
+# Create the project
+project(${PROJ_NAME} 
+  LANGUAGES C CXX
+  VERSION ${PROJ_VERSION}
+)
+
+# Add compiler flags
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+# Set build type
 if(TEST_COVERAGE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
@@ -42,15 +55,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-
-# Create the project
-project(${PROJ_NAME} 
-  LANGUAGES C CXX
-  VERSION ${PROJ_VERSION}
-)
+message(STATUS "Build type set to ${CMAKE_BUILD_TYPE}")
 
 # ------------------------------------------------------------------------------
 # CMake modules
@@ -104,7 +109,7 @@ add_subdirectory(tests)
 # ------------------------------------------------------------------------------
 # Add the example targets
 # ------------------------------------------------------------------------------
-# add_subdirectory(examples)
+add_subdirectory(examples)
 
 # ------------------------------------------------------------------------------
 # Setup the coverage reporting
@@ -119,5 +124,15 @@ if(TEST_COVERAGE)
     NAME coverage
     EXECUTABLE ctest
     DEPENDENCIES sia
+  )
+endif()
+
+# ------------------------------------------------------------------------------
+# Setup the Sphinx documentation custom target
+# ------------------------------------------------------------------------------
+if(SPHINX_DOCS)
+  add_custom_target(docs
+    COMMAND make html
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/docs"
   )
 endif()

@@ -47,6 +47,13 @@ const Eigen::MatrixXd LinearGaussian::F(const Eigen::VectorXd& state,
   return F();
 }
 
+const Eigen::MatrixXd LinearGaussian::G(const Eigen::VectorXd& state,
+                                        const Eigen::VectorXd& control) const {
+  (void)(state);
+  (void)(control);
+  return G();
+}
+
 const Eigen::VectorXd LinearGaussian::h(const Eigen::VectorXd& state) const {
   return H() * state;
 }

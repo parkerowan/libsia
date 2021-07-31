@@ -6,3 +6,7 @@ matplotlib==3.3.3
 seaborn==0.11.0
 jupyterlab==2.2.9
 ipympl==0.5.8
+sphinx==4.0.2
+pydata-sphinx-theme==0.6.3
+sphinx-markdown-tables==0.0.15
+recommonmark==0.7.1
