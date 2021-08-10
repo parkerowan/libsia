@@ -19,7 +19,7 @@ static unsigned get_elapsed_us(steady_clock::time_point tic,
       .count();
 };
 
-iLQR::iLQR(NonlinearGaussian& system,
+iLQR::iLQR(LinearizableDynamics& dynamics,
            DifferentiableCost& cost,
            const std::vector<Eigen::VectorXd>& u0,
            std::size_t max_iter,
@@ -28,7 +28,7 @@ iLQR::iLQR(NonlinearGaussian& system,
            double tau,
            double min_z,
            double mu)
-    : m_system(system),
+    : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
       m_max_iter(max_iter),
@@ -53,7 +53,7 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
   m_states.reserve(N);
   m_states.emplace_back(state.mean());
   for (std::size_t i = 0; i < N - 1; ++i) {
-    m_states.emplace_back(m_system.f(m_states.at(i), m_controls.at(i)));
+    m_states.emplace_back(m_dynamics.f(m_states.at(i), m_controls.at(i)));
   }
 
   // Loop for fixed iteration or until convergence
@@ -87,8 +87,8 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
       const Eigen::MatrixXd lxx = m_cost.cxx(x, u, i);
       const Eigen::MatrixXd lux = m_cost.cux(x, u, i);
       const Eigen::MatrixXd luu = m_cost.cuu(x, u, i);
-      const Eigen::MatrixXd fx = m_system.F(x, u);  // df/dx f(x,u)
-      const Eigen::MatrixXd fu = m_system.G(x, u);  // df/du f(x,u)
+      const Eigen::MatrixXd fx = m_dynamics.F(x, u);  // df/dx f(x,u)
+      const Eigen::MatrixXd fu = m_dynamics.G(x, u);  // df/du f(x,u)
 
       const Eigen::MatrixXd muI = m_mu * Eigen::MatrixXd::Identity(n, n);
       const Eigen::VectorXd Qx = lx + fx.transpose() * Vpx;
@@ -161,7 +161,7 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
 
         // Compute eqn (8c) to integrate the control through system dynamics
         new_controls.emplace_back(uhat);
-        new_states.emplace_back(m_system.f(xhat, uhat));
+        new_states.emplace_back(m_dynamics.f(xhat, uhat));
       }
 
       // From Y. Tassa et al 2012, "Section II-D Improved Line Search"

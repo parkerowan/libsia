@@ -8,8 +8,10 @@
 
 namespace sia {
 
-LQR::LQR(LinearGaussian& system, QuadraticCost& cost, std::size_t horizon)
-    : m_system(system), m_cost(cost), m_horizon(horizon) {}
+LQR::LQR(LinearGaussianDynamics& dynamics,
+         QuadraticCost& cost,
+         std::size_t horizon)
+    : m_dynamics(dynamics), m_cost(cost), m_horizon(horizon) {}
 
 const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   auto& N = m_horizon;
@@ -17,8 +19,8 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   const auto& Qf = m_cost.Qf();
   const auto& Q = m_cost.Q();
   const auto& R = m_cost.R();
-  const auto& F = m_system.F();
-  const auto& G = m_system.G();
+  const auto& F = m_dynamics.F();
+  const auto& G = m_dynamics.G();
 
   // Backward recursion dynamic Ricatti equation to compute the cost to go
   Eigen::MatrixXd P = Qf;

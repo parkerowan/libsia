@@ -3,26 +3,27 @@
 
 #include "tests/helpers.h"
 
-sia::LinearGaussian createTestSystem() {
-  Eigen::Matrix<double, 1, 1> A, B, C, H, Q, R;
-  A << 0.9;
-  B << 0.1;
-  C << 1;
-  H << 1;
+sia::LinearGaussianDynamics createTestDynamics() {
+  Eigen::Matrix<double, 1, 1> F, G, Q;
+  F << 0.9;
+  G << 0.1;
   Q << 0.1;
-  R << 0.01;
-  return sia::LinearGaussian(A, B, C, H, Q, R);
+  return sia::LinearGaussianDynamics(F, G, Q);
 }
 
-sia::LinearGaussian createIntegratorSystem() {
-  Eigen::Matrix<double, 1, 1> A, B, C, H, Q, R;
-  A << 0;
-  B << 1;
-  C << 1;
-  H << 1;
+sia::LinearGaussianDynamics createIntegratorDynamics() {
+  Eigen::Matrix<double, 1, 1> F, G, Q;
+  F << 0;
+  G << 1;
   Q << 0.1;
+  return sia::LinearGaussianDynamics(F, G, Q);
+}
+
+sia::LinearGaussianMeasurement createTestMeasurement() {
+  Eigen::Matrix<double, 1, 1> H, R;
+  H << 1;
   R << 0.01;
-  return sia::LinearGaussian(A, B, C, H, Q, R);
+  return sia::LinearGaussianMeasurement(H, R);
 }
 
 sia::QuadraticCost createTestCost() {

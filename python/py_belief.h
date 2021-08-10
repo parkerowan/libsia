@@ -10,6 +10,8 @@
 
 #include "sia/belief/distribution.h"
 #include "sia/belief/gaussian.h"
+#include "sia/belief/gmm.h"
+#include "sia/belief/gmr.h"
 #include "sia/belief/helpers.h"
 #include "sia/belief/kernel_density.h"
 #include "sia/belief/particles.h"

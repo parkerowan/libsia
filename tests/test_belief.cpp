@@ -3,6 +3,36 @@
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
+#include <limits>
+
+TEST(Belief, Generator) {
+  std::uniform_int_distribution<long> distribution(
+      0, std::numeric_limits<long>::max());
+
+  sia::Generator::instance().seed(0);
+  std::size_t nsamples = 100;
+  long p0[nsamples] = {};
+  for (std::size_t i = 0; i < nsamples; ++i) {
+    p0[i] = distribution(sia::Generator::instance().engine());
+  }
+
+  sia::Generator::instance().seed(0);
+  long p1[nsamples] = {};
+  for (std::size_t i = 0; i < nsamples; ++i) {
+    p1[i] = distribution(sia::Generator::instance().engine());
+  }
+
+  sia::Generator::instance().seed(1);
+  long p2[nsamples] = {};
+  for (std::size_t i = 0; i < nsamples; ++i) {
+    p2[i] = distribution(sia::Generator::instance().engine());
+  }
+
+  for (std::size_t i = 0; i < nsamples; ++i) {
+    EXPECT_EQ(p0[i], p1[i]);  // same seed
+    EXPECT_NE(p0[i], p2[i]);  // different seed
+  }
+}
 
 TEST(Belief, Gaussian) {
   sia::Gaussian a(1);
@@ -48,11 +78,18 @@ TEST(Belief, Gaussian) {
   EXPECT_TRUE(c.mean().isApprox(mu));
   EXPECT_TRUE(c.mode().isApprox(mu));
   EXPECT_TRUE(c.covariance().isApprox(sigma));
+  EXPECT_DOUBLE_EQ(c.logProb(mu), c.maxLogProb());
 
   const auto v = c.vectorize();
   EXPECT_TRUE(c.devectorize(v));
   EXPECT_TRUE(c.mean().isApprox(mu));
   EXPECT_TRUE(c.covariance().isApprox(sigma));
+
+  // Case where original LDLT decomposition failed
+  mu << 1.04865, -0.312572;
+  sigma << 0.149517, 0.0102682, 0.0102682, 0.370523;
+  sia::Gaussian g(mu, sigma);
+  EXPECT_DOUBLE_EQ(g.logProb(mu), g.maxLogProb());
 }
 
 TEST(Belief, Uniform) {
@@ -247,4 +284,127 @@ TEST(Belief, KernelDensity) {
   EXPECT_TRUE(c.values().isApprox(samples.values()));
   EXPECT_TRUE(c.weights().isApprox(samples.weights()));
   EXPECT_TRUE(c.bandwidth().isApprox(H));
+}
+
+TEST(Belief, GMM) {
+  sia::GMM a(1, 1);
+  EXPECT_EQ(a.numClusters(), 1);
+  ASSERT_EQ(a.dimension(), 1);
+  EXPECT_DOUBLE_EQ(a.mean()(0), 0);
+  EXPECT_DOUBLE_EQ(a.mode()(0), 0);
+  EXPECT_DOUBLE_EQ(a.covariance()(0, 0), 1);
+  EXPECT_DOUBLE_EQ(a.prior(0), 1);
+  EXPECT_DOUBLE_EQ(a.gaussian(0).mean()(0), 0);
+  EXPECT_DOUBLE_EQ(a.gaussian(0).covariance()(0, 0), 1);
+
+  sia::GMM b(2, 5);
+  EXPECT_EQ(b.numClusters(), 2);
+  ASSERT_EQ(b.dimension(), 5);
+
+  sia::Gaussian g0(0.0, 2.0);
+  sia::Gaussian g1(1.0, 1.0);
+  std::vector<sia::Gaussian> gaussians{g0, g1};
+  std::vector<double> priors{0.4, 0.6};
+  sia::GMM c(gaussians, priors);
+
+  EXPECT_EQ(c.numClusters(), 2);
+  ASSERT_EQ(c.dimension(), 1);
+
+  double mu = 0.4 * 0.0 + 0.6 * 1.0;
+  double sigma = 0.4 * (2.0 + (0.0 - mu) * (0.0 - mu)) +
+                 0.6 * (1.0 + (1.0 - mu) * (1.0 - mu));
+
+  Eigen::VectorXd x(1);
+  x << mu;
+  double logProb = log(0.4 * exp(g0.logProb(x)) + 0.6 * exp(g1.logProb(x)));
+  EXPECT_DOUBLE_EQ(c.mode()(0), 1.0);
+  EXPECT_DOUBLE_EQ(c.mean()(0), mu);
+  EXPECT_DOUBLE_EQ(c.covariance()(0, 0), sigma);
+  EXPECT_DOUBLE_EQ(c.logProb(x), logProb);
+
+  std::size_t ns = 10000;
+  Eigen::MatrixXd s = Eigen::MatrixXd::Zero(1, ns);
+  for (std::size_t i = 0; i < ns; ++i) {
+    s.col(i) = c.sample();
+  }
+  double n = static_cast<double>(ns);
+  const Eigen::VectorXd mean = s.rowwise().sum() / n;
+  const Eigen::MatrixXd e = (s.array().colwise() - c.mean().array()).matrix();
+  const Eigen::MatrixXd cov = e * e.transpose() / (n - 1);
+  EXPECT_NEAR(c.mean()(0), mean(0), 5e-2);
+  EXPECT_NEAR(c.mode()(0), 1.0, 5e-2);
+  EXPECT_NEAR(c.covariance()(0, 0), cov(0, 0), 5e-2);
+
+  const auto v = c.vectorize();
+  EXPECT_TRUE(c.devectorize(v));
+  EXPECT_DOUBLE_EQ(c.mean()(0), mu);
+  EXPECT_DOUBLE_EQ(c.covariance()(0, 0), sigma);
+
+  // Classification
+  sia::GMM d(std::vector<sia::Gaussian>{sia::Gaussian(0.0, 1.0),
+                                        sia::Gaussian(1.0, 1.0)},
+             std::vector<double>{0.5, 0.5});
+  EXPECT_EQ(d.classify(0.0 * Eigen::VectorXd::Ones(1)), 0);
+  EXPECT_EQ(d.classify(1.0 * Eigen::VectorXd::Ones(1)), 1);
+
+  // Fit
+  Eigen::MatrixXd S(2, 5);
+  S << 1, 3, 5, 7, 9, 2, 4, 6, 8, 10;
+  gaussians = std::vector<sia::Gaussian>{
+      sia::Gaussian(Eigen::Vector2d{3, 3}, Eigen::Matrix2d::Identity()),
+      sia::Gaussian(Eigen::Vector2d{6, 6}, Eigen::Matrix2d::Identity()),
+      sia::Gaussian(Eigen::Vector2d{9, 9}, Eigen::Matrix2d::Identity())};
+  priors = std::vector<double>{0.3, 0.3, 0.4};
+  EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+                          sia::GMM::KMEANS, sia::GMM::WARM_START),
+            1);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+                          sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::WARM_START),
+            1);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  EXPECT_LE(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+                          sia::GMM::KMEANS, sia::GMM::STANDARD_RANDOM),
+            2);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  EXPECT_EQ(
+      sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+                    sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::STANDARD_RANDOM),
+      1);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  sia::Particles samples = sia::Particles::gaussian(
+      Eigen::Vector2d::Zero(), Eigen::Matrix2d::Identity(), 10);
+  sia::GMM gmm_new(samples.values(), 3);
+  EXPECT_EQ(gmm_new.numClusters(), 3);
+  EXPECT_EQ(gmm_new.gaussians().size(), 3);
+  EXPECT_EQ(gmm_new.priors().size(), 3);
+  EXPECT_EQ(gmm_new.dimension(), 2);
+}
+
+TEST(Belief, GMR) {
+  sia::Gaussian g0(Eigen::Vector2d{0, -7}, 1 * Eigen::Matrix2d::Identity());
+  sia::Gaussian g1(Eigen::Vector2d{6, -1}, 2 * Eigen::Matrix2d::Identity());
+  sia::GMM gmm(std::vector<sia::Gaussian>{g0, g1},
+               std::vector<double>{0.5, 0.5});
+
+  std::vector<std::size_t> ix{0};
+  std::vector<std::size_t> ox{1};
+  sia::GMR gmr(gmm, ix, ox);
+
+  sia::Gaussian y0 = gmr.predict(0 * Eigen::VectorXd::Ones(1));
+  sia::Gaussian y1 = gmr.predict(6 * Eigen::VectorXd::Ones(1));
+  ASSERT_EQ(y0.dimension(), 1);
+  ASSERT_EQ(y1.dimension(), 1);
+  EXPECT_NEAR(y0.mean()(0), -7.0, 1e-3);
+  EXPECT_NEAR(y1.mean()(0), -1.0, 1e-3);
+  EXPECT_NEAR(y0.covariance()(0, 0), 1.0, 1e-3);
+  EXPECT_NEAR(y1.covariance()(0, 0), 2.0, 1e-3);
 }

@@ -9,7 +9,7 @@ Sia is a C++/Python library for model-based stochastic estimation and optimal co
 - Finite horizon model predictive control (MPC) including LQR, iLQR, and model predictive path integrals (MPPI).
 - Bayesian estimation including Kalman, extended Kalman, and particle filters.
 - Markov dynamical systems including nonlinear/Gaussian, linear/Gaussian, and their discrete/continuous time variants.
-- Distributions for representing belief including Gaussian, uniform, particle, and Kernel densities (KDE).
+- Distributions for representing belief including Gaussian, uniform, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR).
 - Runner and recorder for easy simulation and data trace collection.
 - Math functions for Runge-Kutta integration, SVD-based matrix inversion.
 - Python bindings with Pybind11.

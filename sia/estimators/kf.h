@@ -16,7 +16,9 @@ namespace sia {
 /// prediction and correction.
 class KF : public Estimator {
  public:
-  explicit KF(LinearGaussian& system, const Gaussian& state);
+  explicit KF(LinearGaussianDynamics& dynamics,
+              LinearGaussianMeasurement& measurement,
+              const Gaussian& state);
   virtual ~KF() = default;
   void reset(const Gaussian& state);
   const Gaussian& getBelief() const override;
@@ -32,7 +34,8 @@ class KF : public Estimator {
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
  private:
-  LinearGaussian& m_system;
+  LinearGaussianDynamics& m_dynamics;
+  LinearGaussianMeasurement& m_measurement;
   Gaussian m_belief;
 };
 

@@ -29,10 +29,11 @@ TEST(Runner, Buffer) {
 }
 
 TEST(Runner, Runner) {
-  sia::LinearGaussian system = createTestSystem();
+  auto dynamics = createTestDynamics();
+  auto measurement = createTestMeasurement();
   sia::Gaussian prior(0, 10);
-  sia::KF a(system, prior);
-  sia::KF b(system, prior);
+  sia::KF a(dynamics, measurement, prior);
+  sia::KF b(dynamics, measurement, prior);
 
   Eigen::Matrix<double, 1, 1> u = Eigen::Matrix<double, 1, 1>::Ones();
   Eigen::VectorXd x0 = Eigen::VectorXd::Ones(1);
@@ -41,7 +42,7 @@ TEST(Runner, Runner) {
   sia::EstimatorMap estimators = {{"kf", a}};
   sia::Runner runner(estimators, buffer);
   sia::Recorder& recorder = runner.recorder();
-  Eigen::VectorXd xkp1 = runner.stepAndEstimate(system, x0, u);
+  Eigen::VectorXd xkp1 = runner.stepAndEstimate(dynamics, measurement, x0, u);
 
   const auto& Y = recorder.getObservations();
   const auto& U = recorder.getControls();

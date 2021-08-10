@@ -272,4 +272,31 @@ const Eigen::MatrixXd d2fdux(
   return H;
 }
 
+double frobNormSquared(const Eigen::MatrixXd& A) {
+  assert(A.rows() == A.cols());
+  double p = double(A.rows());
+  return (A * A.transpose()).trace() / p;
+}
+
+const Eigen::MatrixXd estimateCovariance(const Eigen::MatrixXd& samples) {
+  // See: "A Well-Conditioned Estimator for Large-dimensional Covariance
+  // Matrices", 2004.
+  std::size_t n = samples.cols();
+  std::size_t d = samples.rows();
+  double p = double(d);
+  const Eigen::MatrixXd cov = samples * samples.transpose() / double(n);
+  double mu = cov.trace() / p;
+  const Eigen::MatrixXd muI = mu * Eigen::MatrixXd::Identity(d, d);
+  double d2 = frobNormSquared(cov - muI);
+  double b2 = 0;
+  for (std::size_t i = 0; i < n; ++i) {
+    const Eigen::VectorXd& x = samples.col(i);
+    b2 += frobNormSquared(x * x.transpose() - cov);
+  }
+  b2 /= pow(double(n), 2);
+  b2 = std::min(d2, b2);
+  double shrinkage = b2 / d2;
+  return (1 - shrinkage) * cov + shrinkage * muI;
+}
+
 }  // namespace sia

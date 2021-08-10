@@ -7,9 +7,10 @@
 #include <sia/sia.h>
 
 TEST(Estimators, KF) {
-  sia::LinearGaussian system = createTestSystem();
+  sia::LinearGaussianDynamics dynamics = createTestDynamics();
+  sia::LinearGaussianMeasurement measurement = createTestMeasurement();
   sia::Gaussian prior(0, 10);
-  sia::KF kf(system, prior);
+  sia::KF kf(dynamics, measurement, prior);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
@@ -25,9 +26,10 @@ TEST(Estimators, KF) {
 }
 
 TEST(Estimators, EKF) {
-  sia::LinearGaussian system = createTestSystem();
+  sia::LinearGaussianDynamics dynamics = createTestDynamics();
+  sia::LinearGaussianMeasurement measurement = createTestMeasurement();
   sia::Gaussian prior(0, 10);
-  sia::EKF ekf(system, prior);
+  sia::EKF ekf(dynamics, measurement, prior);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
@@ -43,12 +45,13 @@ TEST(Estimators, EKF) {
 }
 
 TEST(Estimators, PF) {
-  sia::LinearGaussian system = createTestSystem();
+  sia::LinearGaussianDynamics dynamics = createTestDynamics();
+  sia::LinearGaussianMeasurement measurement = createTestMeasurement();
   Eigen::Matrix<double, 1, 1> mu, sigma;
   mu << 0;
   sigma << 10;
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
-  sia::PF pf(system, prior, 1.0, 0.01);
+  sia::PF pf(dynamics, measurement, prior, 1.0, 0.01);
 
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;

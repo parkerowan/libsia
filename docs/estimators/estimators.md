@@ -1,11 +1,11 @@
 # Estimators
-Several estimators are available in `sia`, depending on which type of model is being used.  For Linear/Gaussian models, `sia.KalmanFilter` estimator is optimal.  For Nonlinear/Gaussian, the `sia.ExtendedKalmanFilter` or `sia.ParticleFilter` suboptimal estimators can be used.  For a general user-implemented MarkovProcess, only the `sia.ParticleFilter` can be used.  Note in the following table that supported models include both the discrete time and continuous time variants.
+Several estimators are available in `sia`, depending on which type of model is being used.  For Linear/Gaussian models, `sia.KalmanFilter` estimator is optimal.  For Nonlinear/Gaussian, the `sia.ExtendedKalmanFilter` or `sia.ParticleFilter` suboptimal estimators can be used.  For a general user-implemented MarkovProcess, only the `sia.ParticleFilter` can be used.  Note that models in parenthesis are implicitly supported due to model inheritance.   Also note that both discrete time and continuous time variants are supported.
 
-| Estimator            | Optimal     | Supported models                                 |
-| -------------------- | ----------- | ------------------------------------------------ |
-| KalmanFilter         | Yes         | LinearGaussian                                   |
-| ExtendedKalmanFilter | No          | NonlinearGaussian, LinearGaussian                |
-| ParticleFilter       | No          | MarkovProcess, NonlinearGaussian, LinearGaussian |
+| Estimator            | Optimal     | Supported dynamics and measurement models                                         |
+| -------------------- | ----------- | --------------------------------------------------------------------------------  |
+| KalmanFilter         | Yes         | LinearGaussian                                                                    |
+| ExtendedKalmanFilter | No          | Linearizable (NonlinearGaussian, LinearGaussian)                                  |
+| ParticleFilter       | No          | DynamicsModel, MeasurementModel (Linearizable, NonlinearGaussian, LinearGaussian) |
 
 This example compares these algorithms to estimate the states of a linear/Gaussian model, since it is the most widely supported model type.  In practice, the `sia.KalmanFilter` should be used for this type of model.
 
@@ -29,7 +29,7 @@ To illustrate use of the estimator, we use an example from Crassidis and Junkins
 $$
 x_k = \begin{pmatrix} 1 & -\Delta t \\ \Delta t & 0 \end{pmatrix} x_{k-1} 
  + \begin{pmatrix} \Delta t \\ 0 \end{pmatrix} u_k 
- + \begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix} w_k \\
+ + w_k \\
 y_k = \begin{pmatrix} 1 & 0 \end{pmatrix} x_k + v_k
 $$
 where $w_k \sim \mathcal{N}(0,Q)$ is process noise and $v_k \sim \mathcal{R}(0,R)$ is measurement noise, both determined via spectral power densities of the continuous time measurement.
@@ -44,12 +44,13 @@ q00 = sv**2 * dt + su**2 * dt**3 / 3
 q01 = - su**2 * dt**2 / 2
 q11 = su**2 * dt
 r = sn**2
-system = sia.LinearGaussian(
+
+dynamics = sia.LinearGaussianDynamics(
     F=np.array([[1, -dt], [0, 1]]),
     G=np.array([[dt], [0]]),
-    C=np.array([[1, 0], [0, 1]]),
+    Q=np.array([[q00, q01], [q01, q11]]))
+measurement = sia.LinearGaussianMeasurement(
     H=np.array([[1, 0]]),
-    Q=np.array([[q00, q01], [q01, q11]]),
     R=np.array([[r]]))
 ```
 
@@ -59,12 +60,12 @@ We initialize the estimators around the linear system.  The estimators must be i
 ```python
 # Initialize KF and EKF using a Gaussian prior
 prior = sia.Gaussian(mean=np.array([0, 0]), covariance=np.diag([1E-4, 1E-12]))
-kf = sia.KF(system, state=prior)
-ekf = sia.EKF(system, state=prior)
+kf = sia.KF(dynamics, measurement, state=prior)
+ekf = sia.EKF(dynamics, measurement, state=prior)
 
 # Initialize PF using a particle prior
 particles = sia.Particles.init(prior, num_particles=1000)
-pf = sia.PF(system, particles=particles, resample_threshold=0.1, roughening_factor=0)
+pf = sia.PF(dynamics, measurement, particles=particles, resample_threshold=0.5, roughening_factor=5e-9)
 ```
 
 Use the `sia.Runner` class to simplify the task of simulating the system and performing the estimation step for a map/dictionary of estimators.  Internally, this class steps the dynamics model, samples a measurement, and then calls `estimate()` for each of the provided estimators.
@@ -84,7 +85,7 @@ pf.reset(particles)
 # Initialize the ground truth state and step/estimate for n_steps
 x = np.array([0, 4.8481e-7])
 for k in range(0, n_steps):
-    x = runner.stepAndEstimate(system, x, np.array([0.0011]))
+    x = runner.stepAndEstimate(dynamics, measurement, x, np.array([0.0011]))
 ```
 
 We can access the recorder states via the `sia.Recorder` object.  Here we plot the state estimate error and 3$\sigma$ bounds recorded by the runner for each of the estimators.

@@ -11,10 +11,11 @@ const std::size_t STATE_DIM = 4;
 const std::size_t INPUT_DIM = 1;
 
 // Simulation parameters
+unsigned seed = 0;
 std::size_t num_steps = 200;
 std::size_t horizon = 100;
-double process_noise = 0;
-double measurement_noise = 0;
+double process_noise = 1e-4;
+double measurement_noise = 1e-6;
 double dt = 2e-2;  // Time step in seconds (20 ms)
 std::string datafile = "/libsia/data/cartpole.csv";
 
@@ -36,11 +37,18 @@ double sigma = 10.0;
 double lambda = 1.0;
 
 bool parse_args(int argc, char* argv[]) {
+  // Use a clock to generate a seed
+  typedef std::chrono::high_resolution_clock myclock;
+  myclock::time_point beginning = myclock::now();
+  bool random_seed = true;
+
   for (int i = 1; i < argc; i += 2) {
     if (std::string(argv[i]) == "--help") {
+      std::cout << "  --seed <value> Random number generator\n";
       std::cout << "  --num_steps <value> Number of simulation steps\n";
       std::cout << "  --horizon <value> MPC optimization horizon\n";
       std::cout << "  --process_noise <value> Process noise variance\n";
+      std::cout << "  --measurement_noise <value> Measurement noise variance\n";
       std::cout << "  --dt <value> Simulation time step (s)\n";
       std::cout << "  --datafile <value> File path the csv data output\n";
       std::cout << "  --input_cost <value> Input cost coefficient\n";
@@ -55,12 +63,17 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --sigma <value> [MPPI] Control sampling variance\n";
       std::cout << "  --lambda <value> [MPPI] Free energy temperature\n";
       return false;
+    } else if (std::string(argv[i]) == "--seed") {
+      seed = std::atoi(argv[i + 1]);
+      random_seed = false;
     } else if (std::string(argv[i]) == "--num_steps") {
       num_steps = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--horizon") {
       horizon = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--process_noise") {
       process_noise = std::atof(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--measurement_noise") {
+      measurement_noise = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--dt") {
       dt = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--datafile") {
@@ -89,6 +102,13 @@ bool parse_args(int argc, char* argv[]) {
       lambda = std::atof(argv[i + 1]);
     }
   }
+
+  if (random_seed) {
+    myclock::duration d = myclock::now() - beginning;
+    seed = d.count();
+  }
+  sia::Generator::instance().seed(seed);
+
   return true;
 }
 
@@ -158,29 +178,35 @@ const Eigen::VectorXd cartpole_dynamics(const Eigen::VectorXd& x,
   return xdot;
 }
 
-sia::NonlinearGaussianCT create_system(double q, double r, double dt) {
+sia::NonlinearGaussianDynamicsCT create_dynamics(double q, double dt) {
   // Suppose that noise is added to all channels
-  Eigen::MatrixXd C = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
-  Eigen::MatrixXd Q = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
-  Eigen::MatrixXd R = r * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
+  Eigen::MatrixXd Qpsd = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
+
+  // Create the system
+  return sia::NonlinearGaussianDynamicsCT(cartpole_dynamics, Qpsd, dt);
+}
+
+sia::NonlinearGaussianMeasurementCT create_measurement(double r, double dt) {
+  // Suppose that noise is added to all channels
+  Eigen::MatrixXd Rpsd = r * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
 
   // Assume we can measure all states
   auto h = [](Eigen::VectorXd x) { return x; };
 
   // Create the system
-  return sia::NonlinearGaussianCT(cartpole_dynamics, h, C, Q, R, dt);
+  return sia::NonlinearGaussianMeasurementCT(h, Rpsd, dt);
 }
 
 sia::QuadraticCost create_cost(double r = 1e-2) {
   Eigen::DiagonalMatrix<double, STATE_DIM> Q;
-  Q.diagonal() << 1.25, 1.0, 12.0, 0.25;
+  Q.diagonal() << 1.25, 6.0, 12.0, 0.25;
   Eigen::MatrixXd R(INPUT_DIM, INPUT_DIM);
   R << r;
   Eigen::VectorXd xd = Eigen::VectorXd::Zero(STATE_DIM);
   return sia::QuadraticCost(Q, Q, R, xd);
 }
 
-sia::Controller* create_ilqr_controller(sia::NonlinearGaussian& system,
+sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
                                         sia::QuadraticCost& cost,
                                         std::size_t horizon,
                                         std::size_t max_iter,
@@ -193,11 +219,11 @@ sia::Controller* create_ilqr_controller(sia::NonlinearGaussian& system,
   for (std::size_t i = 0; i < horizon; ++i) {
     u0.emplace_back(Eigen::VectorXd::Zero(INPUT_DIM));
   }
-  return new sia::iLQR(system, cost, u0, max_iter, max_backsteps, epsilon, tau,
-                       min_z, mu);
+  return new sia::iLQR(dynamics, cost, u0, max_iter, max_backsteps, epsilon,
+                       tau, min_z, mu);
 }
 
-sia::Controller* create_mppi_controller(sia::NonlinearGaussian& system,
+sia::Controller* create_mppi_controller(sia::LinearizableDynamics& dynamics,
                                         sia::QuadraticCost& cost,
                                         std::size_t horizon,
                                         std::size_t num_samples,
@@ -209,13 +235,15 @@ sia::Controller* create_mppi_controller(sia::NonlinearGaussian& system,
   }
   Eigen::MatrixXd Sigma(INPUT_DIM, INPUT_DIM);
   Sigma << sigma;
-  return new sia::MPPI(system, cost, u0, num_samples, Sigma, lambda);
+  return new sia::MPPI(dynamics, cost, u0, num_samples, Sigma, lambda);
 }
 
 Eigen::VectorXd init_state() {
-  Eigen::VectorXd mu(STATE_DIM);
-  mu << -1, 1, 2, 0;
-  return mu;
+  Eigen::VectorXd lower(STATE_DIM), upper(STATE_DIM);
+  lower << -0.5, M_PI - 2, -2, -1;
+  upper << +0.5, M_PI + 2, +2, +1;
+  sia::Uniform state(lower, upper);
+  return state.sample();
 }
 
 // To profile, run:
@@ -232,16 +260,17 @@ int main(int argc, char* argv[]) {
   write_header(ofs);
 
   // Create the system and cost function
-  auto system = create_system(process_noise, measurement_noise, dt);
+  auto dynamics = create_dynamics(process_noise, dt);
+  auto measurement = create_measurement(measurement_noise, dt);
   auto cost = create_cost(input_cost);
 
   // Create the controller
   sia::Controller* controller{nullptr};
   if (algorithm == "ilqr") {
-    controller = create_ilqr_controller(system, cost, horizon, max_iter,
+    controller = create_ilqr_controller(dynamics, cost, horizon, max_iter,
                                         max_backsteps, epsilon, tau, min_z, mu);
   } else if (algorithm == "mppi") {
-    controller = create_mppi_controller(system, cost, horizon, num_samples,
+    controller = create_mppi_controller(dynamics, cost, horizon, num_samples,
                                         sigma, lambda);
   } else {
     std::cout << "Unknown controller " << algorithm
@@ -264,10 +293,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Write data
-    write_data(ofs, t, x.mean(), u);
+    Eigen::VectorXd y = measurement.measurement(x.mean()).sample();
+    write_data(ofs, t, y, u);
 
     // Integrate forward
-    x.setMean(system.f(x.mean(), u));
+    x.setMean(dynamics.dynamics(x.mean(), u).sample());
     t += dt;
   }
 

@@ -14,6 +14,9 @@ namespace sia {
 /// where $c_f$ is the terminal cost and $c$ is the running cost.
 class CostFunction {
  public:
+  CostFunction() = default;
+  virtual ~CostFunction() = default;
+
   // Running cost $c(x, u, i)$
   virtual double c(const Eigen::VectorXd& x,
                    const Eigen::VectorXd& u,
@@ -32,6 +35,9 @@ class CostFunction {
 /// the cost functions.
 class DifferentiableCost : public CostFunction {
  public:
+  DifferentiableCost() = default;
+  virtual ~DifferentiableCost() = default;
+
   virtual Eigen::VectorXd cx(const Eigen::VectorXd& x,
                              const Eigen::VectorXd& u,
                              std::size_t i) const = 0;
@@ -79,6 +85,8 @@ class QuadraticCost : public DifferentiableCost {
                          const Eigen::MatrixXd& Q,
                          const Eigen::MatrixXd& R,
                          const std::vector<Eigen::VectorXd>& xd);
+
+  virtual ~QuadraticCost() = default;
 
   // Set the desired trajectory
   void setTrajectory(const std::vector<Eigen::VectorXd>& xd);
@@ -141,6 +149,7 @@ class FunctionalCost : public DifferentiableCost {
  public:
   explicit FunctionalCost(TerminalCostFunction terminal_cost,
                           RunningCostFunction running_cost);
+  virtual ~FunctionalCost() = default;
 
   // Running cost $c(x, u, i)$
   double c(const Eigen::VectorXd& x,

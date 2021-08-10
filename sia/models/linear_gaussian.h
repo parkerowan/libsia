@@ -10,69 +10,157 @@
 
 namespace sia {
 
-/// A Markov process with a discrete time linear Gaussian system of equations
-/// (specialization of the nonlinear case) where the dynamics equation is
-/// - $x_k = F x_k-1 + G u_k + C w_k, w_k \sim N(0, Q_k)$,
-/// and the measurement equation is
-/// - $y_k = H x_k + v_k, v_k \sim N(0, R_k)$.
-class LinearGaussian : public NonlinearGaussian {
- public:
-  explicit LinearGaussian(const Eigen::MatrixXd& F,
-                          const Eigen::MatrixXd& G,
-                          const Eigen::MatrixXd& C,
-                          const Eigen::MatrixXd& H,
-                          const Eigen::MatrixXd& Q,
-                          const Eigen::MatrixXd& R);
+///
+/// DISCRETE TIME
+///
 
-  /// Returns the distribution predicted by the discrete time state transition
-  /// (dynamics) model $p(x_k | x_k-1, u_k)$.
+/// A linear dynamics model with zero-mean additive Gaussian noise
+/// $x_k = F x_k-1 + G u_k + w_k, w_k \sim N(0, Q_k)$.
+class LinearGaussianDynamics : public LinearizableDynamics {
+ public:
+  explicit LinearGaussianDynamics(const Eigen::MatrixXd& F,
+                                  const Eigen::MatrixXd& G,
+                                  const Eigen::MatrixXd& Q);
+  virtual ~LinearGaussianDynamics() = default;
+
+  /// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
   Gaussian& dynamics(const Eigen::VectorXd& state,
                      const Eigen::VectorXd& control) override;
 
-  /// Returns the distribution predicted by the measurement (observation) model
-  /// $p(y_k | x_k)$.
-  Gaussian& measurement(const Eigen::VectorXd& state) override;
+  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  Eigen::VectorXd f(const Eigen::VectorXd& state,
+                    const Eigen::VectorXd& control) override;
 
-  /// Returns the deterministic discrete time state transition (dynamics)
-  /// predicted by the system, i.e. $x_k = f(x_k-1, u_k)$.
-  const Eigen::VectorXd f(const Eigen::VectorXd& state,
-                          const Eigen::VectorXd& control) const override;
+  /// Process noise covariance $V[x_k] = S(x_k-1, u_k)$.
+  Eigen::MatrixXd Q(const Eigen::VectorXd& state,
+                    const Eigen::VectorXd& control) override;
 
-  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $x$, which for
-  /// the linear case is equivalent to the F matrix, i.e. $F = df(x_k-1,
-  /// u_k)/dx_k-1$.
-  const Eigen::MatrixXd F(const Eigen::VectorXd& state,
-                          const Eigen::VectorXd& control) const override;
+  /// Jacobian $F = df(x, u)/dx$.
+  Eigen::MatrixXd F(const Eigen::VectorXd& state,
+                    const Eigen::VectorXd& control) override;
 
-  /// Returns the Jacobian (linearization) of the dynamics w.r.t. $u$, which for
-  /// the linear case is equivalent to the G matrix, i.e. $F = df(x_k-1,
-  /// u_k)/du_k$.
-  const Eigen::MatrixXd G(const Eigen::VectorXd& state,
-                          const Eigen::VectorXd& control) const override;
+  /// Jacobian $G = df(x, u)/du$.
+  Eigen::MatrixXd G(const Eigen::VectorXd& state,
+                    const Eigen::VectorXd& control) override;
 
-  /// Returns the deterministic measurement (observation) predicted by the
-  /// system, i.e. $y = h(x)$.
-  const Eigen::VectorXd h(const Eigen::VectorXd& state) const override;
-
-  /// Returns the Jacobian (linearization) of the measurement, which for the
-  /// linear case is equivalent to the H matrix, i.e. $H = dh(x)/dx$.
-  const Eigen::MatrixXd H(const Eigen::VectorXd& state) const override;
-
+  const Eigen::MatrixXd& Q() const;
   const Eigen::MatrixXd& F() const;
   const Eigen::MatrixXd& G() const;
-  const Eigen::MatrixXd& H() const;
+  void setQ(const Eigen::MatrixXd& Q);
   void setF(const Eigen::MatrixXd& F);
   void setG(const Eigen::MatrixXd& G);
+
+ protected:
+  LinearGaussianDynamics(const Eigen::MatrixXd& Q);
+  void cacheStateCovariance();
+
+  Eigen::MatrixXd m_dynamics_matrix;
+  Eigen::MatrixXd m_input_matrix;
+  Eigen::MatrixXd m_process_covariance;
+  Gaussian m_prob_dynamics;
+};
+
+/// A linear measurement model with zero-mean additive Gaussian noise
+/// $y_k = H x_k + v_k, v_k \sim N(0, R_k)$.
+class LinearGaussianMeasurement : public LinearizableMeasurement {
+ public:
+  explicit LinearGaussianMeasurement(const Eigen::MatrixXd& H,
+                                     const Eigen::MatrixXd& R);
+  virtual ~LinearGaussianMeasurement() = default;
+
+  /// Predicts the statistical observation $p(y | x)$.
+  Gaussian& measurement(const Eigen::VectorXd& state) override;
+
+  /// Expected observation $E[y] = h(x)$.
+  Eigen::VectorXd h(const Eigen::VectorXd& state) override;
+
+  /// Measurement noise covariance $V[y] = R(x)$.
+  Eigen::MatrixXd R(const Eigen::VectorXd& state) override;
+
+  /// Jacobian $H = dh(x)/dx$.
+  Eigen::MatrixXd H(const Eigen::VectorXd& state) override;
+
+  const Eigen::MatrixXd& R() const;
+  const Eigen::MatrixXd& H() const;
+  void setR(const Eigen::MatrixXd& R);
   void setH(const Eigen::MatrixXd& H);
 
  protected:
-  explicit LinearGaussian(const Eigen::MatrixXd& C,
-                          const Eigen::MatrixXd& H,
-                          const Eigen::MatrixXd& Q,
-                          const Eigen::MatrixXd& R);
-  Eigen::MatrixXd m_dynamics_matrix;
-  Eigen::MatrixXd m_input_matrix;
+  void cacheMeasurementCovariance();
+
   Eigen::MatrixXd m_measurement_matrix;
+  Eigen::MatrixXd m_measurement_covariance;
+  Gaussian m_prob_measurement;
+};
+
+///
+/// CONTINUOUS TIME
+///
+
+/// A linear continuous-time dynamics model with zero-mean Gaussian noise
+/// $\dot{x} = A x + B u + C w, w \sim N(0, Qpsd)$.
+/// Note that the dynamics and Qpsd value represent a continuous time process
+/// that must be discretized.  The dynamics are discretized the method specified
+/// on construction. Qpsd represents a power spectrial density and is converted
+/// to a discrete time covariance matrix Q using 1st order approximations from
+/// Crassidis and Junkins, 2012, pg. 171-175.
+class LinearGaussianDynamicsCT : public LinearGaussianDynamics {
+ public:
+  /// The discretization type used for the dynamics transformation.
+  enum Type {
+    FORWARD_EULER,
+    BACKWARD_EULER,
+  };
+
+  explicit LinearGaussianDynamicsCT(const Eigen::MatrixXd& A,
+                                    const Eigen::MatrixXd& B,
+                                    const Eigen::MatrixXd& Qpsd,
+                                    double dt,
+                                    Type type = BACKWARD_EULER);
+  virtual ~LinearGaussianDynamicsCT() = default;
+
+  const Eigen::MatrixXd& A() const;
+  const Eigen::MatrixXd& B() const;
+  void setA(const Eigen::MatrixXd& A);
+  void setB(const Eigen::MatrixXd& B);
+
+  /// Sets the process noise power spectral density
+  void setQpsd(const Eigen::MatrixXd& Qpsd);
+
+  Type getType() const;
+  void setType(Type type);
+  double getTimeStep() const;
+  void setTimeStep(double dt);
+
+ protected:
+  void discretizeDynamics();
+
+  Eigen::MatrixXd m_dynamics_matrix_ct;
+  Eigen::MatrixXd m_input_matrix_ct;
+  double m_dt;
+  Type m_type;
+};
+
+/// A linear measurement model with zero-mean additive Gaussian noise
+/// $y = H x + v, v \sim N(0, Rpsd)$.
+/// Note that the Rpsd value represents a continuous time process that must be
+/// discretized.  Rpsd represents a power spectrial density and is converted to
+/// a discrete time covariance matrix R using 1st order approximations from
+/// Crassidis and Junkins, 2012, pg. 171-175.
+class LinearGaussianMeasurementCT : public LinearGaussianMeasurement {
+ public:
+  explicit LinearGaussianMeasurementCT(const Eigen::MatrixXd& H,
+                                       const Eigen::MatrixXd& Rpsd,
+                                       double dt);
+  virtual ~LinearGaussianMeasurementCT() = default;
+
+  /// Sets the measurement noise power spectral density
+  void setRpsd(const Eigen::MatrixXd& Rpsd);
+  double getTimeStep() const;
+  void setTimeStep(double dt);
+
+ protected:
+  double m_dt;
 };
 
 }  // namespace sia

@@ -49,7 +49,8 @@ const Eigen::MatrixXd Trajectories::measurements(std::size_t k) {
   return measurements;
 }
 
-Trajectory simulate(MarkovProcess& system,
+Trajectory simulate(DynamicsModel& dynamics,
+                    MeasurementModel& measurement,
                     const Eigen::VectorXd& state,
                     const Eigen::MatrixXd& controls,
                     bool sample) {
@@ -60,7 +61,7 @@ Trajectory simulate(MarkovProcess& system,
     const auto u = controls.col(i);
 
     // Integrate the dynamics forward one step
-    auto& px = system.dynamics(x, u);
+    auto& px = dynamics.dynamics(x, u);
 
     // Optionally sample the new state
     if (sample) {
@@ -70,7 +71,7 @@ Trajectory simulate(MarkovProcess& system,
     }
 
     // Return the measurement distribution
-    auto& py = system.measurement(x);
+    auto& py = measurement.measurement(x);
 
     // Optionally sample the measurement
     Eigen::VectorXd y(py.dimension());
@@ -96,7 +97,8 @@ Trajectory simulate(MarkovProcess& system,
   return traj;
 }
 
-Trajectories simulate(MarkovProcess& system,
+Trajectories simulate(DynamicsModel& dynamics,
+                      MeasurementModel& measurement,
                       const std::vector<Eigen::VectorXd>& states,
                       const Eigen::MatrixXd& controls,
                       bool sample) {
@@ -104,12 +106,14 @@ Trajectories simulate(MarkovProcess& system,
   std::vector<Trajectory> traj;
   traj.reserve(n);
   for (std::size_t i = 0; i < n; ++i) {
-    traj.emplace_back(simulate(system, states.at(i), controls, sample));
+    traj.emplace_back(
+        simulate(dynamics, measurement, states.at(i), controls, sample));
   }
   return Trajectories(traj);
 }
 
-Trajectories simulate(MarkovProcess& system,
+Trajectories simulate(DynamicsModel& dynamics,
+                      MeasurementModel& measurement,
                       const std::vector<Eigen::VectorXd>& states,
                       const std::vector<Eigen::MatrixXd>& controls,
                       bool sample) {
@@ -118,7 +122,8 @@ Trajectories simulate(MarkovProcess& system,
   std::vector<Trajectory> traj;
   traj.reserve(n);
   for (std::size_t i = 0; i < n; ++i) {
-    traj.emplace_back(simulate(system, states.at(i), controls.at(i), sample));
+    traj.emplace_back(
+        simulate(dynamics, measurement, states.at(i), controls.at(i), sample));
   }
   return Trajectories(traj);
 }

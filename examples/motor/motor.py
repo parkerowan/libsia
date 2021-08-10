@@ -16,7 +16,7 @@ sns.set_theme(style="whitegrid")
 
 def create_system(voltage_noise: float = 1e2,
                   current_noise: float = 1e0,
-                  dt: float = 1e-4) -> sia.LinearGaussianCT:
+                  dt: float = 1e-4) -> sia.LinearGaussianDynamicsCT:
     """Creates the system model"""
     Lm = 1e-3  # Motor inductance (H)
     Rm = 1.2  # Motor resistance (ohm)
@@ -26,11 +26,8 @@ def create_system(voltage_noise: float = 1e2,
     Kt = 2.0  # Motor torque constant (N-m/A)
     A = np.array([[-Rm / Lm, -Kb / Lm, 0], [Kt / Jm, -Bm / Jm, 0], [0, 1, 0]])
     B = np.array([[1 / Lm], [0], [0]])
-    C = np.array([[1, 0], [0, 1], [0, 0]])
-    H = np.identity(3)
-    Q = np.diag([voltage_noise, current_noise])
-    R = np.identity(3)
-    return sia.LinearGaussianCT(A, B, C, H, Q, R, dt)
+    Q = np.diag([voltage_noise, current_noise, 1e-8])
+    return sia.LinearGaussianDynamicsCT(A, B, Q, dt)
 
 
 def create_cost(current_cost: float = 1e3,
@@ -43,11 +40,11 @@ def create_cost(current_cost: float = 1e3,
     return sia.QuadraticCost(Qlqr, Qlqr, Rlqr, xd)
 
 
-def create_controller(system: sia.LinearGaussianCT,
+def create_controller(dynamics: sia.LinearGaussianDynamicsCT,
                       cost: sia.QuadraticCost,
                       horizon: int = 31) -> sia.LQR:
     """Create the controller"""
-    return sia.LQR(system, cost, horizon)
+    return sia.LQR(dynamics, cost, horizon)
 
 
 def init_state() -> np.array:
@@ -85,11 +82,11 @@ def main(num_steps: int, dt: float, voltage_noise: float, current_noise: float,
     """Run an MPC on a motor position tracking problem"""
 
     # Create the system and cost function
-    system = create_system(voltage_noise, current_noise, dt)
+    dynamics = create_system(voltage_noise, current_noise, dt)
     cost = create_cost(current_cost, velocity_cost, position_cost)
 
     # Create the controller
-    mpc = create_controller(system, cost, horizon)
+    mpc = create_controller(dynamics, cost, horizon)
 
     # Simulate
     n = num_steps
@@ -117,7 +114,7 @@ def main(num_steps: int, dt: float, voltage_noise: float, current_noise: float,
         u[:, k] = mpc.policy(state)
 
         # Simulate dynamics forward
-        x[:, k + 1] = system.dynamics(x[:, k], u[:, k]).sample()
+        x[:, k + 1] = dynamics.dynamics(x[:, k], u[:, k]).sample()
 
     # Plot the results
     if show_plots:

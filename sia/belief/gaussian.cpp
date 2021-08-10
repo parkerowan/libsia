@@ -15,7 +15,10 @@ Gaussian::Gaussian(std::size_t dimension)
   cacheSigmaChol();
 }
 
-Gaussian::Gaussian(double mean, double covariance) : Gaussian(1) {
+Gaussian::Gaussian(double mean, double covariance)
+    : Distribution(Generator::instance()),
+      m_mu(Eigen::VectorXd::Zero(1)),
+      m_sigma(Eigen::MatrixXd::Identity(1, 1)) {
   m_mu << mean;
   m_sigma << covariance;
   cacheSigmaChol();
@@ -23,7 +26,8 @@ Gaussian::Gaussian(double mean, double covariance) : Gaussian(1) {
 
 Gaussian::Gaussian(const Eigen::VectorXd& mean,
                    const Eigen::MatrixXd& covariance)
-    : Gaussian(1) {
+    : Distribution(Generator::instance()) {
+  // TODO: Raise exception
   if (checkDimensions(mean, covariance)) {
     m_mu = mean;
     m_sigma = covariance;
@@ -39,7 +43,7 @@ const Eigen::VectorXd Gaussian::sample() {
   // Sample from standard normal
   Eigen::VectorXd x = Eigen::VectorXd::Zero(dimension());
   for (std::size_t i = 0; i < dimension(); ++i) {
-    x(i) = m_standard_normal(m_generator);
+    x(i) = m_standard_normal(m_rng);
   }
 
   // Project x onto the defined distribution using the Cholesky of sigma
@@ -47,10 +51,8 @@ const Eigen::VectorXd Gaussian::sample() {
 }
 
 double Gaussian::logProb(const Eigen::VectorXd& x) const {
-  double rank = static_cast<double>(dimension());
-  double log_2_pi = log(2 * M_PI);
-  double log_det = 2 * m_cached_sigma_L.diagonal().array().log().sum();
-  return -0.5 * (rank * log_2_pi + pow(mahalanobis(x), 2) + log_det);
+  // -0.5 * (rank * log_2_pi + log_det + pow(mahalanobix(x), 2));
+  return maxLogProb() - 0.5 * pow(mahalanobis(x), 2);
 }
 
 const Eigen::VectorXd Gaussian::mean() const {
@@ -106,6 +108,13 @@ double Gaussian::mahalanobis(const Eigen::VectorXd& x) const {
   return sqrt(y.dot(y));
 }
 
+double Gaussian::maxLogProb() const {
+  double rank = static_cast<double>(dimension());
+  double log_2_pi = log(2 * M_PI);
+  double log_det = 2 * m_cached_sigma_L.diagonal().array().log().sum();
+  return -0.5 * (rank * log_2_pi + log_det);
+}
+
 bool Gaussian::checkDimensions(const Eigen::VectorXd& mu,
                                const Eigen::MatrixXd& sigma) const {
   std::size_t n = mu.size();
@@ -120,8 +129,9 @@ bool Gaussian::checkDimensions(const Eigen::VectorXd& mu,
 }
 
 bool Gaussian::cacheSigmaChol() {
+  // TODO: Raise exception if LDLT fails, or inverse fails
   bool result = true;
-  if (not ldltSqrt(m_sigma, m_cached_sigma_L)) {
+  if (not llt(m_sigma, m_cached_sigma_L)) {
     LOG(WARNING) << "Failed to compute LDLT of covariance matrix";
     result = false;
   }

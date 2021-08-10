@@ -8,8 +8,10 @@
 
 namespace sia {
 
-EKF::EKF(NonlinearGaussian& system, const Gaussian& state)
-    : m_system(system), m_belief(state) {}
+EKF::EKF(LinearizableDynamics& dynamics,
+         LinearizableMeasurement& measurement,
+         const Gaussian& state)
+    : m_dynamics(dynamics), m_measurement(measurement), m_belief(state) {}
 
 void EKF::reset(const Gaussian& state) {
   m_belief = state;
@@ -31,13 +33,12 @@ const Gaussian& EKF::predict(const Eigen::VectorXd& control) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& u = control;
-  const auto& C = m_system.C();
-  const auto& Q = m_system.Q();
+  const auto Q = m_dynamics.Q(x, control);
 
   // Propogate
-  x = m_system.f(x, u);
-  const auto F = m_system.F(x, u);
-  P = F * P * F.transpose() + C * Q * C.transpose();
+  x = m_dynamics.f(x, u);
+  const auto F = m_dynamics.F(x, u);
+  P = F * P * F.transpose() + Q;
 
   m_belief.setMean(x);
   m_belief.setCovariance(P);
@@ -49,10 +50,10 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& y = observation;
-  const auto& R = m_system.R();
+  const auto R = m_measurement.R(x);
 
   // Gain
-  const auto H = m_system.H(x);
+  const auto H = m_measurement.H(x);
   Eigen::MatrixXd HPHTRinv;
   if (not svdInverse(H * P * H.transpose() + R, HPHTRinv)) {
     LOG(ERROR) << "Matrix inversion failed in Kalman gain computation";
@@ -60,7 +61,7 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   const Eigen::MatrixXd K = P * H.transpose() * HPHTRinv;
 
   // Update
-  x += K * (y - m_system.h(x));
+  x += K * (y - m_measurement.h(x));
   P = (Eigen::MatrixXd::Identity(P.rows(), P.cols()) - K * H) * P;
 
   m_belief.setMean(x);

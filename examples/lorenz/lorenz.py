@@ -18,8 +18,8 @@ from mpl_toolkits.mplot3d import Axes3D
 cmap = cm.plasma
 
 
-def create_system(q: float = 1e0, r: float = 1e2) -> sia.NonlinearGaussianCT:
-    """Creates the system model"""
+def create_dynamics(q: float, dt: float) -> sia.NonlinearGaussianDynamicsCT:
+    """Creates the system dynamics model"""
     # Lorenz attractor chaotic parameters
     rho = 28
     sig = 10
@@ -35,8 +35,13 @@ def create_system(q: float = 1e0, r: float = 1e2) -> sia.NonlinearGaussianCT:
 
     # Suppose that noise is added to all 3 channels
     Q = q * np.identity(3)
-    C = np.identity(3)
 
+    # Create the system
+    return sia.NonlinearGaussianDynamicsCT(f, Q, dt)
+
+
+def create_measurement(r: float, dt: float) -> sia.NonlinearGaussianMeasurementCT:
+    """Creates the system measurement model"""
     # Suppose we measure a linear combination of states in the measurement
     # equation.  For NonlinearGaussian systems, we pass a lambda function to
     # the constructor
@@ -46,15 +51,15 @@ def create_system(q: float = 1e0, r: float = 1e2) -> sia.NonlinearGaussianCT:
     ])
     R = r * np.identity(2)
 
-    # Time step in seconds
-    dt = 0.01
-
     # Create the system
-    return sia.NonlinearGaussianCT(f, h, C, Q, R, dt)
+    return sia.NonlinearGaussianMeasurementCT(h, R, dt)
 
 
-def create_estimators(system: sia.NonlinearGaussianCT, num_particles: int,
-                      resample_threshold: float, roughening_factor: float,
+def create_estimators(dynamics: sia.NonlinearGaussianDynamicsCT,
+                      measurement: sia.NonlinearGaussianMeasurementCT,
+                      num_particles: int,
+                      resample_threshold: float,
+                      roughening_factor: float,
                       buffer_size: int):
     """Creates the estimators"""
     # Initialize a gaussian belief
@@ -62,7 +67,7 @@ def create_estimators(system: sia.NonlinearGaussianCT, num_particles: int,
                             covariance=1e3 * np.identity(3))
 
     # Initialize the extended kalman filter
-    ekf = sia.EKF(system=system, state=gaussian)
+    ekf = sia.EKF(dynamics=dynamics, measurement=measurement, state=gaussian)
 
     # Initialize a particle belief
     particles = sia.Particles.uniform(lower=np.array([-30, -30, -10]),
@@ -71,7 +76,8 @@ def create_estimators(system: sia.NonlinearGaussianCT, num_particles: int,
                                       weighted_stats=True)
 
     # Initialize the particle filter
-    pf = sia.PF(system=system,
+    pf = sia.PF(dynamics=dynamics,
+                measurement=measurement,
                 particles=particles,
                 resample_threshold=resample_threshold,
                 roughening_factor=roughening_factor)
@@ -87,7 +93,7 @@ def create_estimators(system: sia.NonlinearGaussianCT, num_particles: int,
     return (runner, state, ekf, pf)
 
 
-def create_animate_3d_sim(system, runner, state, ekf, pf, num_steps, dpi):
+def create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi):
     """Creates an animation function for the 3d sim plot"""
     # Set up the figure, the axis, and the plot element we want to animate
     particles = pf.getBelief()
@@ -120,14 +126,14 @@ def create_animate_3d_sim(system, runner, state, ekf, pf, num_steps, dpi):
     # Render the animation
     return animation.FuncAnimation(fig,
                                    step_animate_3d_sim,
-                                   fargs=(system, runner, state, ekf, pf,
+                                   fargs=(dynamics, measurement, runner, state, ekf, pf,
                                           scatter, line, point, num_steps),
                                    frames=num_steps,
                                    interval=20,
                                    blit=False)
 
 
-def step_animate_3d_sim(i, system, runner, state, ekf, pf, scatter, line,
+def step_animate_3d_sim(i, dynamics, measurement, runner, state, ekf, pf, scatter, line,
                         point, num_steps):
     """Animation function for 3d sim. This is called sequentially."""
     recorder = runner.recorder()
@@ -139,7 +145,7 @@ def step_animate_3d_sim(i, system, runner, state, ekf, pf, scatter, line,
         x = state.mean()
 
         # This steps the system state, takes a measurement and steps each estimator
-        state.setMean(runner.stepAndEstimate(system, x, u))
+        state.setMean(runner.stepAndEstimate(dynamics, measurement, x, u))
 
         # Update state trajectory plot
         line.set_data(recorder.getStates()[:2, :])
@@ -158,7 +164,7 @@ def step_animate_3d_sim(i, system, runner, state, ekf, pf, scatter, line,
     scatter._edgecolor3d = cmap(cs.astype(int))
 
 
-def plot_estimates(system, runner, state, ekf, pf, num_steps, dpi):
+def plot_estimates(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi):
     """Plots estimates of the particle filter and ekf"""
     # Set up the figure, the axis, and the plot element we want to animate
     recorder = runner.recorder()
@@ -198,22 +204,23 @@ def plot_estimates(system, runner, state, ekf, pf, num_steps, dpi):
         ax[i].set_yticks([])
 
 
-def main(num_steps: int, process_noise: float, measurement_noise: float,
+def main(num_steps: int, dt: float, process_noise: float, measurement_noise: float,
          num_particles: int, resample_threshold: float,
          roughening_factor: float, video_name: str, dpi: int,
          show_plots: bool):
     """"Run estimators on a Lorenz attractor estimation problem"""
 
     # Create the system
-    system = create_system(process_noise, measurement_noise)
+    dynamics = create_dynamics(process_noise, dt)
+    measurement = create_measurement(measurement_noise, dt)
 
     # Setup the estimators
-    runner, state, ekf, pf = create_estimators(system, num_particles,
+    runner, state, ekf, pf = create_estimators(dynamics, measurement, num_particles,
                                                resample_threshold,
                                                roughening_factor, num_steps)
 
     # Create the animation function
-    anim = create_animate_3d_sim(system, runner, state, ekf, pf, num_steps,
+    anim = create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_steps,
                                  dpi)
 
     # Render and save the animation
@@ -227,7 +234,7 @@ def main(num_steps: int, process_noise: float, measurement_noise: float,
     anim.save(video_name, writer=writer, dpi=dpi)
 
     # Plot the estimates
-    plot_estimates(system, runner, state, ekf, pf, num_steps, dpi)
+    plot_estimates(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi)
 
     # Show the animation
     if show_plots:
@@ -243,16 +250,22 @@ if __name__ == "__main__":
                         default=300,
                         type=int,
                         help="Number of time steps to animate")
+    parser.add_argument('--dt',
+                        action="store",
+                        dest="dt",
+                        default=0.01,
+                        type=float,
+                        help="Time step (s)")
     parser.add_argument('--process_noise',
                         action="store",
                         dest="process_noise",
-                        default=1E0,
+                        default=1E-1,
                         type=float,
                         help="Process noise variance")
     parser.add_argument('--measurement_noise',
                         action="store",
                         dest="measurement_noise",
-                        default=5E2,
+                        default=1E1,
                         type=float,
                         help="Process noise variance")
     parser.add_argument('--num_particles',
@@ -264,13 +277,13 @@ if __name__ == "__main__":
     parser.add_argument('--resample_threshold',
                         action="store",
                         dest="resample_threshold",
-                        default=0.1,
+                        default=0.4,
                         type=float,
                         help="Threshold [0, 1] to resample particles")
     parser.add_argument('--roughening_factor',
                         action="store",
                         dest="roughening_factor",
-                        default=1E-3,
+                        default=2E-3,
                         type=float,
                         help="Magnitude of roughening [0, \infty]")
     parser.add_argument('--video_name',
@@ -294,6 +307,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(num_steps=args.num_steps,
+         dt=args.dt,
          process_noise=args.process_noise,
          measurement_noise=args.measurement_noise,
          num_particles=args.num_particles,

@@ -1,11 +1,11 @@
 # Controllers
-Several model predictive controllers are available in `sia`, depending on which type of model and cost are being used.  For Linear/Gaussian models with quadratic costs, the `sia.LQR` linear quadratic regulator is optimal and the most efficient.  For Nonlinear/Gaussian with a differentiable cost, the `sia.iLQR` controller should be used.  Nonlinear/Gaussian with a general cost, `sia.MPPI` should be used.
+Several model predictive controllers are available in `sia`, depending on which type of model and cost are being used.  For Linear/Gaussian models with quadratic costs, the `sia.LQR` linear quadratic regulator is optimal and the most efficient.  For Nonlinear/Gaussian with a differentiable cost, the `sia.iLQR` controller should be used.  For Nonlinear/Gaussian with a general cost or arbitrary dynamics, `sia.MPPI` should be used.  Note that models in parenthesis are implicitly supported due to model inheritance.   Also note that both discrete time and continuous time variants are supported.
 
-| Controller | Optimal  | Supported costs                                 | Supported models                  |
-| ---------- | -------- | ----------------------------------------------- |---------------------------------- |
-| LQR        | Yes      | QuadraticCost                                   | LinearGaussian                    |
-| iLQR       | No       | DifferentiableCost, QuadraticCost               | NonlinearGaussian, LinearGaussian |
-| MPPI       | No       | CostFunction, DifferentiableCost, QuadraticCost | NonlinearGaussian, LinearGaussian |
+| Controller | Optimal  | Supported costs                                 | Supported dynamics models                                                        |
+| ---------- | -------- | ----------------------------------------------- |--------------------------------------------------------------------------------- |
+| LQR        | Yes      | QuadraticCost                                   | LinearGaussianDynamics                                                           |
+| iLQR       | No       | DifferentiableCost, QuadraticCost               | LinearizableDynamics (NonlinearGaussianDynamics, LinearGaussianDynamics)         |
+| MPPI       | No       | CostFunction, DifferentiableCost, QuadraticCost | DynamicsModel (LinearizableDynamics, NonlinearGaussianDynamics, LinearGaussianDynamics) |
 
 This example compares these algorithms to control a linear/Gaussian model with a quadratic, since they are the most widely supported model and cost types.  In practice, `sia.LQR` should be used for this problem class.
 
@@ -40,7 +40,7 @@ A = np.array([[0, 10], [1, 0]])
 B = np.array([[1], [10]])
 I = np.eye(2)
 
-system = sia.LinearGaussianCT(A, B, I, I, I, I, dt)
+system = sia.LinearGaussianDynamicsCT(A, B, I, dt)
 
 # Cost
 Qf = np.diag([10, 20])

@@ -29,6 +29,7 @@ class Particles : public Distribution {
                      bool weighted_stats = false);
 
   /// Creates particles with uniform weights from the vector of states.
+  /// Each column of values is a sample.
   explicit Particles(const Eigen::MatrixXd& values,
                      const Eigen::VectorXd& weights,
                      bool weighted_stats = false);

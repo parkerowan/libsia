@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter
 import seaborn as sns
+import ast  # Because argparse bool doesn't work
 sns.set_theme(style="whitegrid")
 
 
@@ -101,7 +102,7 @@ def plot_cartpole_trajectory(datafile: str, animate: bool, trace: bool,
                 fig.canvas.flush_events()
                 plt.pause(0.001)
 
-            writer.grab_frame()
+                writer.grab_frame()
 
 
 if __name__ == "__main__":
@@ -117,13 +118,13 @@ if __name__ == "__main__":
                         action="store",
                         dest="animate",
                         default=True,
-                        type=bool,
+                        type=ast.literal_eval,
                         help="Animate the plot")
     parser.add_argument('--trace',
                         action="store",
                         dest="trace",
                         default=False,
-                        type=bool,
+                        type=ast.literal_eval,
                         help="Show the pendulum trace")
     parser.add_argument('--video_name',
                         action="store",
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument('--clean_axes',
                         action="store",
                         default=False,
-                        type=bool,
+                        type=ast.literal_eval,
                         help="Remove axes when plotting data")
     args = parser.parse_args()
 

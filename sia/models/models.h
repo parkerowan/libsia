@@ -39,22 +39,95 @@ using DynamicsJacobian =
 using MeasurementJacobian =
     std::function<const Eigen::MatrixXd(const Eigen::VectorXd&)>;
 
-/// A Markov process is a statistical system defined by two equations: (i) the
-/// dynamical system that describes state evolution, and (ii) the measurement
-/// equation that describes the observations.
-/// - $x$ Markov state that evolves over time step $k$.
-/// - $u$ Known control actions applied to influence the state $x$.
-/// - $y$ Measurements generated from the state $x$.
-class MarkovProcess {
+/// A Markov system that predicts the statistical discrete time state transition
+/// $p(x_k | x_k-1, u_k)$.
+/// - $x$ State that evolves over time step $k$.
+/// - $u$ Known control action applied to affect the state $x$.
+class DynamicsModel {
  public:
-  /// Returns the distribution predicted by the discrete time state transition
-  /// (dynamics) model $p(x_k | x_k-1, u_k)$.
+  DynamicsModel() = default;
+  virtual ~DynamicsModel() = default;
+
+  /// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
   virtual Distribution& dynamics(const Eigen::VectorXd& state,
                                  const Eigen::VectorXd& control) = 0;
+};
 
-  /// Returns the distribution predicted by the measurement (observation) model
-  /// $p(y_k | x_k)$.
+/// A system that predicts the statistical observation $p(y | x)$.
+/// - $x$ Input state.
+/// - $y$ Observation generated from the state $x$.
+class MeasurementModel {
+ public:
+  MeasurementModel() = default;
+  virtual ~MeasurementModel() = default;
+
+  /// Predicts the statistical observation $p(y | x)$.
   virtual Distribution& measurement(const Eigen::VectorXd& state) = 0;
 };
+
+/// Linearizable dynamics model.  Default Jacobians use central difference.
+class LinearizableDynamics : public DynamicsModel {
+ public:
+  LinearizableDynamics() = default;
+  virtual ~LinearizableDynamics() = default;
+
+  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  virtual Eigen::VectorXd f(const Eigen::VectorXd& state,
+                            const Eigen::VectorXd& control) = 0;
+
+  /// Process noise covariance $V[x_k] = Q(x_k-1, u_k)$.
+  virtual Eigen::MatrixXd Q(const Eigen::VectorXd& state,
+                            const Eigen::VectorXd& control) = 0;
+
+  /// Jacobian $F = df(x, u)/dx$.
+  virtual Eigen::MatrixXd F(const Eigen::VectorXd& state,
+                            const Eigen::VectorXd& control);
+
+  /// Jacobian $G = df(x, u)/du$.
+  virtual Eigen::MatrixXd G(const Eigen::VectorXd& state,
+                            const Eigen::VectorXd& control);
+};
+
+/// Linearizable measurement model.  Default Jacobians use central difference.
+class LinearizableMeasurement : public MeasurementModel {
+ public:
+  LinearizableMeasurement() = default;
+  virtual ~LinearizableMeasurement() = default;
+
+  /// Expected observation $E[y] = h(x)$.
+  virtual Eigen::VectorXd h(const Eigen::VectorXd& state) = 0;
+
+  /// Measurement noise covariance $V[y] = R(x)$.
+  virtual Eigen::MatrixXd R(const Eigen::VectorXd& state) = 0;
+
+  /// Jacobian $H = dh(x)/dx$.
+  virtual Eigen::MatrixXd H(const Eigen::VectorXd& state);
+};
+
+/// Convert from a process noise power spectral density (continuous time) to a
+/// covariance (discrete time). From Crassidis and Junkins, 2012, pg. 172.
+Eigen::MatrixXd toQ(const Eigen::MatrixXd& Qpsd, double dt);
+
+/// Convert to a process noise power spectral density (continuous time) from a
+/// covariance (discrete time). From Crassidis and Junkins, 2012, pg. 172.
+Eigen::MatrixXd toQpsd(const Eigen::MatrixXd& Q, double dt);
+
+/// Convert from a measurement noise power spectral density (continuous time) to
+/// a covariance (discrete time). From Crassidis and Junkins, 2012, pg. 174.
+Eigen::MatrixXd toR(const Eigen::MatrixXd& Rpsd, double dt);
+
+/// Convert to a measurement noise power spectral density (continuous time) from
+/// a covariance (discrete time). From Crassidis and Junkins, 2012, pg. 174.
+Eigen::MatrixXd toRpsd(const Eigen::MatrixXd& R, double dt);
+
+// TODO:
+
+// nonlinear_gmr.h
+// class GMRDynamics : public LinearizableDynamics {};
+// class GMRMeasurement : public LinearizableMeasurement {};
+
+// nonlinear_gpr.h
+// class GPRDynamics : public LinearizableDynamics {};
+// class GPRMeasurement : public LinearizableMeasurement {};
 
 }  // namespace sia

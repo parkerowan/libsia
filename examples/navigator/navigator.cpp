@@ -14,7 +14,6 @@ const std::size_t STATE_DIM = 8;
 std::size_t num_steps = 2000;
 std::size_t horizon = 500;
 double process_noise = 1e-2;
-double measurement_noise = 1e-3;
 double dt = 12 * 60;  // Time step in seconds (12 min)
 std::string datafile = "/libsia/data/navigator.csv";
 
@@ -162,18 +161,12 @@ const Eigen::VectorXd celestial_dynamics(const Eigen::VectorXd& x,
   return xdot;
 }
 
-sia::NonlinearGaussianCT create_system(double q, double r, double dt) {
+sia::NonlinearGaussianDynamicsCT create_dynamics(double q, double dt) {
   // Suppose that noise is added to all channels
-  Eigen::MatrixXd C = Eigen::MatrixXd::Zero(STATE_DIM, NUM_AXES);
-  C.block<2, 2>(6, 0) = Eigen::Matrix2d::Identity();
-  Eigen::MatrixXd Q = q * Eigen::MatrixXd::Identity(NUM_AXES, NUM_AXES);
-  Eigen::MatrixXd R = r * Eigen::MatrixXd::Identity(NUM_AXES, NUM_AXES);
-
-  // Assume we can measure all states
-  auto h = [](Eigen::VectorXd x) { return x; };
+  Eigen::MatrixXd Qpsd = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
 
   // Create the system
-  return sia::NonlinearGaussianCT(celestial_dynamics, h, C, Q, R, dt);
+  return sia::NonlinearGaussianDynamicsCT(celestial_dynamics, Qpsd, dt);
 }
 
 sia::QuadraticCost create_cost(double r) {
@@ -193,7 +186,7 @@ sia::QuadraticCost create_cost(double r) {
   return sia::QuadraticCost(Qf, Q, R, xd);
 }
 
-sia::Controller* create_ilqr_controller(sia::NonlinearGaussian& system,
+sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
                                         sia::QuadraticCost& cost,
                                         std::size_t horizon,
                                         std::size_t max_iter,
@@ -206,8 +199,8 @@ sia::Controller* create_ilqr_controller(sia::NonlinearGaussian& system,
   for (std::size_t i = 0; i < horizon; ++i) {
     u0.emplace_back(Eigen::VectorXd::Zero(NUM_AXES));
   }
-  return new sia::iLQR(system, cost, u0, max_iter, max_backsteps, epsilon, tau,
-                       min_z, mu);
+  return new sia::iLQR(dynamics, cost, u0, max_iter, max_backsteps, epsilon,
+                       tau, min_z, mu);
 }
 
 Eigen::VectorXd init_state() {
@@ -233,13 +226,13 @@ int main(int argc, char* argv[]) {
   write_header(ofs);
 
   // Create the system and cost function
-  auto system = create_system(process_noise, measurement_noise, dt);
+  auto dynamics = create_dynamics(process_noise, dt);
   sia::QuadraticCost cost = create_cost(input_cost / horizon);
 
   // Create the controller
   sia::Controller* controller{nullptr};
   if (algorithm == "ilqr") {
-    controller = create_ilqr_controller(system, cost, horizon, max_iter,
+    controller = create_ilqr_controller(dynamics, cost, horizon, max_iter,
                                         max_backsteps, epsilon, tau, min_z, mu);
   } else {
     std::cout << "Unknown controller " << algorithm
@@ -265,7 +258,7 @@ int main(int argc, char* argv[]) {
     write_data(ofs, t, x.mean(), u);
 
     // Integrate forward
-    x.setMean(system.f(x.mean(), u));
+    x.setMean(dynamics.f(x.mean(), u));
     t += dt;
   }
 
