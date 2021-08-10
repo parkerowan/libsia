@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/lqr.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -28,9 +29,8 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   Eigen::MatrixXd QuuInv, K;
   Eigen::VectorXd k;
   for (int i = N - 2; i >= 0; --i) {
-    if (not svdInverse(R + G.transpose() * P * G, QuuInv)) {
-      LOG(ERROR) << "Matrix inversion failed in cost to go computation";
-    }
+    bool r = svdInverse(R + G.transpose() * P * G, QuuInv);
+    SIA_EXCEPTION(r, "Matrix inversion failed in LQR cost to go computation");
     K = QuuInv * G.transpose() * P * F;
     k = QuuInv * G.transpose() * v;
 

@@ -10,8 +10,8 @@
 namespace sia {
 
 /// Gaussian (normal) distribution defined by mean and covariance.  Uses the
-/// fast Cholesky decomposition (LDLT) of the covariance matrix.  Supports
-/// positive semi-definite covariance matrices.
+/// fast Cholesky decomposition (LLT) of the covariance matrix.  Supports
+/// positive definite covariance matrices.
 class Gaussian : public Distribution {
  public:
   /// Creates a standard multivariate normal (mu = 0, sigma = 1).
@@ -21,7 +21,7 @@ class Gaussian : public Distribution {
   explicit Gaussian(double mean, double variance);
 
   /// Creates a multivariate normal from mean and covariance.  The covariance
-  /// matrix must be symmetric and positive semi-definite.
+  /// matrix must be symmetric and positive definite.
   explicit Gaussian(const Eigen::VectorXd& mean,
                     const Eigen::MatrixXd& covariance);
   virtual ~Gaussian() = default;
@@ -34,23 +34,26 @@ class Gaussian : public Distribution {
   const Eigen::VectorXd vectorize() const override;
   bool devectorize(const Eigen::VectorXd& data) override;
 
-  bool setMean(const Eigen::VectorXd& mean);
+  void setMean(const Eigen::VectorXd& mean);
 
-  /// The covariance matrix must be symmetric and positive semi-definite.
-  bool setCovariance(const Eigen::MatrixXd& covariance);
+  /// The covariance matrix must be symmetric and positive definite.
+  void setCovariance(const Eigen::MatrixXd& covariance);
+  void setMeanAndCov(const Eigen::VectorXd& mean,
+                     const Eigen::MatrixXd& covariance);
 
   /// Computes the distance $\sqrt{(x-\mu)^\top \Sigma^{-1} (x-\mu)}$.
   double mahalanobis(const Eigen::VectorXd& x) const;
 
   /// Returns the log probability when $x = \mu$.
   double maxLogProb() const;
-  bool checkDimensions(const Eigen::VectorXd& mu,
-                       const Eigen::MatrixXd& sigma) const;
 
  protected:
-  /// Computes the Cholesky (LDLT) decomposition of the covariance matrix and
+  /// Computes the Cholesky (LLT) decomposition of the covariance matrix and
   /// caches the resultant L matrix.
-  bool cacheSigmaChol();
+  void cacheSigmaChol();
+
+  void checkDimensions(const Eigen::VectorXd& mu,
+                       const Eigen::MatrixXd& sigma) const;
 
  private:
   Gaussian() = default;

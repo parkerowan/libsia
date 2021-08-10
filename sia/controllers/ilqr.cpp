@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/ilqr.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -106,9 +107,8 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
 
       // Compute the inverse of Quu
       Eigen::MatrixXd QuuInv;
-      if (not svdInverse(Quu, QuuInv)) {
-        LOG(ERROR) << "Failed to invert Quu at time step " << i;
-      }
+      bool r = svdInverse(Quu, QuuInv);
+      SIA_EXCEPTION(r, "Failed to invert Quu in iLQR backward pass");
 
       // Compute eqns (6) to find the control gains k, K for the next forward
       // pass

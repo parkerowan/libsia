@@ -40,8 +40,13 @@ TEST(Belief, Gaussian) {
   EXPECT_DOUBLE_EQ(a.mean()(0), 0);
   EXPECT_DOUBLE_EQ(a.covariance()(0, 0), 1);
 
-  EXPECT_TRUE(a.setMean(5 * Eigen::VectorXd::Ones(1)));
-  EXPECT_TRUE(a.setCovariance(2 * Eigen::MatrixXd::Ones(1, 1)));
+  a.setMean(3 * Eigen::VectorXd::Ones(1));
+  a.setCovariance(7 * Eigen::MatrixXd::Ones(1, 1));
+  EXPECT_DOUBLE_EQ(a.mean()(0), 3);
+  EXPECT_DOUBLE_EQ(a.covariance()(0, 0), 7);
+
+  a.setMeanAndCov(5 * Eigen::VectorXd::Ones(1),
+                  2 * Eigen::MatrixXd::Ones(1, 1));
   EXPECT_DOUBLE_EQ(a.mean()(0), 5);
   EXPECT_DOUBLE_EQ(a.covariance()(0, 0), 2);
 
@@ -98,8 +103,8 @@ TEST(Belief, Uniform) {
   EXPECT_DOUBLE_EQ(a.lower()(0), 0);
   EXPECT_DOUBLE_EQ(a.upper()(0), 1);
 
-  EXPECT_TRUE(a.setLower(-2 * Eigen::VectorXd::Ones(1)));
-  EXPECT_TRUE(a.setUpper(2 * Eigen::VectorXd::Ones(1)));
+  a.setLower(-2 * Eigen::VectorXd::Ones(1));
+  a.setUpper(2 * Eigen::VectorXd::Ones(1));
   EXPECT_DOUBLE_EQ(a.lower()(0), -2);
   EXPECT_DOUBLE_EQ(a.upper()(0), 2);
 
@@ -407,4 +412,26 @@ TEST(Belief, GMR) {
   EXPECT_NEAR(y1.mean()(0), -1.0, 1e-3);
   EXPECT_NEAR(y0.covariance()(0, 0), 1.0, 1e-3);
   EXPECT_NEAR(y1.covariance()(0, 0), 2.0, 1e-3);
+}
+
+TEST(Belief, GPR) {
+  double varf = 0.5;
+  double varn = 0.1;
+  double length = 0.5;
+  Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
+  Eigen::MatrixXd Y = Eigen::MatrixXd::Random(2, 10);
+  sia::GPR gpr(X, Y, varf, varn, length);
+
+  EXPECT_EQ(gpr.numSamples(), 10);
+  EXPECT_EQ(gpr.inputDimension(), 3);
+  EXPECT_EQ(gpr.outputDimension(), 2);
+
+  // Is there a theoretical bound on the error given the hyperparameters?
+  const double EVAL_TOLERANCE = 2e-1;
+  for (std::size_t i = 0; i < 10; ++i) {
+    sia::Gaussian g = gpr.predict(X.col(i));
+    ASSERT_EQ(g.dimension(), 2);
+    EXPECT_NEAR(g.mean()(0), Y(0, i), EVAL_TOLERANCE);
+    EXPECT_NEAR(g.mean()(1), Y(1, i), EVAL_TOLERANCE);
+  }
 }

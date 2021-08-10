@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "sia/belief/distribution.h"
 #include "sia/belief/gmm.h"
 
 #include <Eigen/Dense>
@@ -16,7 +17,7 @@ namespace sia {
 ///
 /// References:
 /// [1] http://www.stat.rice.edu/~hgsung/thesis.pdf
-class GMR : public GMM {
+class GMR : public GMM, Regression {
  public:
   /// Initialize GMR from a GMM.  The input indices define which part of the
   /// GMM state vector is an input $x$, and output indices define which slice of
@@ -35,7 +36,9 @@ class GMR : public GMM {
                double regularization = GMM::DEFAULT_REGULARIZATION);
 
   /// Performs the regression $p(y|x)$.
-  const Gaussian predict(const Eigen::VectorXd& x);
+  const Gaussian& predict(const Eigen::VectorXd& x) override;
+  std::size_t inputDimension() const override;
+  std::size_t outputDimension() const override;
 
  private:
   void cacheRegressionModels();
@@ -55,6 +58,7 @@ class GMR : public GMM {
     Gaussian m_gx;                            // need for local weight
   };
 
+  Gaussian m_belief;
   std::vector<std::size_t> m_input_indices;
   std::vector<std::size_t> m_output_indices;
   std::vector<RegressionModel> m_models;

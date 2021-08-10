@@ -15,8 +15,12 @@ class KernelDensity;
 /// A kernel function maps a vector to a (semi)-positive scalar, is symmetric
 /// about x=0, and whose integral is 1.  See: Hansen, Lecture notes on
 /// nonparametrics, 2009.
-/// https://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
+///
+/// References:
+/// [1] https://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
+/// [2] W. Hardle et. al., "Nonparametric and Semiparametric models," 2004.
 class Kernel {
+  // Declare friend class to hide factory method
   friend class KernelDensity;
 
  public:
@@ -74,11 +78,16 @@ struct EpanechnikovKernel : public Kernel {
 /// Kernel density estimator to smooth a weighted particle density.  If
 /// bandwidth mode is USER_SPECIFIED, kernel bandwidth is initialized using
 /// Scott's rule.
+///
+/// References:
+/// [1] https://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
+/// [2] Hardle et. al., "Nonparametric and Semiparametric models," 2004.
 class KernelDensity : public Particles {
  public:
   /// Determines how the bandwidth is computed
   enum BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
 
+  /// Each column of values is a sample.
   explicit KernelDensity(const Eigen::MatrixXd& values,
                          const Eigen::VectorXd& weights,
                          Kernel::Type type = Kernel::EPANECHNIKOV,

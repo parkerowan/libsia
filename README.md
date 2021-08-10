@@ -9,7 +9,7 @@ Sia is a C++/Python library for model-based stochastic estimation and optimal co
 - Finite horizon model predictive control (MPC) including LQR, iLQR, and model predictive path integrals (MPPI).
 - Bayesian estimation including Kalman, extended Kalman, and particle filters.
 - Markov dynamical systems including nonlinear/Gaussian, linear/Gaussian, and their discrete/continuous time variants.
-- Distributions for representing belief including Gaussian, uniform, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR).
+- Distributions for representing belief including Gaussian, uniform, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR), and Gaussian Process Regression (GPR).
 - Runner and recorder for easy simulation and data trace collection.
 - Math functions for Runge-Kutta integration, SVD-based matrix inversion.
 - Python bindings with Pybind11.
@@ -91,12 +91,12 @@ f = lambda x, u: np.array([0, 0.1 * u[0] + x[0]])
 h = lambda x: np.array([x[1]])
 
 # Define the process and measurement noise
-Q = np.diag([1e-4])
-C = np.array([0, 1])
+Q = np.diag([1e-8, 1e-4])
 R = np.diag([1e-2])
 
-# Create the model
-system = sia.NonlinearGaussianCT(f, h, C, Q, R, dt=0.1)
+# Create the models
+dynamics = sia.NonlinearGaussianDynamicsCT(f, Q, dt=0.1)
+measurement = sia.NonlinearGaussianMeasurementCT(h, R, dt=0.1)
 ```
 
 Because we cannot directly observe the bias using the measurement above, we need to estimate it.  Initialize an extended Kalman filter from the prior belief and the nonlinear system to estimate the system state.  The general form is recursive Bayesian estimation with a prediction step that propogates the state estimate through a dynamics proposal *q()* (and increases uncertainty)
@@ -112,7 +112,7 @@ Available filters include Kalman, extended Kalman, and particle filters.  Check 
 
 ```python
 # Create the estimator
-ekf = sia.ExtendedKalmanFilter(system, prior)
+ekf = sia.ExtendedKalmanFilter(dynamics, measurement, prior)
 ```
 
 Suppose we would like to drive the controllable state to a new desired state.  Here we create an iLQR controller from the system to perform this control.  The general form of the model predictive controller is a policy 
@@ -138,7 +138,7 @@ T = 25
 u0 = [np.array([0]) for i in range(T)]
 
 # Create the controller
-ilqr = sia.iLQR(system, cost, u0, max_iter=10)
+ilqr = sia.iLQR(dynamics, cost, u0, max_iter=10)
 ```
 
 With the estimator and the controller defined, we can now simulate the system for a few steps
@@ -154,8 +154,8 @@ for i in range(N):
     u = ilqr.policy(state=belief)
 
     # Simulate the system forward and sample from the propogated distributions
-    x = system.dynamics(x, u).sample()
-    y = system.measurement(x).sample()
+    x = dynamics.dynamics(x, u).sample()
+    y = measurement.measurement(x).sample()
     mu = belief.mean()
     print("Iteration {:2d}, x=[{:+.3f}, {:+.3f}], b(x)=[{:+.3f}, {:+.3f}]".
           format(i, x[0], x[1], mu[0], mu[1]))

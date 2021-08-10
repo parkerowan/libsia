@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/models/linear_gaussian.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -199,18 +200,17 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
   Eigen::MatrixXd& G = m_input_matrix;
   const Eigen::MatrixXd I = Eigen::MatrixXd::Identity(A.rows(), A.cols());
   switch (m_type) {
-    case BACKWARD_EULER:
-      if (svdInverse(I - m_dt * A, F)) {
-        G = m_dt * F * B;
-        break;
-      }
-      LOG(WARNING)
-          << "LinearGaussianDynamicsCT::discretizeDynamics BACKWARD_EULER "
-             "discretization failed, using FORWARD_EULER instead.";
-    case FORWARD_EULER:
+    case BACKWARD_EULER: {
+      bool r = svdInverse(I - m_dt * A, F);
+      SIA_EXCEPTION(r, "Failed to solve Backward euler discretization");
+      G = m_dt * F * B;
+      break;
+    }
+    case FORWARD_EULER: {
       F = I + m_dt * A;
       G = m_dt * B;
       break;
+    }
     default:
       LOG(ERROR)
           << "LinearGaussianDynamicsCT::discretizeDynamics not implemented "

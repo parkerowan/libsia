@@ -4,11 +4,11 @@
 #include "sia/belief/kernel_density.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/helpers.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
 #include <cmath>
-#include <iostream>
 
 namespace sia {
 
@@ -231,9 +231,8 @@ Kernel::Type KernelDensity::getKernelType() const {
 
 void KernelDensity::setBandwidthMatrix(const Eigen::MatrixXd& H) {
   m_bandwidth = H;
-  if (not svdInverse(m_bandwidth, m_bandwidth_inv)) {
-    LOG(ERROR) << "Failed to compute inverse of bandwidth matrix";
-  }
+  bool r = svdInverse(m_bandwidth, m_bandwidth_inv);
+  SIA_EXCEPTION(r, "Failed to compute inverse of bandwidth matrix");
   m_bandwidth_det = m_bandwidth.determinant();
 }
 
@@ -254,9 +253,8 @@ void KernelDensity::bandwidthScottRule(const Eigen::MatrixXd& Sigma) {
   double n = static_cast<double>(numParticles());
   double c = m_bandwidth_scaling * pow(n, -1.0 / (d + 4));
   Eigen::MatrixXd H;
-  if (not llt(Sigma, H)) {
-    LOG(ERROR) << "Failed to compute LLT of covariance matrix";
-  }
+  bool r = llt(Sigma, H);
+  SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of covariance");
   H *= c;
   setBandwidthMatrix(H);
 }
