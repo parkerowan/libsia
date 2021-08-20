@@ -470,3 +470,59 @@ plt.show()
 ![png](belief_files/belief_17_0.png)
     
 
+
+## Gaussian Process Regression (GPR)
+
+`sia.GPR` implements a multi-dimensional Gaussian Process Regression model that predicts an uncorrelated output vector $y$ given an input vector $x$ for a posterior statistical function $f$
+$$
+p(y|x) = \mathcal{N}(\mathbb{E}[f(x)], \mathbb{V}[f(x)])
+$$
+Note that because the output vector is uncorrelated, the output variance $\mathbb{V}[f(x)]$ is a diagonal matrix.  GPR is a  hyperparameteric kernel-based method.  The GP has several hyperparameters $\sigma_f^2$, $\sigma_n^2$, and $l$.  The variance $\sigma_f^2$ controls the uncertainty of the prior distribution, i.e. in regions where there is no training data.  The variance $\sigma_n^2$ determines the uncertainty of the likelihood, i.e. the measurement noise.  The length $l$ is a kernel smoothing term.  Effects of these hyperparameters are shown below.  The top row demonstrates $\sigma_f^2$ (`vf`) where the uncertainty at the boundaries (dominated by the prior) is modified; middle shows $\sigma_n^2$ (`vn`) where the measurement noise is changed, and the bottom shows $l$ (`l`) with more or less blending of the likelihood between training data in $x$.
+
+
+```python
+# Generate training data from underlying function
+xtrain = np.random.uniform(0, 4, 21)
+v = 0.1 * np.random.randn(2, len(xtrain))
+ytrain = np.vstack((0.4 * xtrain - 0.5, np.sin(2 * xtrain))) + v
+
+# Plot the raw data
+f, ax = plt.subplots(nrows=3, ncols=3, figsize=(15, 10))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+# Evaluate several choices of hyper parameters
+varf   = [1.0, 3.0, 0.3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+varn   = [0.7, 0.7, 0.7, 0.7, 1.2, 0.2, 0.7, 0.7, 0.7]
+length = [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.2, 0.2]
+
+for i in range(len(ax)):
+    # Create the GPR object
+    gpr = sia.GPR(np.array([xtrain]), ytrain, varf=varf[i], varn=varn[i], length=length[i])
+
+    # Evaluate it
+    xtest = np.linspace(-1, 5, 101)
+    gpr_mu = np.zeros((2, len(xtest)))
+    gpr_sig = np.zeros((2, len(xtest)))
+    for k in range(len(xtest)):
+        gaussian = gpr.predict(np.array([xtest[k]]))
+        gpr_mu[:, k] = gaussian.mean()
+        gpr_sig[:, k] = np.diag(gaussian.covariance())
+    
+    # Plot the belief for each axis and overlay the training data
+    ax[i].fill_between(xtest, gpr_mu[0, :] + 3 * gpr_sig[0, :], gpr_mu[0, :] - 3 * gpr_sig[0, :],  alpha=0.3)
+    ax[i].plot(xtest, gpr_mu[0, :], 'b', lw=2)
+    ax[i].fill_between(xtest, gpr_mu[1, :] + 3 * gpr_sig[1, :], gpr_mu[1, :] - 3 * gpr_sig[1, :],  alpha=0.3)
+    ax[i].plot(xtest, gpr_mu[1, :], 'r', lw=2)
+    ax[i].plot(xtrain, ytrain[0, :], '.b', ms=5)
+    ax[i].plot(xtrain, ytrain[1, :], '.r', ms=5)
+    ax[i].set_ylim((-2, 2))
+    ax[i].axis("off")
+    ax[i].set_title("GPR vf={} vn={} l={}".format(varf[i], varn[i], length[i]));
+```
+
+
+    
+![png](belief_files/belief_19_0.png)
+    
+

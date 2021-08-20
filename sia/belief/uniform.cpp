@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/uniform.h"
+#include "sia/common/exception.h"
 
 #include <glog/logging.h>
 
@@ -19,10 +20,9 @@ Uniform::Uniform(double lower, double upper) : Uniform(1) {
 
 Uniform::Uniform(const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
     : Uniform(1) {
-  if (checkDimensions(lower, upper)) {
-    m_lower = lower;
-    m_upper = upper;
-  }
+  checkDimensions(lower, upper);
+  m_lower = lower;
+  m_upper = upper;
 }
 
 std::size_t Uniform::dimension() const {
@@ -94,32 +94,22 @@ const Eigen::VectorXd& Uniform::upper() const {
   return m_upper;
 }
 
-bool Uniform::setLower(const Eigen::VectorXd& lower) {
-  if (not checkDimensions(lower, m_upper)) {
-    return false;
-  }
+void Uniform::setLower(const Eigen::VectorXd& lower) {
+  checkDimensions(lower, m_upper);
   m_lower = lower;
-  return true;
 }
 
-bool Uniform::setUpper(const Eigen::VectorXd& upper) {
-  if (not checkDimensions(m_lower, upper)) {
-    return false;
-  }
+void Uniform::setUpper(const Eigen::VectorXd& upper) {
+  checkDimensions(m_lower, upper);
   m_upper = upper;
-  return true;
 }
 
-bool Uniform::checkDimensions(const Eigen::VectorXd& lower,
+void Uniform::checkDimensions(const Eigen::VectorXd& lower,
                               const Eigen::VectorXd& upper) const {
   std::size_t n = lower.size();
   std::size_t m = upper.size();
-  bool result = n == m;
-  if (not result) {
-    LOG(WARNING) << "Uniform dimensions not compatible, lower(n=" << n
-                 << "), upper(m=" << m << ")";
-  }
-  return result;
+  bool r = n == m;
+  SIA_EXCEPTION(r, "Inconsistent dimensions between lower and upper");
 }
 
 }  // namespace sia

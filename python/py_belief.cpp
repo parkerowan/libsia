@@ -53,8 +53,9 @@ void export_py_belief(py::module& m_sup) {
       .def("setMean", &sia::Gaussian::setMean, py::arg("mean"))
       .def("setCovariance", &sia::Gaussian::setCovariance,
            py::arg("covariance"))
-      .def("mahalanobis", &sia::Gaussian::mahalanobis, py::arg("x"))
-      .def("checkDimensions", &sia::Gaussian::checkDimensions);
+      .def("setMeanAndCov", &sia::Gaussian::setMeanAndCov, py::arg("mean"),
+           py::arg("covariance"))
+      .def("mahalanobis", &sia::Gaussian::mahalanobis, py::arg("x"));
 
   py::class_<sia::Uniform, sia::Distribution>(m, "Uniform")
       .def(py::init<std::size_t>(), py::arg("dimension"))
@@ -73,8 +74,7 @@ void export_py_belief(py::module& m_sup) {
       .def("lower", &sia::Uniform::lower)
       .def("upper", &sia::Uniform::upper)
       .def("setLower", &sia::Uniform::setLower, py::arg("lower"))
-      .def("setUpper", &sia::Uniform::setUpper, py::arg("upper"))
-      .def("checkDimensions", &sia::Uniform::checkDimensions);
+      .def("setUpper", &sia::Uniform::setUpper, py::arg("upper"));
 
   py::class_<sia::Particles, sia::Distribution>(m, "Particles")
       .def(py::init<std::size_t, std::size_t, bool>(), py::arg("dimension"),
@@ -256,4 +256,20 @@ void export_py_belief(py::module& m_sup) {
       .def("priors", &sia::GMR::priors)
       .def("gaussians", &sia::GMR::gaussians)
       .def("predict", &sia::GMR::predict, py::arg("x"));
+
+  py::class_<sia::GPR> gpr(m, "GPR");
+
+  py::enum_<sia::GPR::CovFunction>(gpr, "CovFunction")
+      .value("SQUARED_EXPONENTIAL", sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
+      .export_values();
+
+  gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,
+                   double, double, sia::GPR::CovFunction>(),
+          py::arg("input_samples"), py::arg("output_samples"), py::arg("varf"),
+          py::arg("varn"), py::arg("length"),
+          py::arg("type") = sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
+      .def("predict", &sia::GPR::predict, py::arg("x"))
+      .def("numSamples", &sia::GPR::numSamples)
+      .def("inputDimension", &sia::GPR::inputDimension)
+      .def("outputDimension", &sia::GPR::outputDimension);
 }

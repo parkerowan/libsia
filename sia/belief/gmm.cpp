@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmm.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -24,8 +25,11 @@ GMM::GMM(const std::vector<Gaussian>& gaussians,
     : Distribution(Generator::instance()),
       m_gaussians(gaussians),
       m_priors(priors) {
-  assert(m_gaussians.size() == m_priors.size());
-  assert(m_gaussians.size() > 0);
+  bool r1 = m_gaussians.size() == m_priors.size();
+  bool r2 = m_gaussians.size() > 0;
+  SIA_EXCEPTION(
+      r1, "Number of clusters and priors in GMM constructor do not match");
+  SIA_EXCEPTION(r2, "GMM constructor needs one or more clusters");
   m_num_clusters = gaussians.size();
   m_dimension = gaussians[0].dimension();
 }

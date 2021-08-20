@@ -36,12 +36,13 @@ class Uniform : public Distribution {
 
   const Eigen::VectorXd& lower() const;
   const Eigen::VectorXd& upper() const;
-  bool setLower(const Eigen::VectorXd& lower);
-  bool setUpper(const Eigen::VectorXd& upper);
-  bool checkDimensions(const Eigen::VectorXd& lower,
-                       const Eigen::VectorXd& upper) const;
+  void setLower(const Eigen::VectorXd& lower);
+  void setUpper(const Eigen::VectorXd& upper);
 
  private:
+  void checkDimensions(const Eigen::VectorXd& lower,
+                       const Eigen::VectorXd& upper) const;
+
   Eigen::VectorXd m_lower;
   Eigen::VectorXd m_upper;
   std::uniform_real_distribution<double> m_standard_uniform{0.0, 1.0};

@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/estimators/kf.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -56,9 +57,8 @@ const Gaussian& KF::correct(const Eigen::VectorXd& observation) {
 
   // Gain
   Eigen::MatrixXd HPHTRinv;
-  if (not svdInverse(H * P * H.transpose() + R, HPHTRinv)) {
-    LOG(ERROR) << "Matrix inversion failed in Kalman gain computation";
-  }
+  bool r = svdInverse(H * P * H.transpose() + R, HPHTRinv);
+  SIA_EXCEPTION(r, "Matrix inversion failed in KF gain computation");
   const Eigen::MatrixXd K = P * H.transpose() * HPHTRinv;
 
   // Update

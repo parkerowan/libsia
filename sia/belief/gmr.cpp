@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmr.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -15,6 +16,7 @@ GMR::GMR(const std::vector<Gaussian>& gaussians,
          std::vector<std::size_t> output_indices,
          double regularization)
     : GMM(gaussians, priors),
+      m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
       m_regularization(regularization) {
@@ -26,6 +28,7 @@ GMR::GMR(const GMM& gmm,
          std::vector<std::size_t> output_indices,
          double regularization)
     : GMM(gmm.gaussians(), gmm.priors()),
+      m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
       m_regularization(regularization) {
@@ -33,7 +36,7 @@ GMR::GMR(const GMM& gmm,
 }
 
 // TODO: Check if x has changed, if not return cached values
-const Gaussian GMR::predict(const Eigen::VectorXd& x) {
+const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   // Zero out the outputs
   std::size_t d = m_output_indices.size();
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(d);
@@ -65,7 +68,16 @@ const Gaussian GMR::predict(const Eigen::VectorXd& x) {
   sig += m_regularization * Eigen::MatrixXd::Identity(d, d);
 
   // Create Gaussian and output
-  return Gaussian(mu, sig);
+  m_belief = Gaussian(mu, sig);
+  return m_belief;
+}
+
+std::size_t GMR::inputDimension() const {
+  return m_input_indices.size();
+}
+
+std::size_t GMR::outputDimension() const {
+  return m_output_indices.size();
 }
 
 void GMR::cacheRegressionModels() {
@@ -105,9 +117,8 @@ GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,
     : m_mu_x(mu_x), m_mu_y(mu_y), m_gx(mu_x, sigma_xx) {
   // Compute inverse
   Eigen::MatrixXd sigma_xx_inv;
-  if (not svdInverse(sigma_xx, sigma_xx_inv)) {
-    LOG(ERROR) << "Computing sigma_xx inverse failed\n";
-  }
+  bool r = svdInverse(sigma_xx, sigma_xx_inv);
+  SIA_EXCEPTION(r, "Failed to compute SVD of sigma_xx");
 
   // Compute Gaussian conditioning
   m_sigma_yx_sigma_xx_inv = sigma_yx * sigma_xx_inv;

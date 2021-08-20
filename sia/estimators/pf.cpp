@@ -36,6 +36,7 @@ const Particles& PF::estimate(const Eigen::VectorXd& observation,
   return m_belief;
 }
 
+// TODO: Can parallelize
 const Particles& PF::predict(const Eigen::VectorXd& control) {
   Eigen::MatrixXd& xp = m_belief.m_values;
   Eigen::VectorXd& wp = m_belief.m_weights;

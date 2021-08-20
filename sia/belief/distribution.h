@@ -29,7 +29,7 @@ class Generator {
   static std::mt19937 m_rng;
 };
 
-/// Base probability distribution describing a random variable
+/// Base probability distribution describing a random variable $x ~ p(x)$
 class Distribution {
  public:
   explicit Distribution(Generator& generator);
@@ -48,6 +48,18 @@ class Distribution {
 
  protected:
   std::mt19937& m_rng;
+};
+
+/// Base regression class describing $y ~ p(y|x)$.
+class Regression {
+ public:
+  Regression() = default;
+  virtual ~Regression() = default;
+
+  /// Performs the regression $p(y|x)$.
+  virtual const Distribution& predict(const Eigen::VectorXd& x) = 0;
+  virtual std::size_t inputDimension() const = 0;
+  virtual std::size_t outputDimension() const = 0;
 };
 
 }  // namespace sia

@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gaussian.h"
+#include "sia/common/exception.h"
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
@@ -27,12 +28,10 @@ Gaussian::Gaussian(double mean, double covariance)
 Gaussian::Gaussian(const Eigen::VectorXd& mean,
                    const Eigen::MatrixXd& covariance)
     : Distribution(Generator::instance()) {
-  // TODO: Raise exception
-  if (checkDimensions(mean, covariance)) {
-    m_mu = mean;
-    m_sigma = covariance;
-    cacheSigmaChol();
-  }
+  checkDimensions(mean, covariance);
+  m_mu = mean;
+  m_sigma = covariance;
+  cacheSigmaChol();
 }
 
 std::size_t Gaussian::dimension() const {
@@ -84,23 +83,27 @@ bool Gaussian::devectorize(const Eigen::VectorXd& data) {
     return false;
   }
   setMean(data.head(n));
-  return setCovariance(Eigen::MatrixXd::Map(data.tail(n * n).data(), n, n));
-}
-
-bool Gaussian::setMean(const Eigen::VectorXd& mean) {
-  if (not checkDimensions(mean, m_sigma)) {
-    return false;
-  }
-  m_mu = mean;
+  setCovariance(Eigen::MatrixXd::Map(data.tail(n * n).data(), n, n));
   return true;
 }
 
-bool Gaussian::setCovariance(const Eigen::MatrixXd& covariance) {
-  if (not checkDimensions(m_mu, covariance)) {
-    return false;
-  }
+void Gaussian::setMean(const Eigen::VectorXd& mean) {
+  checkDimensions(mean, m_sigma);
+  m_mu = mean;
+}
+
+void Gaussian::setCovariance(const Eigen::MatrixXd& covariance) {
+  checkDimensions(m_mu, covariance);
   m_sigma = covariance;
-  return cacheSigmaChol();
+  cacheSigmaChol();
+}
+
+void Gaussian::setMeanAndCov(const Eigen::VectorXd& mean,
+                             const Eigen::MatrixXd& covariance) {
+  checkDimensions(mean, covariance);
+  m_mu = mean;
+  m_sigma = covariance;
+  cacheSigmaChol();
 }
 
 double Gaussian::mahalanobis(const Eigen::VectorXd& x) const {
@@ -115,29 +118,21 @@ double Gaussian::maxLogProb() const {
   return -0.5 * (rank * log_2_pi + log_det);
 }
 
-bool Gaussian::checkDimensions(const Eigen::VectorXd& mu,
+void Gaussian::checkDimensions(const Eigen::VectorXd& mu,
                                const Eigen::MatrixXd& sigma) const {
   std::size_t n = mu.size();
   std::size_t m = sigma.rows();
   std::size_t p = sigma.cols();
-  bool result = (n == m) && (n == p);
-  if (not result) {
-    LOG(WARNING) << "Gaussian dimensions not compatible, mu(n=" << n
-                 << "), sigma(m=" << m << ",p=" << p << ")";
-  }
-  return result;
+  bool r = (n == m) && (n == p);
+  SIA_EXCEPTION(r, "Inconsistent dimensions between mu and sigma");
 }
 
-bool Gaussian::cacheSigmaChol() {
-  // TODO: Raise exception if LDLT fails, or inverse fails
-  bool result = true;
-  if (not llt(m_sigma, m_cached_sigma_L)) {
-    LOG(WARNING) << "Failed to compute LDLT of covariance matrix";
-    result = false;
-  }
+void Gaussian::cacheSigmaChol() {
+  bool r = llt(m_sigma, m_cached_sigma_L);
+  SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of covariance");
+
   m_cached_sigma_L_inv = m_cached_sigma_L.triangularView<Eigen::Lower>().solve(
       Eigen::MatrixXd::Identity(dimension(), dimension()));
-  return result;
 }
 
 }  // namespace sia
