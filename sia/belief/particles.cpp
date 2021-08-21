@@ -27,6 +27,13 @@ Particles::Particles(const Eigen::MatrixXd& values,
   setWeights(weights);
 }
 
+Particles::Particles(const Eigen::MatrixXd& values, bool weighted_stats)
+    : Distribution(Generator::instance()), m_weighted_stats(weighted_stats) {
+  setValues(values);
+  setWeights(Eigen::VectorXd::Ones(values.cols()) /
+             static_cast<double>(values.cols()));
+}
+
 Particles Particles::init(Distribution& distribution,
                           std::size_t num_particles,
                           bool weighted_stats) {

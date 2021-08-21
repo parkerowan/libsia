@@ -28,10 +28,15 @@ class Particles : public Distribution {
                      std::size_t num_particles,
                      bool weighted_stats = false);
 
-  /// Creates particles with uniform weights from the vector of states.
+  /// Creates particles with specific weights from the vector of states.
   /// Each column of values is a sample.
   explicit Particles(const Eigen::MatrixXd& values,
                      const Eigen::VectorXd& weights,
+                     bool weighted_stats = false);
+
+  /// Creates particles with uniform weights from the vector of states.
+  /// Each column of values is a sample.
+  explicit Particles(const Eigen::MatrixXd& values,
                      bool weighted_stats = false);
 
   /// Creates particles by sampling from the provided distribution.

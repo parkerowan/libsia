@@ -82,6 +82,8 @@ void export_py_belief(py::module& m_sup) {
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXd&, bool>(),
            py::arg("values"), py::arg("weights"),
            py::arg("weighted_stats") = false)
+      .def(py::init<const Eigen::MatrixXd&, bool>(), py::arg("values"),
+           py::arg("weighted_stats") = false)
       .def_static("init", &sia::Particles::init, py::arg("distribution"),
                   py::arg("num_particles"), py::arg("weighted_stats") = false)
       .def_static("gaussian", &sia::Particles::gaussian, py::arg("mean"),
