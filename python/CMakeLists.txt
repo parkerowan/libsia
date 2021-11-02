@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -14,6 +14,7 @@ set(py_sources
   py_estimators.cpp
   py_math.cpp
   py_models.cpp
+  py_optimizers.cpp
   py_runner.cpp
   pysia.cpp
 )

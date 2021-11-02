@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_models.h"
@@ -288,7 +288,7 @@ void export_py_models(py::module& m_sup) {
              sia::LinearizableMeasurement, sia::MeasurementModel>(
       m, "LinearGaussianMeasurementCT")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double>(),
-           py::arg("H"), py::arg("Rpsd"), py::arg("double"))
+           py::arg("H"), py::arg("Rpsd"), py::arg("dt"))
       .def("measurement", &sia::LinearGaussianMeasurementCT::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::LinearGaussianMeasurementCT::h, py::arg("state"))

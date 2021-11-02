@@ -1,8 +1,9 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
+#include <cmath>
 #include <limits>
 
 TEST(Belief, Generator) {
@@ -148,6 +149,115 @@ TEST(Belief, Uniform) {
   EXPECT_TRUE(c.upper().isApprox(upper));
 }
 
+TEST(Belief, Dirichlet) {
+  sia::Dirichlet a(2);
+  ASSERT_EQ(a.dimension(), 2);
+  EXPECT_DOUBLE_EQ(a.alpha()(0), 1);
+  EXPECT_DOUBLE_EQ(a.alpha()(1), 1);
+
+  a.setAlpha(Eigen::Vector2d{2, 3});
+  EXPECT_DOUBLE_EQ(a.alpha()(0), 2);
+  EXPECT_DOUBLE_EQ(a.alpha()(1), 3);
+  EXPECT_EQ(a.classify(), 1);
+
+  // The mean and the mode are the same when the concentrations are the same
+  double alpha = 3;
+  double beta = 3;
+  sia::Dirichlet b(alpha, beta);
+  ASSERT_EQ(b.dimension(), 2);
+  EXPECT_DOUBLE_EQ(b.alpha()(0), alpha);
+  EXPECT_DOUBLE_EQ(b.alpha()(1), beta);
+
+  Eigen::Vector2d x{0.1, 0.9};
+  double logprob =
+      log(pow(x(0), alpha - 1) * pow(x(1), beta - 1) / std::beta(alpha, beta));
+  EXPECT_NEAR(b.logProb(x), logprob, 1e-6);
+
+  // Expect samples outside of the support to return -inf
+  EXPECT_DOUBLE_EQ(b.logProb(Eigen::Vector2d{-0.1, 0}), -INFINITY);
+
+  std::size_t ns = 10000;
+  Eigen::MatrixXd s = Eigen::MatrixXd::Zero(2, ns);
+  for (std::size_t i = 0; i < ns; ++i) {
+    s.col(i) = b.sample();
+  }
+  double n = static_cast<double>(ns);
+  const Eigen::VectorXd mean = s.rowwise().sum() / n;
+  const Eigen::MatrixXd e = (s.array().colwise() - b.mean().array()).matrix();
+  const Eigen::MatrixXd cov = e * e.transpose() / (n - 1);
+  EXPECT_NEAR(b.mean()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mean()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.mode()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mode()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 0), cov(0, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 1), cov(0, 1), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 0), cov(1, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 1), cov(1, 1), 5e-2);
+
+  const auto v = a.vectorize();
+  EXPECT_TRUE(b.devectorize(v));
+  EXPECT_TRUE(b.alpha().isApprox(a.alpha()));
+
+  sia::Dirichlet c(b.alpha());
+  EXPECT_TRUE(c.alpha().isApprox(b.alpha()));
+
+  sia::Dirichlet d(Eigen::Vector2d{0.370833, 0.321336});
+  EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), INFINITY);
+  EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), -INFINITY);
+}
+
+TEST(Belief, Categorical) {
+  sia::Categorical a(2);
+  ASSERT_EQ(a.dimension(), 2);
+
+  sia::Categorical b(Eigen::Vector2d{0.4, 0.6});
+  ASSERT_EQ(b.dimension(), 2);
+  EXPECT_DOUBLE_EQ(b.probs()(0), 0.4);
+  EXPECT_DOUBLE_EQ(b.probs()(1), 0.6);
+
+  EXPECT_DOUBLE_EQ(b.mean()(0), 0.4);
+  EXPECT_DOUBLE_EQ(b.mean()(1), 0.6);
+
+  EXPECT_DOUBLE_EQ(b.mode()(0), 0);
+  EXPECT_DOUBLE_EQ(b.mode()(1), 1);
+
+  EXPECT_EQ(b.classify(), 1);
+  EXPECT_TRUE(b.oneHot(b.classify()).isApprox(b.mode()));
+  EXPECT_EQ(b.category(b.probs()), b.classify());
+
+  Eigen::Vector2d x{0.3, 0.7};
+  double logprob = log(0.3 * 0.4 + 0.7 * 0.6);
+  EXPECT_NEAR(b.logProb(x), logprob, 1e-6);
+
+  std::size_t ns = 10000;
+  Eigen::MatrixXd s = Eigen::MatrixXd::Zero(2, ns);
+  for (std::size_t i = 0; i < ns; ++i) {
+    s.col(i) = b.sample();
+  }
+  double n = static_cast<double>(ns);
+  const Eigen::VectorXd mean = s.rowwise().sum() / n;
+  const Eigen::MatrixXd e = (s.array().colwise() - b.mean().array()).matrix();
+  const Eigen::MatrixXd cov = e * e.transpose() / (n - 1);
+  EXPECT_NEAR(b.mean()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mean()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 0), cov(0, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 1), cov(0, 1), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 0), cov(1, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 1), cov(1, 1), 5e-2);
+
+  const auto v = b.vectorize();
+  EXPECT_TRUE(a.devectorize(v));
+  EXPECT_TRUE(a.probs().isApprox(b.probs()));
+
+  Eigen::MatrixXd Y = b.oneHot(Eigen::Vector3i{0, 1, 1});
+  EXPECT_DOUBLE_EQ(Y(0, 0), 1);
+  EXPECT_DOUBLE_EQ(Y(0, 1), 0);
+  EXPECT_DOUBLE_EQ(Y(0, 2), 0);
+  EXPECT_DOUBLE_EQ(Y(1, 0), 0);
+  EXPECT_DOUBLE_EQ(Y(1, 1), 1);
+  EXPECT_DOUBLE_EQ(Y(1, 2), 1);
+}
+
 TEST(Belief, Particles) {
   sia::Particles a(2, 100);
   EXPECT_EQ(a.dimension(), 2);
@@ -219,35 +329,12 @@ TEST(Belief, Particles) {
   EXPECT_NEAR(d.covariance()(0, 0), u.covariance()(0, 0), 5e-2);
 }
 
-TEST(Belief, Kernel) {
-  Eigen::VectorXd z = Eigen::VectorXd::Zero(3);
-  Eigen::VectorXd dz = 0.01 * Eigen::VectorXd::Ones(3);
-
-  sia::UniformKernel a(z.size());
-  EXPECT_EQ(a.type(), sia::Kernel::UNIFORM);
-  EXPECT_GE(a.evaluate(z), a.evaluate(z + dz));
-  EXPECT_GE(a.evaluate(z), a.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(a.evaluate(z + dz), a.evaluate(z - dz));
-
-  sia::GaussianKernel b(z.size());
-  EXPECT_EQ(b.type(), sia::Kernel::GAUSSIAN);
-  EXPECT_GT(b.evaluate(z), b.evaluate(z + dz));
-  EXPECT_GT(b.evaluate(z), b.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(b.evaluate(z + dz), b.evaluate(z - dz));
-
-  sia::EpanechnikovKernel c(z.size());
-  EXPECT_EQ(c.type(), sia::Kernel::EPANECHNIKOV);
-  EXPECT_GT(c.evaluate(z), c.evaluate(z + dz));
-  EXPECT_GT(c.evaluate(z), c.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(c.evaluate(z + dz), c.evaluate(z - dz));
-}
-
 TEST(Belief, KernelDensity) {
   auto samples = sia::Particles::uniform(Eigen::Vector2d(-1, -2),
                                          Eigen::Vector2d(3, 4), 100);
 
   sia::KernelDensity a(samples.values(), samples.weights());
-  EXPECT_EQ(a.getKernelType(), sia::Kernel::EPANECHNIKOV);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::EPANECHNIKOV);
   EXPECT_GT(a.probability(samples.value(0)), 0);
   ASSERT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -272,13 +359,18 @@ TEST(Belief, KernelDensity) {
   EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
 
-  a.setKernelType(sia::Kernel::UNIFORM);
-  EXPECT_EQ(a.getKernelType(), sia::Kernel::UNIFORM);
+  a.setKernelType(sia::KernelDensity::UNIFORM);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::UNIFORM);
+  EXPECT_GT(a.probability(samples.value(0)), 0);
+
+  a.setBandwidthMode(sia::KernelDensity::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT_RULE);
 
   // Expect if user specified that silverman is used as initialize bandwidth
-  sia::KernelDensity c(samples, sia::Kernel::GAUSSIAN,
+  sia::KernelDensity c(samples, sia::KernelDensity::GAUSSIAN,
                        sia::KernelDensity::USER_SPECIFIED);
-  EXPECT_EQ(c.getKernelType(), sia::Kernel::GAUSSIAN);
+  EXPECT_EQ(c.getKernelType(), sia::KernelDensity::GAUSSIAN);
+  EXPECT_GT(c.probability(samples.value(0)), 0);
   EXPECT_EQ(c.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);
@@ -403,6 +495,8 @@ TEST(Belief, GMR) {
   std::vector<std::size_t> ix{0};
   std::vector<std::size_t> ox{1};
   sia::GMR gmr(gmm, ix, ox);
+  ASSERT_EQ(gmr.inputDimension(), 1);
+  ASSERT_EQ(gmr.outputDimension(), 1);
 
   sia::Gaussian y0 = gmr.predict(0 * Eigen::VectorXd::Ones(1));
   sia::Gaussian y1 = gmr.predict(6 * Eigen::VectorXd::Ones(1));
@@ -415,23 +509,95 @@ TEST(Belief, GMR) {
 }
 
 TEST(Belief, GPR) {
-  double varf = 0.5;
-  double varn = 0.1;
-  double length = 0.5;
   Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
   Eigen::MatrixXd Y = Eigen::MatrixXd::Random(2, 10);
-  sia::GPR gpr(X, Y, varf, varn, length);
+  sia::GPR gpr(X, Y);
 
   EXPECT_EQ(gpr.numSamples(), 10);
   EXPECT_EQ(gpr.inputDimension(), 3);
   EXPECT_EQ(gpr.outputDimension(), 2);
 
+  // Check the different noise models
+  double log_marg_loss = gpr.negLogMarginalLik();
+  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::VECTOR_NOISE);
+  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
+  gpr.setVectorNoise(1.0 * Eigen::VectorXd::Ones(2));
+  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
+
+  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::HETEROSKEDASTIC_NOISE);
+  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
+  gpr.setHeteroskedasticNoise(1.0 * Eigen::MatrixXd::Ones(2, 10));
+  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
+
+  // Check the hyperparameters are written
+  gpr.setScalarNoise(0.1);
+  Eigen::VectorXd p = Eigen::Vector2d{0.2, 1.0};
+  gpr.setHyperparameters(p);
+  const auto& pn = gpr.hyperparameters();
+  EXPECT_TRUE(pn.isApprox(p));
+
+  // Expect the log loss gradient to equate to the numerical approx
+  const double GRAD_TOLERANCE = 1e-4;
+  Eigen::VectorXd grad = gpr.negLogMarginalLikGrad();
+  auto loss = [&](const Eigen::VectorXd& x) {
+    gpr.setHyperparameters(x);
+    return gpr.negLogMarginalLik();
+  };
+  Eigen::VectorXd grad_approx = sia::dfdx(loss, gpr.hyperparameters());
+  Eigen::VectorXd e = grad - grad_approx;
+  EXPECT_NEAR(sqrt(e.dot(e)), 0, GRAD_TOLERANCE);
+
   // Is there a theoretical bound on the error given the hyperparameters?
   const double EVAL_TOLERANCE = 2e-1;
   for (std::size_t i = 0; i < 10; ++i) {
-    sia::Gaussian g = gpr.predict(X.col(i));
+    const auto& x = X.col(i);
+    const auto& y = Y.col(i);
+    sia::Gaussian g = gpr.predict(x);
     ASSERT_EQ(g.dimension(), 2);
-    EXPECT_NEAR(g.mean()(0), Y(0, i), EVAL_TOLERANCE);
-    EXPECT_NEAR(g.mean()(1), Y(1, i), EVAL_TOLERANCE);
+    EXPECT_NEAR(g.mean()(0), y(0), EVAL_TOLERANCE);
+    EXPECT_NEAR(g.mean()(1), y(1), EVAL_TOLERANCE);
+  }
+
+  // Expect after training that the log marginal likelihood has been reduced
+  log_marg_loss = gpr.negLogMarginalLik();
+  gpr.train();
+  EXPECT_LT(gpr.negLogMarginalLik(), log_marg_loss);
+}
+
+TEST(Belief, GPC) {
+  double alpha = 0.1;
+  Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
+  Eigen::VectorXi Y = Eigen::VectorXi::Zero(10);
+  for (std::size_t i = 0; i < 10; i += 2) {
+    Y(i) = 1;
+  }
+  sia::GPC gpc(X, Y, alpha);
+  gpc.setAlpha(0.001);
+
+  EXPECT_EQ(gpc.numSamples(), 10);
+  EXPECT_EQ(gpc.inputDimension(), 3);
+  EXPECT_EQ(gpc.outputDimension(), 2);
+
+  ASSERT_EQ(gpc.numHyperparameters(), 2);
+  Eigen::VectorXd p = Eigen::Vector2d{0.1, 1.0};
+  gpc.setHyperparameters(p);
+  const auto& pn = gpc.hyperparameters();
+  EXPECT_TRUE(pn.isApprox(p));
+
+  double loss = gpc.negLogMarginalLik();
+  gpc.train();
+  EXPECT_LT(gpc.negLogMarginalLik(), loss);
+
+  const double GRAD_TOLERANCE = 2e-2;
+  Eigen::VectorXd grad = gpc.negLogMarginalLikGrad();
+  EXPECT_NEAR(grad.norm(), 0, GRAD_TOLERANCE);
+
+  sia::Categorical cat(gpc.outputDimension());
+  Eigen::MatrixXd Yoh = cat.oneHot(Y);
+  for (std::size_t i = 0; i < 10; ++i) {
+    const auto& x = X.col(i);
+    sia::Dirichlet p = gpc.predict(x);
+    ASSERT_EQ(p.dimension(), 2);
+    EXPECT_EQ(p.classify(), Y(i));
   }
 }
