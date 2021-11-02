@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmr.h"
@@ -15,7 +15,7 @@ GMR::GMR(const std::vector<Gaussian>& gaussians,
          std::vector<std::size_t> input_indices,
          std::vector<std::size_t> output_indices,
          double regularization)
-    : GMM(gaussians, priors),
+    : m_gmm(gaussians, priors),
       m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
@@ -27,7 +27,7 @@ GMR::GMR(const GMM& gmm,
          std::vector<std::size_t> input_indices,
          std::vector<std::size_t> output_indices,
          double regularization)
-    : GMM(gmm.gaussians(), gmm.priors()),
+    : m_gmm(gmm.gaussians(), gmm.priors()),
       m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
@@ -46,11 +46,12 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   double cweight = std::numeric_limits<double>::epsilon();
 
   // For each Gaussian dist
-  for (std::size_t k = 0; k < numClusters(); ++k) {
+  const auto& priors = m_gmm.priors();
+  for (std::size_t k = 0; k < m_gmm.numClusters(); ++k) {
     const auto& model = m_models[k];
 
     // Compute the weight based on proximity of input to input mean
-    double weight = m_priors[k] * exp(model.m_gx.logProb(x));
+    double weight = priors[k] * exp(model.m_gx.logProb(x));
     cweight += weight;
 
     // Compute the weighted local mean & covariance
@@ -80,15 +81,20 @@ std::size_t GMR::outputDimension() const {
   return m_output_indices.size();
 }
 
+GMM& GMR::gmm() {
+  return m_gmm;
+}
+
 void GMR::cacheRegressionModels() {
-  std::size_t K = numClusters();
+  std::size_t K = m_gmm.numClusters();
   m_models.clear();
   m_models.reserve(K);
 
   // For each Gaussian dist
+  const auto& gaussians = m_gmm.gaussians();
   for (std::size_t k = 0; k < K; ++k) {
-    Eigen::MatrixXd cov = m_gaussians[k].covariance();
-    Eigen::VectorXd mu = m_gaussians[k].mean();
+    Eigen::MatrixXd cov = gaussians[k].covariance();
+    Eigen::VectorXd mu = gaussians[k].mean();
 
     // Extract Gaussian conditioning terms
     const Eigen::VectorXd mu_x = slice(mu, m_input_indices);

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -48,6 +48,18 @@ class MPPI : public Controller {
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
+  /// Returns the solution control trajectory $U$ over the horizon
+  const Trajectory<Eigen::VectorXd>& controls() const override;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  const Trajectory<Eigen::VectorXd>& states() const override;
+
+  /// Returns the sampled state trajectories $X$ over the horizon
+  const std::vector<Trajectory<Eigen::VectorXd>>& rolloutStates() const;
+
+  /// Returns the weight vector for each sampled rollout
+  const Eigen::VectorXd& rolloutWeights() const;
+
  private:
   void cacheSigmaInv();
 
@@ -58,7 +70,10 @@ class MPPI : public Controller {
   Gaussian m_sigma;
   Eigen::MatrixXd m_sigma_inv;
   double m_lambda;
-  std::vector<Eigen::VectorXd> m_controls;
+  Trajectory<Eigen::VectorXd> m_controls;
+  Trajectory<Eigen::VectorXd> m_states;
+  std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;
+  Eigen::VectorXd m_rollout_weights;
 };
 
 }  // namespace sia

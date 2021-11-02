@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "tests/helpers.h"
@@ -137,6 +137,11 @@ TEST(Controllers, LQR) {
   // Expect cmm to be the minimum
   EXPECT_LT(cm, cp);
   EXPECT_LT(cm, cn);
+
+  // Check the state and control rollout
+  ASSERT_EQ(mpc.states().size(), horizon);
+  ASSERT_EQ(mpc.controls().size(), horizon);
+  EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
 }
 
 TEST(Controllers, iLQR) {
@@ -144,8 +149,9 @@ TEST(Controllers, iLQR) {
   sia::QuadraticCost cost = createTestCost();
   std::size_t max_iter = 10;
   std::size_t max_backsteps = 10;
+  std::size_t horizon = 2;
   Eigen::VectorXd zero = Eigen::VectorXd::Zero(1);
-  std::vector<Eigen::VectorXd> u0{zero, zero};
+  std::vector<Eigen::VectorXd> u0(horizon, zero);
   sia::iLQR mpc(dynamics, cost, u0, max_iter, max_backsteps);
 
   // Simulate a step forward and check the cost is at a local minima using a
@@ -173,14 +179,27 @@ TEST(Controllers, iLQR) {
   // Expect cmm to be the minimum
   EXPECT_LT(cm, cp);
   EXPECT_LT(cm, cn);
+
+  // Expect that the iLQR converged in 1 iteration and no backstepping was
+  // needed since the system is linear
+  EXPECT_EQ(mpc.metrics().iter, 1);
+  EXPECT_EQ(mpc.metrics().backstep_iter, 1);
+  EXPECT_DOUBLE_EQ(mpc.metrics().alpha, 1.0);
+  EXPECT_DOUBLE_EQ(mpc.metrics().dJ, 0.0);
+
+  // Check the state and control rollout
+  ASSERT_EQ(mpc.states().size(), horizon);
+  ASSERT_EQ(mpc.controls().size(), horizon);
+  EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
 }
 
 TEST(Controllers, MPPI) {
   sia::LinearGaussianDynamics dynamics = createIntegratorDynamics();
   sia::QuadraticCost cost = createTestCost();
   std::size_t num_samples = 100;
+  std::size_t horizon = 2;
   Eigen::VectorXd zero = Eigen::VectorXd::Zero(1);
-  std::vector<Eigen::VectorXd> u0{zero, zero};
+  std::vector<Eigen::VectorXd> u0(horizon, zero);
   Eigen::MatrixXd sigma(1, 1);
   sigma << 1;
   sia::MPPI mpc(dynamics, cost, u0, num_samples, sigma);
@@ -213,4 +232,11 @@ TEST(Controllers, MPPI) {
   // Expect cmm to be the minimum
   EXPECT_LT(cm, cp);
   EXPECT_LT(cm, cn);
+
+  // Check the state and control rollout
+  ASSERT_EQ(mpc.states().size(), horizon);
+  ASSERT_EQ(mpc.controls().size(), horizon);
+  EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
+  ASSERT_EQ(mpc.rolloutStates().size(), num_samples);
+  ASSERT_EQ(mpc.rolloutWeights().size(), num_samples);
 }

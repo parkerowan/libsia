@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gaussian.h"
@@ -50,7 +50,7 @@ const Eigen::VectorXd Gaussian::sample() {
 }
 
 double Gaussian::logProb(const Eigen::VectorXd& x) const {
-  // -0.5 * (rank * log_2_pi + log_det + pow(mahalanobix(x), 2));
+  // -0.5 * (rank * log_2_pi + log_det + pow(mahalanobis(x), 2));
   return maxLogProb() - 0.5 * pow(mahalanobis(x), 2);
 }
 
@@ -87,15 +87,15 @@ bool Gaussian::devectorize(const Eigen::VectorXd& data) {
   return true;
 }
 
-void Gaussian::setMean(const Eigen::VectorXd& mean) {
-  checkDimensions(mean, m_sigma);
-  m_mu = mean;
-}
-
 void Gaussian::setCovariance(const Eigen::MatrixXd& covariance) {
   checkDimensions(m_mu, covariance);
   m_sigma = covariance;
   cacheSigmaChol();
+}
+
+void Gaussian::setMean(const Eigen::VectorXd& mean) {
+  checkDimensions(mean, m_sigma);
+  m_mu = mean;
 }
 
 void Gaussian::setMeanAndCov(const Eigen::VectorXd& mean,

@@ -1,8 +1,9 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
 
+#include "sia/belief/categorical.h"
 #include "sia/belief/distribution.h"
 #include "sia/belief/gaussian.h"
 
@@ -16,7 +17,7 @@ namespace sia {
 ///
 /// References:
 /// [1] http://www.stat.rice.edu/~hgsung/thesis.pdf
-class GMM : public Distribution {
+class GMM : public Distribution, public Inference {
  public:
   /// Regularization applied to covariance matrices during GMM fit.
   static constexpr double DEFAULT_REGULARIZATION = 1e-6;
@@ -43,8 +44,12 @@ class GMM : public Distribution {
   const Eigen::VectorXd vectorize() const override;
   bool devectorize(const Eigen::VectorXd& data) override;
 
-  /// Classify a sample to its highest likelihood cluster
-  std::size_t classify(const Eigen::VectorXd& x) const;
+  /// Performs the inference $p(y|x)$
+  const Categorical& predict(const Eigen::VectorXd& x) override;
+  std::size_t inputDimension() const override;
+  std::size_t outputDimension() const override;
+
+  std::size_t classify(const Eigen::VectorXd& x);
 
   std::size_t numClusters() const;
   double prior(std::size_t i) const;
@@ -73,7 +78,8 @@ class GMM : public Distribution {
                          InitMethod init_method = InitMethod::STANDARD_RANDOM,
                          double regularization = DEFAULT_REGULARIZATION);
 
- protected:
+ private:
+  Categorical m_belief;
   std::size_t m_num_clusters;
   std::size_t m_dimension;
   std::vector<Gaussian> m_gaussians;

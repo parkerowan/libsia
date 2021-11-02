@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -12,16 +12,20 @@ set(lib_libs
 
 set(lib_header
   sia.h
+  belief/categorical.h
+  belief/dirichlet.h
   belief/distribution.h
   belief/gaussian.h
   belief/gmm.h
   belief/gmr.h
+  belief/gpc.h
   belief/gpr.h
-  common/exception.h
   belief/helpers.h
   belief/kernel_density.h
   belief/particles.h
   belief/uniform.h
+  common/exception.h
+  common/trajectory.h
   controllers/controllers.h
   controllers/cost.h
   controllers/ilqr.h
@@ -36,17 +40,18 @@ set(lib_header
   models/linear_gaussian.h
   models/models.h
   models/nonlinear_gaussian.h
-  models/simulate.h
-  runner/buffer.h
-  runner/recorder.h
-  runner/runner.h
+  optimizers/bayesian_optimizer.h
+  optimizers/gradient_descent.h
 )
 
 set(lib_source
+  belief/categorical.cpp
+  belief/dirichlet.cpp
   belief/distribution.cpp
   belief/gaussian.cpp
   belief/gmm.cpp
   belief/gmr.cpp
+  belief/gpc.cpp
   belief/gpr.cpp
   belief/helpers.cpp
   belief/kernel_density.cpp
@@ -63,10 +68,8 @@ set(lib_source
   models/linear_gaussian.cpp
   models/models.cpp
   models/nonlinear_gaussian.cpp
-  models/simulate.cpp
-  runner/buffer.cpp
-  runner/recorder.cpp
-  runner/runner.cpp
+  optimizers/bayesian_optimizer.cpp
+  optimizers/gradient_descent.cpp
 )
 
 FUNCTIONS_CREATE_CPP_SHARED_LIB(

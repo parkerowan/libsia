@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -67,17 +67,21 @@ class iLQR : public Controller {
                 std::size_t max_backsteps = 1,
                 double epsilon = 1e-1,
                 double tau = 0.5,
-                double min_z = 1e-1,
+                double min_z = 1e-2,
                 double mu = 0);
   virtual ~iLQR() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
-  /// Return the states and controls for the rollout
-  const std::vector<Eigen::VectorXd>& getControls() const;
-  const std::vector<Eigen::VectorXd>& getStates() const;
-  const Metrics& getMetrics() const;
+  /// Returns the solution control trajectory $U$ over the horizon
+  const Trajectory<Eigen::VectorXd>& controls() const override;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  const Trajectory<Eigen::VectorXd>& states() const override;
+
+  /// Return the metrics
+  const Metrics& metrics() const;
 
  private:
   LinearizableDynamics& m_dynamics;
