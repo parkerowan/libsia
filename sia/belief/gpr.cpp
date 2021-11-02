@@ -71,14 +71,32 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
          double varf,
          double length,
          GPR::CovFunction type)
+    : GPR(input_samples,
+          output_samples,
+          varn * Eigen::MatrixXd::Ones(output_samples.rows(),
+                                       output_samples.cols()),
+          varf,
+          length,
+          type) {}
+
+GPR::GPR(const Eigen::MatrixXd& input_samples,
+         const Eigen::MatrixXd& output_samples,
+         const Eigen::MatrixXd& varn,
+         double varf,
+         double length,
+         GPR::CovFunction type)
     : m_belief(input_samples.rows()),
       m_input_samples(input_samples),
       m_output_samples(output_samples),
-      m_varn(varn * Eigen::MatrixXd::Ones(output_samples.rows(),
-                                          output_samples.cols())),
+      m_varn(varn),
       m_varf(varf),
       m_length(length) {
-  assert(input_samples.cols() == output_samples.cols());
+  SIA_EXCEPTION(input_samples.cols() == output_samples.cols(),
+                "Inconsistent number of input cols to output cols");
+  SIA_EXCEPTION(input_samples.cols() == varn.cols(),
+                "Inconsistent number of input cols to varn cols");
+  SIA_EXCEPTION(output_samples.rows() == varn.rows(),
+                "Inconsistent number of output rows to varn rows");
 
   if (type == GPR::SQUARED_EXPONENTIAL) {
     m_kernel = new GPR::Kernel::SquaredExponential();

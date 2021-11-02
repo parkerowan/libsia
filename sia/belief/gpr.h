@@ -32,6 +32,12 @@ class GPR : public Regression {
                double varf,
                double length,
                CovFunction type = SQUARED_EXPONENTIAL);
+  explicit GPR(const Eigen::MatrixXd& input_samples,
+               const Eigen::MatrixXd& output_samples,
+               const Eigen::MatrixXd& varn,
+               double varf,
+               double length,
+               CovFunction type = SQUARED_EXPONENTIAL);
   virtual ~GPR();
 
   /// Performs the regression $p(y|x)$.
