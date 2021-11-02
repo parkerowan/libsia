@@ -498,7 +498,7 @@ length = [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.2, 0.2]
 
 for i in range(len(ax)):
     # Create the GPR object
-    gpr = sia.GPR(np.array([xtrain]), ytrain, varf=varf[i], varn=varn[i], length=length[i])
+    gpr = sia.GPR(np.array([xtrain]), ytrain, varn=varn[i], varf=varf[i], length=length[i])
 
     # Evaluate it
     xtest = np.linspace(-1, 5, 101)

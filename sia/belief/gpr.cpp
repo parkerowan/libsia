@@ -67,15 +67,16 @@ struct GPR::Kernel::SquaredExponential : public GPR::Kernel {
 
 GPR::GPR(const Eigen::MatrixXd& input_samples,
          const Eigen::MatrixXd& output_samples,
-         double varf,
          double varn,
+         double varf,
          double length,
          GPR::CovFunction type)
     : m_belief(input_samples.rows()),
       m_input_samples(input_samples),
       m_output_samples(output_samples),
+      m_varn(varn * Eigen::MatrixXd::Ones(output_samples.rows(),
+                                          output_samples.cols())),
       m_varf(varf),
-      m_varn(varn),
       m_length(length) {
   assert(input_samples.cols() == output_samples.cols());
 
@@ -131,22 +132,25 @@ void GPR::cacheRegressionModels() {
   m_models.reserve(m);
   for (std::size_t i = 0; i < m; ++i) {
     const Eigen::VectorXd& Y = m_output_samples.row(i);
+    const Eigen::VectorXd& varn = m_varn.row(i);
     m_models.emplace_back(GPR::RegressionModel(m_kernel, m_input_samples, Y,
-                                               m_varf, m_varn, m_length));
+                                               varn, m_varf, m_length));
   }
 }
 
 GPR::RegressionModel::RegressionModel(Kernel* kernel,
                                       const Eigen::MatrixXd& X,
                                       const Eigen::VectorXd& y,
+                                      const Eigen::VectorXd& varn,
                                       double varf,
-                                      double varn,
                                       double length) {
   // Algorithm 2.1 in: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   assert(kernel != nullptr);
   std::size_t n = X.cols();
+  assert(std::size_t(varn.size()) == n);
   const Eigen::MatrixXd K = kernel->evalMatrix(X, X, varf, length);
-  const Eigen::MatrixXd Ksig = K + varn * Eigen::MatrixXd::Identity(n, n);
+  const Eigen::MatrixXd sig = varn.asDiagonal();
+  const Eigen::MatrixXd Ksig = K + sig;
 
   Eigen::MatrixXd L;
   bool r = llt(Ksig, L);

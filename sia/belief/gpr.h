@@ -28,8 +28,8 @@ class GPR : public Regression {
   /// blending.  The covariance type determines the kernel basis.
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
-               double varf,
                double varn,
+               double varf,
                double length,
                CovFunction type = SQUARED_EXPONENTIAL);
   virtual ~GPR();
@@ -52,8 +52,8 @@ class GPR : public Regression {
     explicit RegressionModel(Kernel* kernel,
                              const Eigen::MatrixXd& X,
                              const Eigen::VectorXd& y,
+                             const Eigen::VectorXd& varn,
                              double varf,
-                             double varn,
                              double length);
     Eigen::MatrixXd m_cached_L_inv;
     Eigen::VectorXd m_cached_alpha;
@@ -64,8 +64,8 @@ class GPR : public Regression {
   std::vector<RegressionModel> m_models;
   Eigen::MatrixXd m_input_samples;
   Eigen::MatrixXd m_output_samples;
+  Eigen::MatrixXd m_varn;
   double m_varf;
-  double m_varn;
   double m_length;
 };
 

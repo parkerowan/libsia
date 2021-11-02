@@ -420,7 +420,7 @@ TEST(Belief, GPR) {
   double length = 0.5;
   Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
   Eigen::MatrixXd Y = Eigen::MatrixXd::Random(2, 10);
-  sia::GPR gpr(X, Y, varf, varn, length);
+  sia::GPR gpr(X, Y, varn, varf, length);
 
   EXPECT_EQ(gpr.numSamples(), 10);
   EXPECT_EQ(gpr.inputDimension(), 3);

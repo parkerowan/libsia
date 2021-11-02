@@ -265,8 +265,8 @@ void export_py_belief(py::module& m_sup) {
 
   gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,
                    double, double, sia::GPR::CovFunction>(),
-          py::arg("input_samples"), py::arg("output_samples"), py::arg("varf"),
-          py::arg("varn"), py::arg("length"),
+          py::arg("input_samples"), py::arg("output_samples"), py::arg("varn"),
+          py::arg("varf"), py::arg("length"),
           py::arg("type") = sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
       .def("predict", &sia::GPR::predict, py::arg("x"))
       .def("numSamples", &sia::GPR::numSamples)
