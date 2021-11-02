@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_models.h"
@@ -35,42 +35,6 @@ void export_py_models(py::module& m_sup) {
       .def("h", &sia::LinearizableMeasurement::h, py::arg("state"))
       .def("R", &sia::LinearizableMeasurement::R, py::arg("state"))
       .def("H", &sia::LinearizableMeasurement::H, py::arg("state"));
-
-  py::class_<sia::Trajectory>(m, "Trajectory")
-      .def_readwrite("states", &sia::Trajectory::states)
-      .def_readwrite("controls", &sia::Trajectory::controls)
-      .def_readwrite("measurements", &sia::Trajectory::measurements);
-
-  py::class_<sia::Trajectories>(m, "Trajectories")
-      .def(py::init<const std::vector<sia::Trajectory>&>(), py::arg("data"))
-      .def("data", &sia::Trajectories::data)
-      .def("size", &sia::Trajectories::size)
-      .def("states", &sia::Trajectories::states, py::arg("k"))
-      .def("controls", &sia::Trajectories::controls, py::arg("k"))
-      .def("measurements", &sia::Trajectories::measurements, py::arg("k"));
-
-  m.def("simulate",
-        static_cast<sia::Trajectory (*)(
-            sia::DynamicsModel&, sia::MeasurementModel&, const Eigen::VectorXd&,
-            const Eigen::MatrixXd&, bool)>(&sia::simulate),
-        py::arg("dynamics"), py::arg("measurement"), py::arg("state"),
-        py::arg("controls"), py::arg("sample") = true);
-
-  m.def("simulate",
-        static_cast<sia::Trajectories (*)(
-            sia::DynamicsModel&, sia::MeasurementModel&,
-            const std::vector<Eigen::VectorXd>&, const Eigen::MatrixXd&, bool)>(
-            &sia::simulate),
-        py::arg("dynamics"), py::arg("measurement"), py::arg("states"),
-        py::arg("controls"), py::arg("sample") = true);
-
-  m.def("simulate",
-        static_cast<sia::Trajectories (*)(
-            sia::DynamicsModel&, sia::MeasurementModel&,
-            const std::vector<Eigen::VectorXd>&,
-            const std::vector<Eigen::MatrixXd>&, bool)>(&sia::simulate),
-        py::arg("dynamics"), py::arg("measurement"), py::arg("states"),
-        py::arg("controls"), py::arg("sample") = true);
 
   py::class_<sia::NonlinearGaussianDynamics, sia::LinearizableDynamics,
              sia::DynamicsModel>(m, "NonlinearGaussianDynamics")
@@ -288,7 +252,7 @@ void export_py_models(py::module& m_sup) {
              sia::LinearizableMeasurement, sia::MeasurementModel>(
       m, "LinearGaussianMeasurementCT")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double>(),
-           py::arg("H"), py::arg("Rpsd"), py::arg("double"))
+           py::arg("H"), py::arg("Rpsd"), py::arg("dt"))
       .def("measurement", &sia::LinearGaussianMeasurementCT::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::LinearGaussianMeasurementCT::h, py::arg("state"))

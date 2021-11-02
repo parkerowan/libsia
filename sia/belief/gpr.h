@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -7,66 +7,103 @@
 #include "sia/belief/gaussian.h"
 
 #include <Eigen/Dense>
+#include <memory>
 
 namespace sia {
 
-/// Gaussian Process Regression performs Gaussian regression to predict $p(y|x)$
-/// using a GP kernel prior.  This class implements algorithm 2.1 from Rasmussen
-/// and Williams, and assumes a zero mean prior.
+/// Gaussian Process Regression performs Gaussian regression to predict
+/// $p(y|x)$ using a GP kernel prior.  This class implements algorithm 2.1
+/// from Rasmussen and Williams, and assumes a zero mean prior.
+///
+/// Hyperparameters for Kernel Types:
+/// - SE_KERNEL: (length, signal_var)
 ///
 /// References:
 /// [1]: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
-class GPR : public Regression {
+class GPR : public Inference {
  public:
-  /// Supported basis/kernel functions for covariance
-  enum CovFunction { SQUARED_EXPONENTIAL };
+  /// Kernel function used for the GP covariance
+  enum KernelType {
+    SE_KERNEL  // Squared exponential kernel
+  };
+
+  /// Function used for the GP measurement noise
+  enum NoiseType {
+    SCALAR_NOISE,          // Single variance for all channels
+    VECTOR_NOISE,          // Single variance for each channel
+    HETEROSKEDASTIC_NOISE  // Unique variance for each channel and sample
+  };
 
   /// Initialize GPR from training data.  Each column of input and output
-  /// training samples is a sample.  varf controls the uncertainty of the
-  /// Gaussian prior (i.e. outside of the training domain); varn controls the
-  /// measurement likelihood uncertainty; and length controls the kernel basis
-  /// blending.  The covariance type determines the kernel basis.
+  /// training samples is a sample.
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
-               double varf,
-               double varn,
-               double length,
-               CovFunction type = SQUARED_EXPONENTIAL);
-  virtual ~GPR();
+               KernelType kernel_type = SE_KERNEL,
+               NoiseType noise_type = SCALAR_NOISE);
+  explicit GPR(const Eigen::MatrixXd& input_samples,
+               const Eigen::MatrixXd& output_samples,
+               const Eigen::VectorXd& hyperparameters,
+               double noise_variance,
+               KernelType kernel_type = SE_KERNEL);
+  virtual ~GPR() = default;
 
-  /// Performs the regression $p(y|x)$.
+  /// Recompute with new data but same hyperparameters
+  void setData(const Eigen::MatrixXd& input_samples,
+               const Eigen::MatrixXd& output_samples);
+
+  /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
+
+  /// Computes the negative log marginal likelihood loss and gradients
+  double negLogMarginalLik() const;
+  Eigen::VectorXd negLogMarginalLikGrad() const;
+
+  /// Train the hyperparameters
+  void train();
+
+  /// Dimensions
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-
   std::size_t numSamples() const;
+
+  /// Access the hyperparameters
+  Eigen::VectorXd hyperparameters() const;
+  void setHyperparameters(const Eigen::VectorXd& hyperparameters);
+  std::size_t numHyperparameters() const;
+
+  /// Set the white noise variance hyperparameters
+  void setScalarNoise(double variance);
+  void setVectorNoise(const Eigen::VectorXd& variance);
+  void setHeteroskedasticNoise(const Eigen::MatrixXd& variance);
+
+  // Forward declarations
+  struct KernelFunction;
+  struct NoiseFunction;
 
  private:
   void cacheRegressionModels();
 
-  // Forward declaration
-  class Kernel;
-
-  /// Terms for a 1D regression model
+  // Terms for a 1D regression model
   struct RegressionModel {
-    explicit RegressionModel(Kernel* kernel,
-                             const Eigen::MatrixXd& X,
-                             const Eigen::VectorXd& y,
-                             double varf,
-                             double varn,
-                             double length);
-    Eigen::MatrixXd m_cached_L_inv;
-    Eigen::VectorXd m_cached_alpha;
+    explicit RegressionModel(const Eigen::MatrixXd& L,
+                             const Eigen::MatrixXd& Linv,
+                             const Eigen::MatrixXd& Kinv,
+                             const Eigen::VectorXd& alpha,
+                             const std::vector<Eigen::MatrixXd>& grad);
+    virtual ~RegressionModel() = default;
+    Eigen::MatrixXd cached_L;
+    Eigen::MatrixXd cached_L_inv;
+    Eigen::MatrixXd cached_K_inv;
+    Eigen::VectorXd cached_alpha;
+    std::vector<Eigen::MatrixXd> cached_grad;
   };
 
-  Gaussian m_belief;
-  Kernel* m_kernel{nullptr};
-  std::vector<RegressionModel> m_models;
   Eigen::MatrixXd m_input_samples;
   Eigen::MatrixXd m_output_samples;
-  double m_varf;
-  double m_varn;
-  double m_length;
+  Gaussian m_belief;
+  std::shared_ptr<KernelFunction> m_kernel{nullptr};
+  std::shared_ptr<NoiseFunction> m_noise{nullptr};
+  std::vector<RegressionModel> m_models;
 };
 
 }  // namespace sia

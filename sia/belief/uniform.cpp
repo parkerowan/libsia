@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/uniform.h"
@@ -48,7 +48,7 @@ double Uniform::logProb(const Eigen::VectorXd& x) const {
     }
   }
 
-  // Compute the log prob (probability = 1 / sum(b-a))
+  // Compute the log prob (probability = 1 / prod(b-a))
   Eigen::VectorXd e = upper() - lower();
   return -e.array().log().sum();
 }

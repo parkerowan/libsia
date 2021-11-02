@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/ilqr.h"
@@ -42,7 +42,7 @@ iLQR::iLQR(LinearizableDynamics& dynamics,
 
 const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
   auto tic = steady_clock::now();
-  auto& N = m_horizon;
+  auto T = m_horizon;
 
   // Shift the control through the buffer so that we use the previously computed
   // cost to initialize the trajectory.
@@ -51,9 +51,9 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
 
   // Rollout the dynamics for the initial control
   m_states.clear();
-  m_states.reserve(N);
+  m_states.reserve(T);
   m_states.emplace_back(state.mean());
-  for (std::size_t i = 0; i < N - 1; ++i) {
+  for (std::size_t i = 0; i < T - 1; ++i) {
     m_states.emplace_back(m_dynamics.f(m_states.at(i), m_controls.at(i)));
   }
 
@@ -67,22 +67,22 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
     // 1. Backward pass
     std::vector<Eigen::VectorXd> feedforward;
     std::vector<Eigen::MatrixXd> feedback;
-    feedforward.reserve(N - 1);
-    feedback.reserve(N - 1);
+    feedforward.reserve(T);
+    feedback.reserve(T);
 
     // Initialize terminal value function Gradient and Hessian
     double dJa = 0;
     double dJb = 0;
-    Eigen::VectorXd Vpx = m_cost.cfx(m_states.at(N - 1));
-    Eigen::MatrixXd Vpxx = m_cost.cfxx(m_states.at(N - 1));
-    std::size_t n = m_states.at(N - 1).size();
-    for (int i = N - 2; i >= 0; --i) {
+    Eigen::VectorXd Vpx = m_cost.cfx(m_states.at(T - 1));
+    Eigen::MatrixXd Vpxx = m_cost.cfxx(m_states.at(T - 1));
+    std::size_t n = m_states.at(T - 1).size();
+    for (int i = T - 1; i >= 0; --i) {
       const auto& x = m_states.at(i);
       const auto& u = m_controls.at(i);
 
       // Compute eqns (5) to find the Q value coefficients based on the value at
       // the next time step (initialize above)
-      // NOTE: The tensor terms are currently ommited to simplify complexity.
+      // NOTE: DDP tensor terms are currently ommited to simplify complexity.
       const Eigen::VectorXd lx = m_cost.cx(x, u, i);
       const Eigen::VectorXd lu = m_cost.cu(x, u, i);
       const Eigen::MatrixXd lxx = m_cost.cxx(x, u, i);
@@ -110,12 +110,11 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
       bool r = svdInverse(Quu, QuuInv);
       SIA_EXCEPTION(r, "Failed to invert Quu in iLQR backward pass");
 
-      // Compute eqns (6) to find the control gains k, K for the next forward
-      // pass
-      const Eigen::VectorXd k = -QuuInv * Qu;
+      // Compute eqns (6) to find the gains k, K for the next forward pass
       const Eigen::MatrixXd K = -QuuInv * Qux;
-      feedforward.emplace_back(k);
+      const Eigen::VectorXd k = -QuuInv * Qu;
       feedback.emplace_back(K);
+      feedforward.emplace_back(k);
 
       // Compute eqns (11) to update the value function (cost to go
       // approximation) for the backward recursion
@@ -134,26 +133,23 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
       dJb += dVb;
     }
 
-    // Flip the gain vector/matrices order to match forward advance in time
+    // Flip the gain vector/matrices order to advance forward in time
     std::reverse(feedforward.begin(), feedforward.end());
     std::reverse(feedback.begin(), feedback.end());
 
     // 2. Forward pass
-    double c = 1e-2;
-    double tau = 0.5;
     double alpha = 1;
     std::size_t k = 0;
     std::vector<Eigen::VectorXd> new_states, new_controls;
     do {
       new_states.clear();
       new_controls.clear();
-      new_states.reserve(N);
-      new_controls.reserve(N);
-      new_states.emplace_back(m_states.at(0));
-      for (std::size_t i = 0; i < N - 1; ++i) {
+      new_states.reserve(T);
+      new_controls.reserve(T);
+      Eigen::VectorXd xhat = m_states.at(0);
+      for (std::size_t i = 0; i < T; ++i) {
         // Compute eqns (8a-b) to find the control law
         const Eigen::VectorXd& u = m_controls.at(i);
-        const Eigen::VectorXd& xhat = new_states.at(i);
         const Eigen::VectorXd& x = m_states.at(i);
         const Eigen::VectorXd& k = feedforward.at(i);
         const Eigen::MatrixXd& K = feedback.at(i);
@@ -161,7 +157,8 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
 
         // Compute eqn (8c) to integrate the control through system dynamics
         new_controls.emplace_back(uhat);
-        new_states.emplace_back(m_dynamics.f(xhat, uhat));
+        new_states.emplace_back(xhat);
+        xhat = m_dynamics.f(xhat, uhat);
       }
 
       // From Y. Tassa et al 2012, "Section II-D Improved Line Search"
@@ -175,14 +172,14 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
       }
 
       // Backtracking iteration - shrink alpha (feedfoward contribution)
-      alpha *= tau;
+      alpha *= m_tau;
       k++;
-    } while ((k < m_max_backsteps) && (z < c));
+    } while ((k < m_max_backsteps) && (z < m_min_z));
 
     // Debug iteration
     m_metrics.z = z;
-    m_metrics.backstep_iter = k - 1;
-    m_metrics.alpha = alpha / tau;
+    m_metrics.backstep_iter = k;
+    m_metrics.alpha = alpha / m_tau;
 
     // Accept and update iteration
     m_states = new_states;
@@ -200,15 +197,15 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
   return m_controls.at(0);
 }
 
-const std::vector<Eigen::VectorXd>& iLQR::getControls() const {
+const Trajectory<Eigen::VectorXd>& iLQR::controls() const {
   return m_controls;
 }
 
-const std::vector<Eigen::VectorXd>& iLQR::getStates() const {
+const Trajectory<Eigen::VectorXd>& iLQR::states() const {
   return m_states;
 }
 
-const iLQR::Metrics& iLQR::getMetrics() const {
+const iLQR::Metrics& iLQR::metrics() const {
   return m_metrics;
 }
 

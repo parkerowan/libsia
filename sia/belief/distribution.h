@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -50,13 +50,13 @@ class Distribution {
   std::mt19937& m_rng;
 };
 
-/// Base regression class describing $y ~ p(y|x)$.
-class Regression {
+/// Base class for prediction $p(y) = p(y|x)$ (regression or classification)
+class Inference {
  public:
-  Regression() = default;
-  virtual ~Regression() = default;
+  Inference() = default;
+  virtual ~Inference() = default;
 
-  /// Performs the regression $p(y|x)$.
+  /// Performs the inference $p(y|x)$
   virtual const Distribution& predict(const Eigen::VectorXd& x) = 0;
   virtual std::size_t inputDimension() const = 0;
   virtual std::size_t outputDimension() const = 0;

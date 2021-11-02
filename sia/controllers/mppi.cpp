@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/mppi.h"
@@ -6,8 +6,6 @@
 #include <glog/logging.h>
 
 namespace sia {
-
-using Trajectory = std::vector<Eigen::VectorXd>;
 
 MPPI::MPPI(DynamicsModel& dynamics,
            CostFunction& cost,
@@ -21,53 +19,89 @@ MPPI::MPPI(DynamicsModel& dynamics,
       m_num_samples(num_samples),
       m_sigma(Gaussian(Eigen::VectorXd::Zero(sigma.rows()), sigma)),
       m_lambda(lam),
-      m_controls(u0) {
+      m_controls(u0),
+      m_rollout_weights(Eigen::VectorXd::Zero(num_samples)) {
   cacheSigmaInv();
 }
 
 const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
-  auto& N = m_horizon;
-  auto& K = m_num_samples;
+  auto T = m_horizon;
+  auto N = m_num_samples;
+  auto x = state.mean();
 
   // Shift the control through the buffer so that we use the previously computed
   // cost to initialize the trajectory.
   m_controls.erase(m_controls.begin());        // remove the first element
   m_controls.emplace_back(m_controls.back());  // copy the last element
 
+  // Reset the rollout history
+  m_rollout_states.clear();
+  m_rollout_states.reserve(N);
+
   // Rollout a perturbation around the nominal control for each sample
-  std::vector<Trajectory> eps;
-  eps.reserve(K);
-  Eigen::VectorXd S = Eigen::VectorXd::Zero(K);
-  for (std::size_t k = 0; k < K; ++k) {
-    auto x = state.mean();
+  std::vector<Trajectory<Eigen::VectorXd>> eps;
+  eps.reserve(N);
+  Eigen::VectorXd S = Eigen::VectorXd::Zero(N);
+  for (std::size_t j = 0; j < N; ++j) {
+    Trajectory<Eigen::VectorXd> state_rollout;
+    state_rollout.reserve(T);
+
+    x = state.mean();  // TODO: Add option to sample
+    state_rollout.emplace_back(x);
+
     // TODO: can parallelize
-    Trajectory samples = m_sigma.samples(N);
+    Trajectory<Eigen::VectorXd> samples = m_sigma.samples(T);
     eps.emplace_back(samples);
-    for (std::size_t i = 0; i < N - 1; ++i) {
+    for (std::size_t i = 0; i < T - 1; ++i) {
       const auto& u = m_controls.at(i);
       const auto& e = samples.at(i);
       const auto uhat = u + e;
-      x = m_dynamics.dynamics(x, uhat).mean();
-      S(k) += m_cost.c(x, uhat, i) + m_lambda * u.transpose() * m_sigma_inv * e;
+      S(j) += m_cost.c(x, uhat, i) + m_lambda * u.transpose() * m_sigma_inv * e;
+      x = m_dynamics.dynamics(x, uhat).mean();  // TODO: Add option to sample
+      state_rollout.emplace_back(x);
     }
-    S(k) += m_cost.cf(x);
+    S(j) += m_cost.cf(x);
+    m_rollout_states.emplace_back(state_rollout);
   }
 
   // Compute weights
   double beta = S.minCoeff();
-  Eigen::VectorXd w = exp(-(S.array() - beta) / m_lambda);
-  w /= w.sum();
+  m_rollout_weights = exp(-(S.array() - beta) / m_lambda);
+  m_rollout_weights /= m_rollout_weights.sum();
 
-  // Update controls
-  for (std::size_t i = 0; i < N; ++i) {
+  // Clear the states
+  m_states.clear();
+  m_states.reserve(T);
+
+  // Update controls and states
+  x = state.mean();
+  m_states.emplace_back(x);
+  for (std::size_t i = 0; i < T - 1; ++i) {
     Eigen::VectorXd e = Eigen::VectorXd::Zero(eps.at(0).at(0).size());
-    for (std::size_t k = 0; k < K; ++k) {
-      e += w(k) * eps.at(k).at(i);
+    for (std::size_t j = 0; j < N; ++j) {
+      e += m_rollout_weights(j) * eps.at(j).at(i);
     }
     m_controls.at(i) += e;
+    x = m_dynamics.dynamics(x, m_controls.at(i)).mean();
+    m_states.emplace_back(x);
   }
-
   return m_controls.at(0);
+}
+
+const Trajectory<Eigen::VectorXd>& MPPI::controls() const {
+  return m_controls;
+}
+
+const Trajectory<Eigen::VectorXd>& MPPI::states() const {
+  return m_states;
+}
+
+const std::vector<Trajectory<Eigen::VectorXd>>& MPPI::rolloutStates() const {
+  return m_rollout_states;
+}
+
+const Eigen::VectorXd& MPPI::rolloutWeights() const {
+  return m_rollout_weights;
 }
 
 void MPPI::cacheSigmaInv() {

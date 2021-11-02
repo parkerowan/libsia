@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -10,7 +10,7 @@
 namespace sia {
 
 /// Defines a cost function for an optimal control problem comprised of
-/// $J(x,u) = c_f(x_T) + \sum_{i=1}^{T-1} c(x,u,i)$
+/// $J(x,u) = c_f(x_T) + \sum_{i=0}^{T-1} c(x,u,i)$
 /// where $c_f$ is the terminal cost and $c$ is the running cost.
 class CostFunction {
  public:
