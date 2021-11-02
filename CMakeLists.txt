@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -11,6 +11,7 @@ cmake_policy(SET CMP0054 NEW)
 
 # Command line options
 option(TEST_COVERAGE "Generate a make coverage command" OFF)
+option(BUILD_EXAMPLES "Builds the examples" ON)
 option(PYTHON_BINDINGS "Make the python bindings" OFF)
 option(SPHINX_DOCS "Make the sphinx documentation" OFF)
 
@@ -109,7 +110,9 @@ add_subdirectory(tests)
 # ------------------------------------------------------------------------------
 # Add the example targets
 # ------------------------------------------------------------------------------
-add_subdirectory(examples)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 # ------------------------------------------------------------------------------
 # Setup the coverage reporting

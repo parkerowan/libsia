@@ -3,17 +3,21 @@
 [![pipeline status](https://gitlab.com/parkerowan/libsia/badges/master/pipeline.svg)](https://gitlab.com/parkerowan/libsia/commits/master)
 [![codecov](https://codecov.io/gl/parkerowan/libsia/branch/master/graph/badge.svg?token=H5P0UCFFR1)](https://codecov.io/gl/parkerowan/libsia)
 
-Sia is a C++/Python library for model-based stochastic estimation and optimal control (or model-based reinforcement learning, if you prefer).  The current scope is on unconstrained continuous state and action vector spaces.  Due to the focus on stochastic models, belief and dynamical systems are first-class representations.
+Sia is a C++/Python library for model-based Reinforcement Learning (or stochastic estimation and optimal control if you prefer). The current scope is on unconstrained continuous state and action vector spaces. Due to the focus on stochastic models, belief and dynamical systems are first-class representations. Algorithms included with the library are general purpose and can be applied to many different applications.
 
 ## Features
 - Finite horizon model predictive control (MPC) including LQR, iLQR, and model predictive path integrals (MPPI).
 - Bayesian estimation including Kalman, extended Kalman, and particle filters.
 - Markov dynamical systems including nonlinear/Gaussian, linear/Gaussian, and their discrete/continuous time variants.
-- Distributions for representing belief including Gaussian, uniform, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR), and Gaussian Process Regression (GPR).
-- Runner and recorder for easy simulation and data trace collection.
+- Distributions for representing belief including Gaussian, Dirichlet, uniform, categorical, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR), Gaussian Process Regression (GPR), and Gaussian Process Classification (GPC).
+- Built-in constrained Gradient Descent and Bayesian Optimization.
 - Math functions for Runge-Kutta integration, SVD-based matrix inversion.
+- Runner and recorder for easy simulation and data trace collection.
+- Minimal dependencies in the core library (Eigen, glog).
 - Python bindings with Pybind11.
-- C++ and Python examples.
+- C++ and Python examples and tutorials.
+- Extensive unit tests with gtest.
+- BSD-3 permissive license.
 
 ## Gallery
 

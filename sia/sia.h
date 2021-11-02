@@ -1,12 +1,15 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
 
+#include "sia/belief/categorical.h"
+#include "sia/belief/dirichlet.h"
 #include "sia/belief/distribution.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/gmm.h"
 #include "sia/belief/gmr.h"
+#include "sia/belief/gpc.h"
 #include "sia/belief/gpr.h"
 #include "sia/belief/helpers.h"
 #include "sia/belief/kernel_density.h"
@@ -26,6 +29,8 @@
 #include "sia/models/models.h"
 #include "sia/models/nonlinear_gaussian.h"
 #include "sia/models/simulate.h"
+#include "sia/optimizers/bayesian_optimizer.h"
+#include "sia/optimizers/gradient_descent.h"
 #include "sia/runner/buffer.h"
 #include "sia/runner/recorder.h"
 #include "sia/runner/runner.h"

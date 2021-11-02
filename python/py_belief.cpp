@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_belief.h"
@@ -28,6 +28,11 @@ void export_py_belief(py::module& m_sup) {
       .def("vectorize", &sia::Distribution::vectorize)
       .def("devectorize", &sia::Distribution::devectorize, py::arg("data"))
       .def("samples", &sia::Distribution::samples, py::arg("num_samples"));
+
+  py::class_<sia::Inference, PyInference>(m, "Inference")
+      .def("predict", &sia::Inference::predict, py::arg("x"))
+      .def("inputDimension", &sia::Inference::inputDimension)
+      .def("outputDimension", &sia::Inference::outputDimension);
 
   m.def("logProb", &sia::logProb, py::arg("distribution"), py::arg("x"));
 
@@ -76,6 +81,50 @@ void export_py_belief(py::module& m_sup) {
       .def("setLower", &sia::Uniform::setLower, py::arg("lower"))
       .def("setUpper", &sia::Uniform::setUpper, py::arg("upper"));
 
+  py::class_<sia::Dirichlet, sia::Distribution>(m, "Dirichlet")
+      .def(py::init<std::size_t>(), py::arg("dimension"))
+      .def(py::init<double, double>(), py::arg("alpha"), py::arg("beta"))
+      .def(py::init<const Eigen::VectorXd&>(), py::arg("alpha"))
+      .def("dimension", &sia::Dirichlet::dimension)
+      .def("sample", &sia::Dirichlet::sample)
+      .def("logProb", &sia::Dirichlet::logProb, py::arg("x"))
+      .def("mean", &sia::Dirichlet::mean)
+      .def("mode", &sia::Dirichlet::mode)
+      .def("covariance", &sia::Dirichlet::covariance)
+      .def("vectorize", &sia::Dirichlet::vectorize)
+      .def("devectorize", &sia::Dirichlet::devectorize, py::arg("data"))
+      .def("samples", &sia::Dirichlet::samples, py::arg("num_samples"))
+      .def("categorical", &sia::Dirichlet::categorical)
+      .def("classify", &sia::Dirichlet::classify)
+      .def("alpha", &sia::Dirichlet::alpha)
+      .def("setAlpha", &sia::Dirichlet::setAlpha, py::arg("alpha"));
+
+  py::class_<sia::Categorical, sia::Distribution>(m, "Categorical")
+      .def(py::init<std::size_t>(), py::arg("dimension"))
+      .def(py::init<const Eigen::VectorXd&>(), py::arg("probs"))
+      .def("dimension", &sia::Categorical::dimension)
+      .def("sample", &sia::Categorical::sample)
+      .def("logProb", &sia::Categorical::logProb, py::arg("x"))
+      .def("mean", &sia::Categorical::mean)
+      .def("mode", &sia::Categorical::mode)
+      .def("covariance", &sia::Categorical::covariance)
+      .def("vectorize", &sia::Categorical::vectorize)
+      .def("devectorize", &sia::Categorical::devectorize, py::arg("data"))
+      .def("samples", &sia::Categorical::samples, py::arg("num_samples"))
+      .def("classify", &sia::Categorical::classify)
+      .def("probs", &sia::Categorical::probs)
+      .def("setProbs", &sia::Categorical::setProbs, py::arg("probs"))
+      .def(
+          "oneHot",
+          static_cast<Eigen::VectorXd (sia::Categorical::*)(std::size_t) const>(
+              &sia::Categorical::oneHot),
+          py::arg("category"))
+      .def("oneHot",
+           static_cast<Eigen::MatrixXd (sia::Categorical::*)(
+               const Eigen::VectorXi&) const>(&sia::Categorical::oneHot),
+           py::arg("category"))
+      .def("category", &sia::Categorical::category, py::arg("probs"));
+
   py::class_<sia::Particles, sia::Distribution>(m, "Particles")
       .def(py::init<std::size_t, std::size_t, bool>(), py::arg("dimension"),
            py::arg("num_particles"), py::arg("weighted_stats") = false)
@@ -110,33 +159,6 @@ void export_py_belief(py::module& m_sup) {
       .def("weights", &sia::Particles::weights)
       .def("weight", &sia::Particles::weight, py::arg("i"));
 
-  py::class_<sia::Kernel, PyKernel> kernel(m, "Kernel");
-
-  py::enum_<sia::Kernel::Type>(kernel, "Type")
-      .value("UNIFORM", sia::Kernel::UNIFORM)
-      .value("GAUSSIAN", sia::Kernel::GAUSSIAN)
-      .value("EPANECHNIKOV", sia::Kernel::EPANECHNIKOV)
-      .export_values();
-
-  kernel.def(py::init<>())
-      .def("evaluate", &sia::Kernel::evaluate, py::arg("x"))
-      .def("type", &sia::Kernel::type);
-
-  py::class_<sia::UniformKernel, sia::Kernel>(m, "UniformKernel")
-      .def(py::init<std::size_t>(), py::arg("dimension"))
-      .def("evaluate", &sia::UniformKernel::evaluate, py::arg("x"))
-      .def("type", &sia::UniformKernel::type);
-
-  py::class_<sia::GaussianKernel, sia::Kernel>(m, "GaussianKernel")
-      .def(py::init<std::size_t>(), py::arg("dimension"))
-      .def("evaluate", &sia::GaussianKernel::evaluate, py::arg("x"))
-      .def("type", &sia::GaussianKernel::type);
-
-  py::class_<sia::EpanechnikovKernel, sia::Kernel>(m, "EpanechnikovKernel")
-      .def(py::init<std::size_t>(), py::arg("dimension"))
-      .def("evaluate", &sia::EpanechnikovKernel::evaluate, py::arg("x"))
-      .def("type", &sia::EpanechnikovKernel::type);
-
   py::class_<sia::KernelDensity, sia::Particles> kernel_density(
       m, "KernelDensity");
 
@@ -145,17 +167,24 @@ void export_py_belief(py::module& m_sup) {
       .value("USER_SPECIFIED", sia::KernelDensity::USER_SPECIFIED)
       .export_values();
 
+  py::enum_<sia::KernelDensity::KernelType>(kernel_density, "KernelType")
+      .value("UNIFORM", sia::KernelDensity::UNIFORM)
+      .value("GAUSSIAN", sia::KernelDensity::GAUSSIAN)
+      .value("EPANECHNIKOV", sia::KernelDensity::EPANECHNIKOV)
+      .export_values();
+
   kernel_density
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXd&,
-                    sia::Kernel::Type, sia::KernelDensity::BandwidthMode,
-                    double>(),
+                    sia::KernelDensity::KernelType,
+                    sia::KernelDensity::BandwidthMode, double>(),
            py::arg("values"), py::arg("weights"),
-           py::arg("type") = sia::Kernel::EPANECHNIKOV,
+           py::arg("type") = sia::KernelDensity::EPANECHNIKOV,
            py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
-      .def(py::init<const sia::Particles&, sia::Kernel::Type,
+      .def(py::init<const sia::Particles&, sia::KernelDensity::KernelType,
                     sia::KernelDensity::BandwidthMode, double>(),
-           py::arg("particles"), py::arg("type") = sia::Kernel::EPANECHNIKOV,
+           py::arg("particles"),
+           py::arg("type") = sia::KernelDensity::EPANECHNIKOV,
            py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
       .def("probability", &sia::KernelDensity::probability, py::arg("x"))
@@ -193,7 +222,7 @@ void export_py_belief(py::module& m_sup) {
       .def("setKernelType", &sia::KernelDensity::setKernelType, py::arg("type"))
       .def("getKernelType", &sia::KernelDensity::getKernelType);
 
-  py::class_<sia::GMM, sia::Distribution> gmm(m, "GMM");
+  py::class_<sia::GMM, sia::Distribution, sia::Inference> gmm(m, "GMM");
 
   gmm.def(py::init<std::size_t, std::size_t>(), py::arg("K"),
           py::arg("dimension"))
@@ -210,6 +239,9 @@ void export_py_belief(py::module& m_sup) {
       .def("covariance", &sia::GMM::covariance)
       .def("vectorize", &sia::GMM::vectorize)
       .def("devectorize", &sia::GMM::devectorize, py::arg("data"))
+      .def("predict", &sia::GMM::predict, py::arg("x"))
+      .def("inputDimension", &sia::GMM::inputDimension)
+      .def("outputDimension", &sia::GMM::outputDimension)
       .def("classify", &sia::GMM::classify, py::arg("x"))
       .def("numClusters", &sia::GMM::numClusters)
       .def("prior", &sia::GMM::prior, py::arg("i"))
@@ -231,45 +263,76 @@ void export_py_belief(py::module& m_sup) {
       .value("WARM_START", sia::GMM::InitMethod::WARM_START)
       .export_values();
 
-  py::class_<sia::GMR, sia::GMM, sia::Distribution>(m, "GMR")
+  py::class_<sia::GMR, sia::Inference>(m, "GMR")
       .def(py::init<const std::vector<sia::Gaussian>&,
                     const std::vector<double>&, std::vector<std::size_t>,
                     std::vector<std::size_t>, double>(),
            py::arg("gaussians"), py::arg("weights"), py::arg("input_indices"),
-           py::arg("output_indices"), py::arg("regularization") = 1e-6)
+           py::arg("output_indices"),
+           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
       .def(py::init<const sia::GMM&, std::vector<std::size_t>,
                     std::vector<std::size_t>, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
-           py::arg("regularization") = 1e-6)
-      .def("dimension", &sia::GMR::dimension)
-      .def("sample", &sia::GMR::sample)
-      .def("logProb", &sia::GMR::logProb, py::arg("x"))
-      .def("mean", &sia::GMR::mean)
-      .def("mode", &sia::GMR::mode)
-      .def("covariance", &sia::GMR::covariance)
-      .def("vectorize", &sia::GMR::vectorize)
-      .def("devectorize", &sia::GMR::devectorize, py::arg("data"))
-      .def("classify", &sia::GMR::classify, py::arg("x"))
-      .def("numClusters", &sia::GMR::numClusters)
-      .def("prior", &sia::GMR::prior, py::arg("i"))
-      .def("gaussian", &sia::GMR::gaussian, py::arg("i"))
-      .def("priors", &sia::GMR::priors)
-      .def("gaussians", &sia::GMR::gaussians)
-      .def("predict", &sia::GMR::predict, py::arg("x"));
+           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+      .def("predict", &sia::GMR::predict, py::arg("x"))
+      .def("inputDimension", &sia::GMR::inputDimension)
+      .def("outputDimension", &sia::GMR::outputDimension);
 
-  py::class_<sia::GPR> gpr(m, "GPR");
+  py::class_<sia::GPR, sia::Inference> gpr(m, "GPR");
 
-  py::enum_<sia::GPR::CovFunction>(gpr, "CovFunction")
-      .value("SQUARED_EXPONENTIAL", sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
+  py::enum_<sia::GPR::KernelType>(gpr, "KernelType")
+      .value("SE_KERNEL", sia::GPR::KernelType::SE_KERNEL)
       .export_values();
 
-  gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,
-                   double, double, sia::GPR::CovFunction>(),
-          py::arg("input_samples"), py::arg("output_samples"), py::arg("varf"),
-          py::arg("varn"), py::arg("length"),
-          py::arg("type") = sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
+  py::enum_<sia::GPR::NoiseType>(gpr, "NoiseType")
+      .value("SCALAR_NOISE", sia::GPR::NoiseType::SCALAR_NOISE)
+      .value("VECTOR_NOISE", sia::GPR::NoiseType::VECTOR_NOISE)
+      .value("HETEROSKEDASTIC_NOISE",
+             sia::GPR::NoiseType::HETEROSKEDASTIC_NOISE)
+      .export_values();
+
+  gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                   sia::GPR::KernelType, sia::GPR::NoiseType>(),
+          py::arg("input_samples"), py::arg("output_samples"),
+          py::arg("kernel_type") = sia::GPR::SE_KERNEL,
+          py::arg("noise_type") = sia::GPR::SCALAR_NOISE)
+      .def("setData", &sia::GPR::setData, py::arg("input_samples"),
+           py::arg("output_samples"))
       .def("predict", &sia::GPR::predict, py::arg("x"))
-      .def("numSamples", &sia::GPR::numSamples)
+      .def("negLogMarginalLik", &sia::GPR::negLogMarginalLik)
+      .def("negLogMarginalLikGrad", &sia::GPR::negLogMarginalLikGrad)
+      .def("train", &sia::GPR::train)
       .def("inputDimension", &sia::GPR::inputDimension)
-      .def("outputDimension", &sia::GPR::outputDimension);
+      .def("outputDimension", &sia::GPR::outputDimension)
+      .def("numSamples", &sia::GPR::numSamples)
+      .def("hyperparameters", &sia::GPR::hyperparameters)
+      .def("setHyperparameters", &sia::GPR::setHyperparameters, py::arg("p"))
+      .def("numHyperparameters", &sia::GPR::numHyperparameters)
+      .def("setScalarNoise", &sia::GPR::setScalarNoise, py::arg("variance"))
+      .def("setVectorNoise", &sia::GPR::setVectorNoise, py::arg("variance"))
+      .def("setHeteroskedasticNoise", &sia::GPR::setHeteroskedasticNoise,
+           py::arg("variance"));
+
+  py::class_<sia::GPC, sia::Inference>(m, "GPC")
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&, double,
+                    sia::GPR::KernelType>(),
+           py::arg("input_samples"), py::arg("output_samples"),
+           py::arg("alpha") = 0.01,
+           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
+      .def(py::init<const Eigen::MatrixXd&, const std::vector<int>&, double,
+                    sia::GPR::KernelType>(),
+           py::arg("input_samples"), py::arg("output_samples"),
+           py::arg("alpha") = 0.01,
+           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
+      .def("predict", &sia::GPC::predict, py::arg("x"))
+      .def("negLogMarginalLik", &sia::GPC::negLogMarginalLik)
+      .def("negLogMarginalLikGrad", &sia::GPC::negLogMarginalLikGrad)
+      .def("train", &sia::GPC::train)
+      .def("inputDimension", &sia::GPC::inputDimension)
+      .def("outputDimension", &sia::GPC::outputDimension)
+      .def("numSamples", &sia::GPC::numSamples)
+      .def("hyperparameters", &sia::GPC::hyperparameters)
+      .def("setHyperparameters", &sia::GPC::setHyperparameters, py::arg("p"))
+      .def("numHyperparameters", &sia::GPC::numHyperparameters)
+      .def("setAlpha", &sia::GPC::setAlpha, py::arg("alpha"));
 }

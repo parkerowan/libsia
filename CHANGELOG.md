@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2022-01-03
+### Added
+- Gaussian process classification (GPC)
+- Bounded gradient descent optimization
+- Methods for training GPR and GPC hyperparameters using gradient descent
+- GPR-based Bayesian Optimization
+- Categorical and Dirichlet distributions
+- Sphinx documentation 
+### Changed
+- Raw pointers have been changed to shared pointers
+- Updated python belief doc to show GPR usage
+- Updated README
+
 ## [0.2.3] - 2021-08-16
 ### Added
 - Gaussian process regression (GPR) to belief library
