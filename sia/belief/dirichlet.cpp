@@ -9,6 +9,8 @@
 
 namespace sia {
 
+#define SMALL_NUMBER 1e-6
+
 Dirichlet::Dirichlet(std::size_t dimension)
     : Distribution(Generator::instance()) {
   SIA_EXCEPTION(dimension >= 2, "Dirichlet distribution requires dim >= 2");
@@ -46,13 +48,20 @@ double Dirichlet::logProb(const Eigen::VectorXd& x) const {
     }
   }
 
+  // Check that x sums to 1
+  Eigen::VectorXd xnorm = x;
+  if ((abs(x.sum() - 1.0)) > SMALL_NUMBER) {
+    LOG(WARNING) << "Sum of x is expected to be 1, applying normalization";
+    xnorm = x / x.sum();
+  }
+
   // See: Sec 3 http://jonathan-huang.org/research/dirichlet/dirichlet.pdf
   double a = log(tgamma(m_alpha.sum()));
   double b = 0;
   for (std::size_t i = 0; i < dimension(); ++i) {
     b -= log(tgamma(m_alpha(i)));
   }
-  double c = ((m_alpha.array() - 1.0) * x.array().log()).sum();
+  double c = ((m_alpha.array() - 1.0) * xnorm.array().log()).sum();
   return a + b + c;
 }
 

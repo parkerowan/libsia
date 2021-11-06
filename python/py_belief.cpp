@@ -76,6 +76,22 @@ void export_py_belief(py::module& m_sup) {
       .def("setLower", &sia::Uniform::setLower, py::arg("lower"))
       .def("setUpper", &sia::Uniform::setUpper, py::arg("upper"));
 
+  py::class_<sia::Dirichlet, sia::Distribution>(m, "Dirichlet")
+      .def(py::init<std::size_t>(), py::arg("dimension"))
+      .def(py::init<double, double>(), py::arg("alpha"), py::arg("beta"))
+      .def(py::init<const Eigen::VectorXd&>(), py::arg("alpha"))
+      .def("dimension", &sia::Dirichlet::dimension)
+      .def("sample", &sia::Dirichlet::sample)
+      .def("logProb", &sia::Dirichlet::logProb, py::arg("x"))
+      .def("mean", &sia::Dirichlet::mean)
+      .def("mode", &sia::Dirichlet::mode)
+      .def("covariance", &sia::Dirichlet::covariance)
+      .def("vectorize", &sia::Dirichlet::vectorize)
+      .def("devectorize", &sia::Dirichlet::devectorize, py::arg("data"))
+      .def("samples", &sia::Dirichlet::samples, py::arg("num_samples"))
+      .def("alpha", &sia::Dirichlet::alpha)
+      .def("setAlpha", &sia::Dirichlet::setAlpha, py::arg("alpha"));
+
   py::class_<sia::Particles, sia::Distribution>(m, "Particles")
       .def(py::init<std::size_t, std::size_t, bool>(), py::arg("dimension"),
            py::arg("num_particles"), py::arg("weighted_stats") = false)
@@ -265,8 +281,8 @@ void export_py_belief(py::module& m_sup) {
 
   gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,
                    double, double, sia::GPR::CovFunction>(),
-          py::arg("input_samples"), py::arg("output_samples"), py::arg("varn"),
-          py::arg("varf"), py::arg("length"),
+          py::arg("input_samples"), py::arg("output_samples"),
+          py::arg("varn") = 0, py::arg("varf") = 0.1, py::arg("length") = 10,
           py::arg("type") = sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     const Eigen::MatrixXd&, double, double,

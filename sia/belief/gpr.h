@@ -22,15 +22,15 @@ class GPR : public Regression {
   enum CovFunction { SQUARED_EXPONENTIAL };
 
   /// Initialize GPR from training data.  Each column of input and output
-  /// training samples is a sample.  varf controls the uncertainty of the
-  /// Gaussian prior (i.e. outside of the training domain); varn controls the
-  /// measurement likelihood uncertainty; and length controls the kernel basis
-  /// blending.  The covariance type determines the kernel basis.
+  /// training samples is a sample.  varn controls the measurement likelihood
+  /// uncertainty; varf controls the marginal variance of the Gaussian prior
+  /// (i.e. outside of the training domain); and length controls the kernel
+  /// basis blending.  The covariance type determines the kernel basis.
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
-               double varn,
-               double varf,
-               double length,
+               double varn = 0,
+               double varf = 0.1,
+               double length = 10,
                CovFunction type = SQUARED_EXPONENTIAL);
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
