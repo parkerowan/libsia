@@ -80,7 +80,7 @@ const Eigen::VectorXd Dirichlet::mode() const {
 const Eigen::MatrixXd Dirichlet::covariance() const {
   double a0 = m_alpha.sum();
   double den = pow(a0, 2) * (a0 + 1);
-  Eigen::MatrixXd cov = -m_alpha.transpose() * m_alpha / den;
+  Eigen::MatrixXd cov = -m_alpha * m_alpha.transpose() / den;
   cov.diagonal() = m_alpha.array() * (a0 - m_alpha.array()) / den;
   return cov;
 }

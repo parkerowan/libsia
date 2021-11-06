@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "sia/belief/dirichlet.h"
 #include "sia/belief/distribution.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/gmm.h"

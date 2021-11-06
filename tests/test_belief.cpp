@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
+#include <cmath>
 #include <limits>
 
 TEST(Belief, Generator) {
@@ -146,6 +147,55 @@ TEST(Belief, Uniform) {
   EXPECT_TRUE(c.devectorize(v));
   EXPECT_TRUE(c.lower().isApprox(lower));
   EXPECT_TRUE(c.upper().isApprox(upper));
+}
+
+TEST(Belief, Dirichlet) {
+  sia::Dirichlet a(2);
+  ASSERT_EQ(a.dimension(), 2);
+  EXPECT_DOUBLE_EQ(a.alpha()(0), 1);
+  EXPECT_DOUBLE_EQ(a.alpha()(1), 1);
+
+  a.setAlpha(Eigen::Vector2d{2, 3});
+  EXPECT_DOUBLE_EQ(a.alpha()(0), 2);
+  EXPECT_DOUBLE_EQ(a.alpha()(1), 3);
+
+  // The mean and the mode are the same when the concentrations are the same
+  double alpha = 3;
+  double beta = 3;
+  sia::Dirichlet b(alpha, beta);
+  ASSERT_EQ(b.dimension(), 2);
+  EXPECT_DOUBLE_EQ(b.alpha()(0), alpha);
+  EXPECT_DOUBLE_EQ(b.alpha()(1), beta);
+
+  Eigen::Vector2d x{0.1, 0.9};
+  double logprob =
+      log(pow(x(0), alpha - 1) * pow(x(1), beta - 1) / std::beta(alpha, beta));
+  EXPECT_DOUBLE_EQ(b.logProb(x), logprob);
+
+  // Expect samples outside of the support to return -inf
+  EXPECT_DOUBLE_EQ(b.logProb(Eigen::Vector2d{-0.1, 0}), -INFINITY);
+
+  std::size_t ns = 10000;
+  Eigen::MatrixXd s = Eigen::MatrixXd::Zero(2, ns);
+  for (std::size_t i = 0; i < ns; ++i) {
+    s.col(i) = b.sample();
+  }
+  double n = static_cast<double>(ns);
+  const Eigen::VectorXd mean = s.rowwise().sum() / n;
+  const Eigen::MatrixXd e = (s.array().colwise() - b.mean().array()).matrix();
+  const Eigen::MatrixXd cov = e * e.transpose() / (n - 1);
+  EXPECT_NEAR(b.mean()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mean()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.mode()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mode()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 0), cov(0, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 1), cov(0, 1), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 0), cov(1, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 1), cov(1, 1), 5e-2);
+
+  const auto v = a.vectorize();
+  EXPECT_TRUE(b.devectorize(v));
+  EXPECT_TRUE(b.alpha().isApprox(a.alpha()));
 }
 
 TEST(Belief, Particles) {
