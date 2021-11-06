@@ -23,6 +23,7 @@ class Dirichlet : public Distribution {
   /// Creates a multivariate Dirichlet from vector of concentrations.
   explicit Dirichlet(const Eigen::VectorXd& alpha);
   virtual ~Dirichlet() = default;
+  std::size_t classify() const;
   std::size_t dimension() const override;
   const Eigen::VectorXd sample() override;
   double logProb(const Eigen::VectorXd& x) const override;
@@ -36,6 +37,8 @@ class Dirichlet : public Distribution {
   void setAlpha(const Eigen::VectorXd& alpha);
 
  private:
+  Eigen::VectorXd normalizeInput(const Eigen::VectorXd& x) const;
+
   Eigen::VectorXd m_alpha;
   std::vector<std::gamma_distribution<double>> m_gamma_dists;
 };

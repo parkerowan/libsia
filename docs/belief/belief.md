@@ -43,7 +43,7 @@ for name, dist in distributions.items():
     
     # Helper to evaluate the probability for multiple samples
     prob = np.exp(sia.logProb1d(dist, x))
-    plt.plot(x, prob, label=name)
+    plt.plot(x, prob, label=name, lw=2)
     
     # Add dots for the distribution means
     mean = dist.mean()
@@ -64,6 +64,61 @@ plt.show()
 
     
 ![png](belief_files/belief_3_0.png)
+    
+
+
+Sia also provides support for representing multiple categories using a Dirichlet distribution $x\sim\mathcal{D}(\alpha)$.
+- `sia.Dirichlet`.  Dirichlet distributions represent a mutivariate continuous random variable $x_i\in(0, 1)$ where $\sum x_i = 1$, and are parameterized by a vector of concentrations $\theta =\{\alpha\}$ of the same dimension.  This is useful for representing the likelihood of multiple categories.  The 2D case (i.e. a binary class) is equivalent to the Beta distribution.  
+
+An example of the Beta case is shown below.
+
+
+```python
+distributions = {
+    "Beta a=.5, b=.5": sia.Dirichlet(alpha=.5, beta=.5),
+    "Beta a=5, b=1": sia.Dirichlet(alpha=5, beta=1),
+    "Beta a=1, b=3": sia.Dirichlet(alpha=1, beta=3),
+    "Beta a=2, b=2": sia.Dirichlet(alpha=2, beta=2),
+    "Beta a=2, b=5": sia.Dirichlet(alpha=2, beta=5),
+}
+
+# Plot the probabilities
+f, ax = plt.subplots(figsize=(12, 5))
+sns.despine(f, left=True, bottom=True)
+
+# Evaluate the probability using sia.Distribution.logProb(x)
+# Note that the Dirichlet distribution requires 1 dimension for each 
+# category, so a binary classifier has dimension 2.  Here we only plot
+# the 1st axis.  The 2nd axis is the reflection of the Beta random variable.
+x = np.linspace(0, 1, 250)
+axis = 0
+for name, dist in distributions.items():
+    pass
+    
+    # Helper to evaluate the probability for multiple samples
+    prob = np.exp(sia.logProb2d(dist, x, 1-x))
+    plt.plot(x, prob, label=name, lw=2)
+    
+    # Add dots for the distribution means
+    mean = dist.mean()
+    plt.plot(mean[axis], np.exp(dist.logProb(mean)), ".k", ms=12)
+    
+    # Add plusses for the distribution modes
+    mode = dist.mode()
+    plt.plot(mode[axis], np.exp(dist.logProb(mode)), "+k", ms=15)
+    
+    # Draw samples and plot a histogram
+    s_sia = dist.samples(10000)
+    plt.hist(np.array(s_sia)[:, axis], 50, density=True, color="k", edgecolor=None,  alpha=0.15)
+
+plt.ylim((0, 2.5))
+plt.legend()
+plt.show()
+```
+
+
+    
+![png](belief_files/belief_5_0.png)
     
 
 
@@ -114,7 +169,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_5_0.png)
+![png](belief_files/belief_7_0.png)
     
 
 
@@ -181,7 +236,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_7_0.png)
+![png](belief_files/belief_9_0.png)
     
 
 
@@ -248,7 +303,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_9_0.png)
+![png](belief_files/belief_11_0.png)
     
 
 
@@ -298,7 +353,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_11_0.png)
+![png](belief_files/belief_13_0.png)
     
 
 
@@ -367,7 +422,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_13_0.png)
+![png](belief_files/belief_15_0.png)
     
 
 
@@ -404,7 +459,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_15_0.png)
+![png](belief_files/belief_17_0.png)
     
 
 
@@ -467,7 +522,7 @@ plt.show()
 
 
     
-![png](belief_files/belief_17_0.png)
+![png](belief_files/belief_19_0.png)
     
 
 
@@ -523,6 +578,60 @@ for i in range(len(ax)):
 
 
     
-![png](belief_files/belief_19_0.png)
+![png](belief_files/belief_21_0.png)
+    
+
+
+## Gaussian Process Classification (GPC)
+
+`sia.GPC` implements a multi-dimensional Gaussian Process Classification model that predicts a Dirichlet distribution $p(y|x) = \mathcal{D}(x)$ to describe the softmax probability of seeing a class.  The dimension of the output Dirichlet distribution is based on the max class presented in the training data.  GPC has several hyperparameters $\alpha$, $\sigma_n^2$, and $l$.  The baseline concentration $1 > \alpha > 0$ controls the uncertainty of the Dirichlet prior.  The variance $\sigma_n^2$ determines the uncertainty of the likelihood, i.e. the measurement noise.  The length $l$ is a kernel smoothing term.  Effects of these hyperparameters are shown below.  The top row demonstrates $\alpha$ (`a`), middle shows $\sigma_n^2$ (`vn`), and the bottom shows $l$ (`l`).
+
+
+```python
+# Generate training data from underlying probability of a binary class
+class_prob = lambda x : -0.2 * x ** 2 + 0.6 * np.sin(6 * x) ** 2 + 0.2
+# class_prob = lambda x : x >= 0.5
+
+xtrain = np.random.uniform(0, 1, 100)
+ptrain = class_prob(xtrain)
+ytrain = np.array([int(np.random.uniform(0, 1, 1) <= class_prob(x)) for x in xtrain])
+
+# Plot the raw data
+f, ax = plt.subplots(nrows=3, ncols=3, figsize=(15, 10))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+# Evaluate several choices of hyper parameters
+alpha  = [0.5, 0.1, 0.01, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+varn   = [10, 10, 10, 10, 25, 2, 10, 10, 10]
+length = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.05]
+
+for i in range(len(ax)):
+    # Create the GPC object
+    gpc = sia.GPC(np.array([xtrain]), ytrain, alpha=alpha[i], varf=varn[i], length=length[i])
+
+    # Evaluate it
+    xtest = np.linspace(-0.1, 1.1, 101)
+    ptest = class_prob(xtest)
+    gpc_mu = np.zeros((2, len(xtest)))
+    gpc_sig = np.zeros((2, len(xtest)))
+    for k in range(len(xtest)):
+        dirichlet = gpc.predict(np.array([xtest[k]]))
+        gpc_mu[:, k] = dirichlet.mean()
+        gpc_sig[:, k] = np.diag(dirichlet.covariance())
+    
+    # Plot the belief for each axis and overlay the training data
+    ax[i].fill_between(xtest, gpc_mu[1, :] + 2 * gpc_sig[1, :], gpc_mu[1, :] - 2 * gpc_sig[1, :],  alpha=0.3)
+    ax[i].plot(xtest, gpc_mu[1, :], 'b', lw=2)
+    ax[i].plot(xtrain, ytrain, '.k', ms=3)
+    ax[i].plot(xtest, ptest, 'k', lw=1.2)
+    ax[i].set_ylim((-0.2, 1.2))
+    ax[i].axis("off")
+    ax[i].set_title("GPC a={} vn={} l={}".format(alpha[i], varn[i], length[i]));
+```
+
+
+    
+![png](belief_files/belief_23_0.png)
     
 

@@ -17,6 +17,7 @@ set(lib_header
   belief/gaussian.h
   belief/gmm.h
   belief/gmr.h
+  belief/gpc.h
   belief/gpr.h
   common/exception.h
   belief/helpers.h
@@ -49,6 +50,7 @@ set(lib_source
   belief/gaussian.cpp
   belief/gmm.cpp
   belief/gmr.cpp
+  belief/gpc.cpp
   belief/gpr.cpp
   belief/helpers.cpp
   belief/kernel_density.cpp

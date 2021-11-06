@@ -294,4 +294,15 @@ void export_py_belief(py::module& m_sup) {
       .def("numSamples", &sia::GPR::numSamples)
       .def("inputDimension", &sia::GPR::inputDimension)
       .def("outputDimension", &sia::GPR::outputDimension);
+
+  py::class_<sia::GPC>(m, "GPC")
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&, double,
+                    double, double>(),
+           py::arg("input_samples"), py::arg("output_samples"),
+           py::arg("alpha") = 0.01, py::arg("varf") = 0.1,
+           py::arg("length") = 10)
+      .def("predict", &sia::GPC::predict, py::arg("x"))
+      .def("numSamples", &sia::GPC::numSamples)
+      .def("inputDimension", &sia::GPC::inputDimension)
+      .def("outputDimension", &sia::GPC::outputDimension);
 }

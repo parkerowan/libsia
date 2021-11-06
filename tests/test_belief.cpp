@@ -158,6 +158,7 @@ TEST(Belief, Dirichlet) {
   a.setAlpha(Eigen::Vector2d{2, 3});
   EXPECT_DOUBLE_EQ(a.alpha()(0), 2);
   EXPECT_DOUBLE_EQ(a.alpha()(1), 3);
+  EXPECT_EQ(a.classify(), 1);
 
   // The mean and the mode are the same when the concentrations are the same
   double alpha = 3;
@@ -488,5 +489,27 @@ TEST(Belief, GPR) {
     ASSERT_EQ(g.dimension(), 2);
     EXPECT_NEAR(g.mean()(0), Y(0, i), EVAL_TOLERANCE);
     EXPECT_NEAR(g.mean()(1), Y(1, i), EVAL_TOLERANCE);
+  }
+}
+
+TEST(Belief, GPC) {
+  double alpha = 0.001;
+  double varf = 10;
+  double length = 0.01;
+  Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
+  Eigen::VectorXi Y = Eigen::VectorXi::Zero(10);
+  for (std::size_t i = 0; i < 10; i += 2) {
+    Y(i) = 1;
+  }
+  sia::GPC gpc(X, Y, alpha, varf, length);
+
+  EXPECT_EQ(gpc.numSamples(), 10);
+  EXPECT_EQ(gpc.inputDimension(), 3);
+  EXPECT_EQ(gpc.outputDimension(), 2);
+
+  for (std::size_t i = 0; i < 10; ++i) {
+    sia::Dirichlet p = gpc.predict(X.col(i));
+    ASSERT_EQ(p.dimension(), 2);
+    EXPECT_EQ(p.classify(), Y(i));
   }
 }

@@ -85,7 +85,7 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
          double varf,
          double length,
          GPR::CovFunction type)
-    : m_belief(input_samples.rows()),
+    : m_belief(output_samples.rows()),
       m_input_samples(input_samples),
       m_output_samples(output_samples),
       m_varn(varn),

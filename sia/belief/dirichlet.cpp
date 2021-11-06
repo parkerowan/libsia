@@ -25,6 +25,13 @@ Dirichlet::Dirichlet(const Eigen::VectorXd& alpha) : Dirichlet(alpha.size()) {
   setAlpha(alpha);
 }
 
+std::size_t Dirichlet::classify() const {
+  int r, c;
+  Eigen::VectorXd pi = mean();
+  pi.maxCoeff(&r, &c);
+  return r;
+}
+
 std::size_t Dirichlet::dimension() const {
   return m_alpha.size();
 }
@@ -49,11 +56,7 @@ double Dirichlet::logProb(const Eigen::VectorXd& x) const {
   }
 
   // Check that x sums to 1
-  Eigen::VectorXd xnorm = x;
-  if ((abs(x.sum() - 1.0)) > SMALL_NUMBER) {
-    LOG(WARNING) << "Sum of x is expected to be 1, applying normalization";
-    xnorm = x / x.sum();
-  }
+  Eigen::VectorXd xnorm = normalizeInput(x);
 
   // See: Sec 3 http://jonathan-huang.org/research/dirichlet/dirichlet.pdf
   double a = log(tgamma(m_alpha.sum()));
@@ -112,6 +115,15 @@ void Dirichlet::setAlpha(const Eigen::VectorXd& alpha) {
   for (std::size_t i = 0; i < dimension(); ++i) {
     m_gamma_dists.emplace_back(std::gamma_distribution<double>(alpha(i), 1));
   }
+}
+
+Eigen::VectorXd Dirichlet::normalizeInput(const Eigen::VectorXd& x) const {
+  Eigen::VectorXd xnorm = x;
+  if ((abs(x.sum() - 1.0)) > SMALL_NUMBER) {
+    LOG(WARNING) << "Sum of x is expected to be 1, applying normalization";
+    xnorm = x / x.sum();
+  }
+  return xnorm;
 }
 
 }  // namespace sia
