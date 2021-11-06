@@ -196,6 +196,9 @@ TEST(Belief, Dirichlet) {
   const auto v = a.vectorize();
   EXPECT_TRUE(b.devectorize(v));
   EXPECT_TRUE(b.alpha().isApprox(a.alpha()));
+
+  sia::Dirichlet c(b.alpha());
+  EXPECT_TRUE(c.alpha().isApprox(b.alpha()));
 }
 
 TEST(Belief, Particles) {
@@ -453,6 +456,8 @@ TEST(Belief, GMR) {
   std::vector<std::size_t> ix{0};
   std::vector<std::size_t> ox{1};
   sia::GMR gmr(gmm, ix, ox);
+  ASSERT_EQ(gmr.inputDimension(), 1);
+  ASSERT_EQ(gmr.outputDimension(), 1);
 
   sia::Gaussian y0 = gmr.predict(0 * Eigen::VectorXd::Ones(1));
   sia::Gaussian y1 = gmr.predict(6 * Eigen::VectorXd::Ones(1));

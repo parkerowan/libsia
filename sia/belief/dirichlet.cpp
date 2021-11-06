@@ -22,7 +22,7 @@ Dirichlet::Dirichlet(double alpha, double beta) : Dirichlet(2) {
 }
 
 Dirichlet::Dirichlet(const Eigen::VectorXd& alpha) : Dirichlet(alpha.size()) {
-  setAlpha(m_alpha);
+  setAlpha(alpha);
 }
 
 std::size_t Dirichlet::dimension() const {
