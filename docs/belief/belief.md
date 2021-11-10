@@ -582,6 +582,70 @@ for i in range(len(ax)):
     
 
 
+**Hyperparameter optimization.** Optimization dependencies are not included with `sia`, however GPR provides a loss function `GPR.negLogLikLoss()` of the training data and parameter access via `GPR.getHyperparameters()` that make it easy to plug in to a 3rd party optimzer, such as scipy.  Here we optimize the GPR hyperparameters using the L-BFGS-B algorithm.
+
+
+```python
+from scipy.optimize import minimize
+
+gpr_naive = sia.GPR(np.array([xtrain]), ytrain)
+gpr_optm = sia.GPR(np.array([xtrain]), ytrain)
+
+# Optimize the hyperparameters using the L-BFGS-B algorithm
+# and the negative log likelihood loss function provided by the sia.GPR
+res = minimize(gpr_optm.negLogLikLoss, 
+               x0=gpr_optm.getHyperparameters(),                
+               bounds=((2e-1, 10), (1e-2, 50), (1e-2, 50)),
+               options={'disp': True},
+               method='L-BFGS-B')
+gpr_optm.setHyperparameters(res.x)
+print(gpr_naive.getHyperparameters())
+print(gpr_optm.getHyperparameters())
+
+models = {
+    "Naive": gpr_naive,
+    "Optimized": gpr_optm
+}
+
+# Plot the raw data
+f, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 4))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+for i in range(len(models.values())):
+    key = list(models.keys())[i]
+    
+    # Evaluate it
+    xtest = np.linspace(-1, 5, 101)
+    gpr_mu = np.zeros((2, len(xtest)))
+    gpr_sig = np.zeros((2, len(xtest)))
+    for k in range(len(xtest)):
+        gaussian = models[key].predict(np.array([xtest[k]]))
+        gpr_mu[:, k] = gaussian.mean()
+        gpr_sig[:, k] = np.diag(gaussian.covariance())
+    
+    # Plot the belief for each axis and overlay the training data
+    ax[i].fill_between(xtest, gpr_mu[0, :] + 3 * gpr_sig[0, :], gpr_mu[0, :] - 3 * gpr_sig[0, :],  alpha=0.3)
+    ax[i].plot(xtest, gpr_mu[0, :], 'b', lw=2)
+    ax[i].fill_between(xtest, gpr_mu[1, :] + 3 * gpr_sig[1, :], gpr_mu[1, :] - 3 * gpr_sig[1, :],  alpha=0.3)
+    ax[i].plot(xtest, gpr_mu[1, :], 'r', lw=2)
+    ax[i].plot(xtrain, ytrain[0, :], '.b', ms=5)
+    ax[i].plot(xtrain, ytrain[1, :], '.r', ms=5)
+    ax[i].set_ylim((-2, 2))
+    ax[i].axis("off")
+    ax[i].set_title("GPR {}".format(key));
+```
+
+    [0.1 1.  1. ]
+    [0.2        1.73491115 1.08063708]
+
+
+
+    
+![png](belief_files/belief_23_1.png)
+    
+
+
 ## Gaussian Process Classification (GPC)
 
 `sia.GPC` implements a multi-dimensional Gaussian Process Classification model that predicts a Dirichlet distribution $p(y|x) = \mathcal{D}(x)$ to describe the softmax probability of seeing a class.  The dimension of the output Dirichlet distribution is based on the max class presented in the training data.  GPC has several hyperparameters $\alpha$, $\sigma_n^2$, and $l$.  The baseline concentration $1 > \alpha > 0$ controls the uncertainty of the Dirichlet prior.  The variance $\sigma_n^2$ determines the uncertainty of the likelihood, i.e. the measurement noise.  The length $l$ is a kernel smoothing term.  Effects of these hyperparameters are shown below.  The top row demonstrates $\alpha$ (`a`), middle shows $\sigma_n^2$ (`vn`), and the bottom shows $l$ (`l`).
@@ -632,6 +696,6 @@ for i in range(len(ax)):
 
 
     
-![png](belief_files/belief_23_0.png)
+![png](belief_files/belief_25_0.png)
     
 

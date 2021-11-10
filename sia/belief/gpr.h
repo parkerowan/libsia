@@ -28,9 +28,9 @@ class GPR : public Regression {
   /// basis blending.  The covariance type determines the kernel basis.
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
-               double varn = 0,
-               double varf = 0.1,
-               double length = 10,
+               double varn = 0.1,
+               double varf = 1,
+               double length = 1,
                CovFunction type = SQUARED_EXPONENTIAL);
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
@@ -46,6 +46,13 @@ class GPR : public Regression {
   std::size_t outputDimension() const override;
 
   std::size_t numSamples() const;
+
+  /// Computes the negative log likelihood loss on training data given a vector
+  /// of hyperparameters (varn, varf, length).  Hyperparameters are shared
+  /// across output channels.
+  double negLogLikLoss(const Eigen::VectorXd& p) const;
+  Eigen::VectorXd getHyperparameters() const;
+  void setHyperparameters(const Eigen::VectorXd& p);
 
  private:
   void cacheRegressionModels();
@@ -68,6 +75,7 @@ class GPR : public Regression {
   Gaussian m_belief;
   Kernel* m_kernel{nullptr};
   std::vector<RegressionModel> m_models;
+  bool m_heteroskedastic{true};
   Eigen::MatrixXd m_input_samples;
   Eigen::MatrixXd m_output_samples;
   Eigen::MatrixXd m_varn;

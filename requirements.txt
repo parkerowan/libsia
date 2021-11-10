@@ -1,6 +1,6 @@
 pybind11==2.6.1                  # Bindings
 numpy==1.19.4                    # Bindings
-scipy==1.5.4                     # Examples
+scipy==1.5.4                     # Examples, docs
 pandas==1.1.5                    # Examples
 matplotlib==3.3.3                # Examples
 seaborn==0.11.0                  # Examples

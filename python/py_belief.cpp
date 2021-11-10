@@ -282,7 +282,7 @@ void export_py_belief(py::module& m_sup) {
   gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,
                    double, double, sia::GPR::CovFunction>(),
           py::arg("input_samples"), py::arg("output_samples"),
-          py::arg("varn") = 0, py::arg("varf") = 0.1, py::arg("length") = 10,
+          py::arg("varn") = 0.1, py::arg("varf") = 1, py::arg("length") = 1,
           py::arg("type") = sia::GPR::CovFunction::SQUARED_EXPONENTIAL)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     const Eigen::MatrixXd&, double, double,
@@ -293,7 +293,10 @@ void export_py_belief(py::module& m_sup) {
       .def("predict", &sia::GPR::predict, py::arg("x"))
       .def("numSamples", &sia::GPR::numSamples)
       .def("inputDimension", &sia::GPR::inputDimension)
-      .def("outputDimension", &sia::GPR::outputDimension);
+      .def("outputDimension", &sia::GPR::outputDimension)
+      .def("negLogLikLoss", &sia::GPR::negLogLikLoss, py::arg("p"))
+      .def("getHyperparameters", &sia::GPR::getHyperparameters)
+      .def("setHyperparameters", &sia::GPR::setHyperparameters, py::arg("p"));
 
   py::class_<sia::GPC>(m, "GPC")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&, double,

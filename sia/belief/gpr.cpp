@@ -77,7 +77,9 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
                                        output_samples.cols()),
           varf,
           length,
-          type) {}
+          type) {
+  m_heteroskedastic = false;
+}
 
 GPR::GPR(const Eigen::MatrixXd& input_samples,
          const Eigen::MatrixXd& output_samples,
@@ -91,13 +93,6 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
       m_varn(varn),
       m_varf(varf),
       m_length(length) {
-  SIA_EXCEPTION(input_samples.cols() == output_samples.cols(),
-                "Inconsistent number of input cols to output cols");
-  SIA_EXCEPTION(input_samples.cols() == varn.cols(),
-                "Inconsistent number of input cols to varn cols");
-  SIA_EXCEPTION(output_samples.rows() == varn.rows(),
-                "Inconsistent number of output rows to varn rows");
-
   if (type == GPR::SQUARED_EXPONENTIAL) {
     m_kernel = new GPR::Kernel::SquaredExponential();
   } else {
@@ -145,8 +140,55 @@ std::size_t GPR::numSamples() const {
   return m_input_samples.cols();
 }
 
+double GPR::negLogLikLoss(const Eigen::VectorXd& p) const {
+  SIA_EXCEPTION(p.size() == 3, "Hyperparameter vector dim expected to be 3");
+
+  GPR gpr(m_input_samples, m_output_samples, p(0), p(1), p(2));
+  double neg_log_lik = 0;
+  for (std::size_t i = 0; i < gpr.numSamples(); ++i) {
+    const auto& x = m_input_samples.col(i);
+    const auto& y = m_output_samples.col(i);
+    neg_log_lik -= gpr.predict(x).logProb(y);
+  }
+  return neg_log_lik;
+}
+
+Eigen::VectorXd GPR::getHyperparameters() const {
+  if (m_heteroskedastic) {
+    LOG(WARNING) << "This GPR uses a heteroskedatic noise model, only "
+                    "returning the first element of the noise matrix";
+  }
+  return Eigen::Vector3d(m_varn(0, 0), m_varf, m_length);
+}
+
+void GPR::setHyperparameters(const Eigen::VectorXd& p) {
+  SIA_EXCEPTION(p.size() == 3, "Hyperparameter vector dim expected to be 3");
+
+  m_varn = p(0) * Eigen::MatrixXd::Ones(m_output_samples.rows(),
+                                        m_output_samples.cols());
+  m_varf = p(1);
+  m_length = p(2);
+
+  cacheRegressionModels();
+}
+
 void GPR::cacheRegressionModels() {
+  // Check dimensions
+  SIA_EXCEPTION(m_input_samples.cols() == m_output_samples.cols(),
+                "Inconsistent number of input cols to output cols");
+  SIA_EXCEPTION(m_input_samples.cols() == m_varn.cols(),
+                "Inconsistent number of input cols to varn cols");
+  SIA_EXCEPTION(m_output_samples.rows() == m_varn.rows(),
+                "Inconsistent number of output rows to varn rows");
+
+  // Check hyperparameters
+  SIA_EXCEPTION(m_varn(0, 0) > 0, "GPR expects hyperparameter varn to be > 0");
+  SIA_EXCEPTION(m_varf > 0, "GPR expects hyperparameter varf to be > 0");
+  SIA_EXCEPTION(m_length > 0, "GPR expects hyperparameter length to be > 0");
+
+  // Cache models
   std::size_t m = m_output_samples.rows();
+  m_models.clear();
   m_models.reserve(m);
   for (std::size_t i = 0; i < m; ++i) {
     const Eigen::VectorXd& Y = m_output_samples.row(i);
