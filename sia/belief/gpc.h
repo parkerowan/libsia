@@ -37,6 +37,11 @@ class GPC : public Regression {
                double alpha = 0.01,
                double varf = 0.1,
                double length = 10);
+  explicit GPC(const Eigen::MatrixXd& input_samples,
+               const std::vector<int>& output_samples,
+               double alpha = 0.01,
+               double varf = 0.1,
+               double length = 10);
   virtual ~GPC();
 
   /// Performs the regression $p(c|x)$.
@@ -46,10 +51,19 @@ class GPC : public Regression {
 
   std::size_t numSamples() const;
 
+  /// Computes the negative log likelihood loss on training data given a vector
+  /// of hyperparameters (alpha, varf, length).  Hyperparameters are shared
+  /// across output channels.
+  double negLogLikLoss(const Eigen::VectorXd& p) const;
+  Eigen::VectorXd getHyperparameters() const;
+  void setHyperparameters(const Eigen::VectorXd& p);
+
  private:
   void cacheRegressionModel();
   static std::size_t getNumClasses(const Eigen::VectorXi& x);
-  static Eigen::MatrixXd getOneHot(const Eigen::VectorXi& x);
+  static Eigen::VectorXd getOneHot(int x, std::size_t num_classes);
+  static Eigen::MatrixXd getOneHot(const Eigen::VectorXi& x,
+                                   std::size_t num_classes);
 
   Dirichlet m_belief;
   GPR* m_gpr;
