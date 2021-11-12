@@ -171,7 +171,7 @@ TEST(Belief, Dirichlet) {
   Eigen::Vector2d x{0.1, 0.9};
   double logprob =
       log(pow(x(0), alpha - 1) * pow(x(1), beta - 1) / std::beta(alpha, beta));
-  EXPECT_DOUBLE_EQ(b.logProb(x), logprob);
+  EXPECT_NEAR(b.logProb(x), logprob, 1e-6);
 
   // Expect samples outside of the support to return -inf
   EXPECT_DOUBLE_EQ(b.logProb(Eigen::Vector2d{-0.1, 0}), -INFINITY);
@@ -200,6 +200,10 @@ TEST(Belief, Dirichlet) {
 
   sia::Dirichlet c(b.alpha());
   EXPECT_TRUE(c.alpha().isApprox(b.alpha()));
+
+  sia::Dirichlet d(Eigen::Vector2d{0.370833, 0.321336});
+  EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), INFINITY);
+  EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), -INFINITY);
 }
 
 TEST(Belief, Particles) {

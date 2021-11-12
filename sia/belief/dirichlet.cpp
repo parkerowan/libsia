@@ -10,6 +10,7 @@
 namespace sia {
 
 #define SMALL_NUMBER 1e-6
+#define VERY_SMALL_NUMBER 1e-16
 
 Dirichlet::Dirichlet(std::size_t dimension)
     : Distribution(Generator::instance()) {
@@ -50,12 +51,14 @@ const Eigen::VectorXd Dirichlet::sample() {
 double Dirichlet::logProb(const Eigen::VectorXd& x) const {
   // Check if x is in the domain of the distribution
   for (std::size_t i = 0; i < dimension(); i++) {
-    if ((x(i) > 1.0) || (x(i) < 0.0)) {
+    if ((x(i) > (1.0 + SMALL_NUMBER)) || (x(i) < -SMALL_NUMBER)) {
+      LOG(WARNING) << "x(i) is " << x(i) << ", returning -INF";
       return -INFINITY;
     }
   }
 
-  // Check that x sums to 1
+  // Check that x sums to 1 and squashes the extrema of x to avoid a degenerate
+  // log likelihood
   Eigen::VectorXd xnorm = normalizeInput(x);
 
   // See: Sec 3 http://jonathan-huang.org/research/dirichlet/dirichlet.pdf
@@ -118,10 +121,13 @@ void Dirichlet::setAlpha(const Eigen::VectorXd& alpha) {
 }
 
 Eigen::VectorXd Dirichlet::normalizeInput(const Eigen::VectorXd& x) const {
-  Eigen::VectorXd xnorm = x;
+  // Apply a small correction to avoid the degenerate case at x = 0 where the
+  // log likelihood goes to infinity
+  Eigen::VectorXd xnorm =
+      (1 - 2 * VERY_SMALL_NUMBER) * x.array() + VERY_SMALL_NUMBER;
   if ((abs(x.sum() - 1.0)) > SMALL_NUMBER) {
     LOG(WARNING) << "Sum of x is expected to be 1, applying normalization";
-    xnorm = x / x.sum();
+    xnorm /= xnorm.sum();
   }
   return xnorm;
 }

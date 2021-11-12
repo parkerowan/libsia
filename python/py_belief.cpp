@@ -304,8 +304,16 @@ void export_py_belief(py::module& m_sup) {
            py::arg("input_samples"), py::arg("output_samples"),
            py::arg("alpha") = 0.01, py::arg("varf") = 0.1,
            py::arg("length") = 10)
+      .def(py::init<const Eigen::MatrixXd&, const std::vector<int>&, double,
+                    double, double>(),
+           py::arg("input_samples"), py::arg("output_samples"),
+           py::arg("alpha") = 0.01, py::arg("varf") = 0.1,
+           py::arg("length") = 10)
       .def("predict", &sia::GPC::predict, py::arg("x"))
       .def("numSamples", &sia::GPC::numSamples)
       .def("inputDimension", &sia::GPC::inputDimension)
-      .def("outputDimension", &sia::GPC::outputDimension);
+      .def("outputDimension", &sia::GPC::outputDimension)
+      .def("negLogLikLoss", &sia::GPC::negLogLikLoss, py::arg("p"))
+      .def("getHyperparameters", &sia::GPC::getHyperparameters)
+      .def("setHyperparameters", &sia::GPC::setHyperparameters, py::arg("p"));
 }

@@ -61,7 +61,6 @@ class GPC : public Regression {
  private:
   void cacheRegressionModel();
   static std::size_t getNumClasses(const Eigen::VectorXi& x);
-  static Eigen::VectorXd getOneHot(int x, std::size_t num_classes);
   static Eigen::MatrixXd getOneHot(const Eigen::VectorXi& x,
                                    std::size_t num_classes);
 

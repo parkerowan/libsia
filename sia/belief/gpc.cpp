@@ -74,11 +74,11 @@ double GPC::negLogLikLoss(const Eigen::VectorXd& p) const {
   GPC gpc(m_input_samples, m_output_samples, p(0), p(1), p(2));
   double neg_log_lik = 0;
   std::size_t c = outputDimension();
+  const Eigen::MatrixXd Y = getOneHot(m_output_samples, c);
   for (std::size_t i = 0; i < gpc.numSamples(); ++i) {
     const auto& x = m_input_samples.col(i);
-    const auto& y = m_output_samples.col(i);
-    const auto py = getOneHot(y, c);
-    neg_log_lik -= gpc.predict(x).logProb(py);
+    const auto& y = Y.col(i);
+    neg_log_lik -= gpc.predict(x).logProb(y);
   }
   return neg_log_lik;
 }
@@ -112,14 +112,6 @@ void GPC::cacheRegressionModel() {
 
 std::size_t GPC::getNumClasses(const Eigen::VectorXi& x) {
   return x.maxCoeff() + 1;
-}
-
-Eigen::VectorXd GPC::getOneHot(int x, std::size_t num_classes) {
-  assert(x < (int)num_classes);
-  assert(x >= 0);
-  Eigen::VectorXd y = Eigen::VectorXd::Zero(num_classes);
-  y(x) = 1.0;
-  return y;
 }
 
 // Returns a matrix of one-hot classifications [num classes x sum samples]
