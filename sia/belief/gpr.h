@@ -47,10 +47,10 @@ class GPR : public Regression {
 
   std::size_t numSamples() const;
 
-  /// Computes the negative log likelihood loss on training data given a vector
-  /// of hyperparameters (varn, varf, length).  Hyperparameters are shared
-  /// across output channels.
-  double negLogLikLoss(const Eigen::VectorXd& p) const;
+  /// Computes the negative log likelihood loss on training data and
+  /// hyperparameters (varn, varf, length).  Hyperparameters are shared across
+  /// output channels.
+  double negLogLikLoss();
   Eigen::VectorXd getHyperparameters() const;
   void setHyperparameters(const Eigen::VectorXd& p);
 

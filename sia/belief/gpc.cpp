@@ -68,17 +68,14 @@ std::size_t GPC::numSamples() const {
   return m_input_samples.cols();
 }
 
-double GPC::negLogLikLoss(const Eigen::VectorXd& p) const {
-  SIA_EXCEPTION(p.size() == 3, "Hyperparameter vector dim expected to be 3");
-
-  GPC gpc(m_input_samples, m_output_samples, p(0), p(1), p(2));
+double GPC::negLogLikLoss() {
   double neg_log_lik = 0;
   std::size_t c = outputDimension();
   const Eigen::MatrixXd Y = getOneHot(m_output_samples, c);
-  for (std::size_t i = 0; i < gpc.numSamples(); ++i) {
+  for (std::size_t i = 0; i < numSamples(); ++i) {
     const auto& x = m_input_samples.col(i);
     const auto& y = Y.col(i);
-    neg_log_lik -= gpc.predict(x).logProb(y);
+    neg_log_lik -= predict(x).logProb(y);
   }
   return neg_log_lik;
 }
@@ -97,6 +94,27 @@ void GPC::setHyperparameters(const Eigen::VectorXd& p) {
   cacheRegressionModel();
 }
 
+// Returns a matrix of one-hot classifications [num classes x sum samples]
+// TODO: move this to a discrete Categorical representation
+Eigen::MatrixXd GPC::getOneHot(const Eigen::VectorXi& x,
+                               std::size_t num_classes) {
+  int max_x = x.maxCoeff();
+  SIA_EXCEPTION(max_x < (int)num_classes,
+                "GPC expects the indices in x to be < number of classes");
+
+  int min_x = x.minCoeff();
+  SIA_EXCEPTION(min_x >= 0, "GPC expects the indices in x to be >= 0");
+
+  std::size_t n = x.size();
+  Eigen::MatrixXd Y = Eigen::MatrixXd::Zero(num_classes, n);
+  for (std::size_t i = 0; i < n; ++i) {
+    assert(x(i) < (int)num_classes);
+    assert(x(i) >= 0);
+    Y(x(i), i) = 1.0;
+  }
+  return Y;
+}
+
 void GPC::cacheRegressionModel() {
   // Section 4 in: https://arxiv.org/pdf/1805.10915.pdf
   std::size_t c = outputDimension();
@@ -112,19 +130,6 @@ void GPC::cacheRegressionModel() {
 
 std::size_t GPC::getNumClasses(const Eigen::VectorXi& x) {
   return x.maxCoeff() + 1;
-}
-
-// Returns a matrix of one-hot classifications [num classes x sum samples]
-Eigen::MatrixXd GPC::getOneHot(const Eigen::VectorXi& x,
-                               std::size_t num_classes) {
-  std::size_t n = x.size();
-  Eigen::MatrixXd Y = Eigen::MatrixXd::Zero(num_classes, n);
-  for (std::size_t i = 0; i < n; ++i) {
-    assert(x(i) < (int)num_classes);
-    assert(x(i) >= 0);
-    Y(x(i), i) = 1.0;
-  }
-  return Y;
 }
 
 }  // namespace sia

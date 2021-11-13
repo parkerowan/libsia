@@ -487,13 +487,23 @@ TEST(Belief, GPR) {
   EXPECT_EQ(gpr.outputDimension(), 2);
 
   // Is there a theoretical bound on the error given the hyperparameters?
+  double log_lik = 0;
   const double EVAL_TOLERANCE = 2e-1;
   for (std::size_t i = 0; i < 10; ++i) {
-    sia::Gaussian g = gpr.predict(X.col(i));
+    const auto& x = X.col(i);
+    const auto& y = Y.col(i);
+    sia::Gaussian g = gpr.predict(x);
     ASSERT_EQ(g.dimension(), 2);
-    EXPECT_NEAR(g.mean()(0), Y(0, i), EVAL_TOLERANCE);
-    EXPECT_NEAR(g.mean()(1), Y(1, i), EVAL_TOLERANCE);
+    EXPECT_NEAR(g.mean()(0), y(0), EVAL_TOLERANCE);
+    EXPECT_NEAR(g.mean()(1), y(1), EVAL_TOLERANCE);
+    log_lik += g.logProb(y);
   }
+
+  EXPECT_DOUBLE_EQ(gpr.negLogLikLoss(), -log_lik);
+  Eigen::VectorXd p = Eigen::Vector3d{0.1, 0.2, 0.3};
+  gpr.setHyperparameters(p);
+  const auto& pn = gpr.getHyperparameters();
+  EXPECT_TRUE(pn.isApprox(p));
 }
 
 TEST(Belief, GPC) {
@@ -511,9 +521,20 @@ TEST(Belief, GPC) {
   EXPECT_EQ(gpc.inputDimension(), 3);
   EXPECT_EQ(gpc.outputDimension(), 2);
 
+  double log_lik = 0;
+  Eigen::MatrixXd Yoh = sia::GPC::getOneHot(Y, 2);
   for (std::size_t i = 0; i < 10; ++i) {
-    sia::Dirichlet p = gpc.predict(X.col(i));
+    const auto& x = X.col(i);
+    const auto& yoh = Yoh.col(i);
+    sia::Dirichlet p = gpc.predict(x);
     ASSERT_EQ(p.dimension(), 2);
     EXPECT_EQ(p.classify(), Y(i));
+    log_lik += p.logProb(yoh);
   }
+
+  EXPECT_DOUBLE_EQ(gpc.negLogLikLoss(), -log_lik);
+  Eigen::VectorXd p = Eigen::Vector3d{0.1, 0.2, 0.3};
+  gpc.setHyperparameters(p);
+  const auto& pn = gpc.getHyperparameters();
+  EXPECT_TRUE(pn.isApprox(p));
 }

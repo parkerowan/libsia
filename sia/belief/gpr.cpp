@@ -140,15 +140,12 @@ std::size_t GPR::numSamples() const {
   return m_input_samples.cols();
 }
 
-double GPR::negLogLikLoss(const Eigen::VectorXd& p) const {
-  SIA_EXCEPTION(p.size() == 3, "Hyperparameter vector dim expected to be 3");
-
-  GPR gpr(m_input_samples, m_output_samples, p(0), p(1), p(2));
+double GPR::negLogLikLoss() {
   double neg_log_lik = 0;
-  for (std::size_t i = 0; i < gpr.numSamples(); ++i) {
+  for (std::size_t i = 0; i < numSamples(); ++i) {
     const auto& x = m_input_samples.col(i);
     const auto& y = m_output_samples.col(i);
-    neg_log_lik -= gpr.predict(x).logProb(y);
+    neg_log_lik -= predict(x).logProb(y);
   }
   return neg_log_lik;
 }

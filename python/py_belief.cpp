@@ -294,7 +294,7 @@ void export_py_belief(py::module& m_sup) {
       .def("numSamples", &sia::GPR::numSamples)
       .def("inputDimension", &sia::GPR::inputDimension)
       .def("outputDimension", &sia::GPR::outputDimension)
-      .def("negLogLikLoss", &sia::GPR::negLogLikLoss, py::arg("p"))
+      .def("negLogLikLoss", &sia::GPR::negLogLikLoss)
       .def("getHyperparameters", &sia::GPR::getHyperparameters)
       .def("setHyperparameters", &sia::GPR::setHyperparameters, py::arg("p"));
 
@@ -313,7 +313,7 @@ void export_py_belief(py::module& m_sup) {
       .def("numSamples", &sia::GPC::numSamples)
       .def("inputDimension", &sia::GPC::inputDimension)
       .def("outputDimension", &sia::GPC::outputDimension)
-      .def("negLogLikLoss", &sia::GPC::negLogLikLoss, py::arg("p"))
+      .def("negLogLikLoss", &sia::GPC::negLogLikLoss)
       .def("getHyperparameters", &sia::GPC::getHyperparameters)
       .def("setHyperparameters", &sia::GPC::setHyperparameters, py::arg("p"));
 }
