@@ -14,6 +14,7 @@ set(py_sources
   py_estimators.cpp
   py_math.cpp
   py_models.cpp
+  py_optimizers.cpp
   py_runner.cpp
   pysia.cpp
 )

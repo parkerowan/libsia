@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
-#include <iostream>
 
 TEST(Runner, Buffer) {
   sia::Buffer buffer(2, 10);

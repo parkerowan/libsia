@@ -28,6 +28,8 @@
 #include "sia/models/models.h"
 #include "sia/models/nonlinear_gaussian.h"
 #include "sia/models/simulate.h"
+#include "sia/optimizers/bayesian_optimizer.h"
+#include "sia/optimizers/gradient_descent.h"
 #include "sia/runner/buffer.h"
 #include "sia/runner/recorder.h"
 #include "sia/runner/runner.h"

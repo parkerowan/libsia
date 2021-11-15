@@ -11,6 +11,7 @@ cmake_policy(SET CMP0054 NEW)
 
 # Command line options
 option(TEST_COVERAGE "Generate a make coverage command" OFF)
+option(BUILD_EXAMPLES "Builds the examples" ON)
 option(PYTHON_BINDINGS "Make the python bindings" OFF)
 option(SPHINX_DOCS "Make the sphinx documentation" OFF)
 
@@ -109,7 +110,9 @@ add_subdirectory(tests)
 # ------------------------------------------------------------------------------
 # Add the example targets
 # ------------------------------------------------------------------------------
-add_subdirectory(examples)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 # ------------------------------------------------------------------------------
 # Setup the coverage reporting
