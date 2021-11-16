@@ -40,13 +40,13 @@ TEST(Optimizers, GradientDescent) {
   // bounds inactive at optimimum
   Eigen::VectorXd lb = Eigen::Vector2d{-10, -10};
   Eigen::VectorXd ub = Eigen::Vector2d{10, 10};
-  sia::GradientDescent a(lb, ub, 1e-6, 0.5);
+  sia::GradientDescent a(lb, ub);
   Eigen::VectorXd xopt = a.minimize(quadratic, Eigen::Vector2d{1.2, -2.5});
   EXPECT_NEAR(xopt(0), 0, 1e-6);
   EXPECT_NEAR(xopt(1), 0, 1e-6);
   EXPECT_EQ(a.dimension(), 2);
 
-  // bounds inactive at optimimum - multiple starts
+  // bounds inactive at optimimum - 3 manual multiple starts
   xopt = a.minimize(quadratic,
                     std::vector<Eigen::VectorXd>{Eigen::Vector2d{1.2, -2.5},
                                                  Eigen::Vector2d{-15, 13.0},
@@ -57,10 +57,18 @@ TEST(Optimizers, GradientDescent) {
   // bounds active at optimum
   lb = Eigen::Vector2d{-5, -5};
   ub = Eigen::Vector2d{5, -2};
-  sia::GradientDescent b(lb, ub, 1e-6, 0.5);
+  sia::GradientDescent b(lb, ub);
   xopt = b.minimize(quadratic, Eigen::Vector2d{1.2, -6});
   EXPECT_NEAR(xopt(0), 0, 1e-6);
   EXPECT_NEAR(xopt(1), -2, 1e-6);
+
+  // bounds active at 2 optima - 10 internal multiple starts
+  lb = Eigen::Vector2d{0, -10};
+  ub = Eigen::Vector2d{7, 10};
+  sia::GradientDescent c(lb, ub, 10);
+  xopt = c.minimize(branin);
+  EXPECT_NEAR(xopt(0), M_PI, 1e-3);
+  EXPECT_NEAR(xopt(1), 2.275, 1e-3);
 }
 
 TEST(Optimizers, BayesianOptimizer) {

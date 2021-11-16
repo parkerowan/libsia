@@ -8,11 +8,29 @@ void export_py_optimizers(py::module& m_sup) {
   py::module m = m_sup;
 
   py::class_<sia::GradientDescent>(m, "GradientDescent")
-      .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&, double,
-                    double, double>(),
-           py::arg("lower"), py::arg("upper"), py::arg("tol") = 1e-6,
+      .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&, std::size_t,
+                    std::size_t, double, double, double>(),
+           py::arg("lower"), py::arg("upper"), py::arg("n_starts") = 1,
+           py::arg("max_iter") = 500, py::arg("tol") = 1e-6,
            py::arg("eta") = 0.5, py::arg("delta") = 0.5)
       .def("dimension", &sia::GradientDescent::dimension)
+      .def("lower", &sia::GradientDescent::lower)
+      .def("upper", &sia::GradientDescent::upper)
+      .def("setNstarts", &sia::GradientDescent::setNstarts, py::arg("n_starts"))
+      .def("nstarts", &sia::GradientDescent::nstarts)
+      .def("setMaxIter", &sia::GradientDescent::setMaxIter, py::arg("max_iter"))
+      .def("maxIter", &sia::GradientDescent::maxIter)
+      .def("setTol", &sia::GradientDescent::setTol, py::arg("tol"))
+      .def("tol", &sia::GradientDescent::tol)
+      .def("setEta", &sia::GradientDescent::setEta, py::arg("eta"))
+      .def("eta", &sia::GradientDescent::eta)
+      .def("setDelta", &sia::GradientDescent::setDelta, py::arg("delta"))
+      .def("delta", &sia::GradientDescent::delta)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
+               std::function<double(const Eigen::VectorXd&)>)>(
+               &sia::GradientDescent::minimize),
+           py::arg("f"))
       .def("minimize",
            static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
                std::function<double(const Eigen::VectorXd&)>,
