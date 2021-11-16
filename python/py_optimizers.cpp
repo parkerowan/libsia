@@ -26,13 +26,16 @@ void export_py_optimizers(py::module& m_sup) {
            py::arg("f"), py::arg("x0"));
 
   //   py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer")
-  //       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&>(),
-  //            py::arg("lower"), py::arg("upper"))
+  //       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
+  //                     sia::ObjectiveType, sia::AcquistionType, std::size_t,
+  //                     double, double, double>(),
+  //            py::arg("lower"), py::arg("upper"), py::arg("objective"),
+  //            py::arg("acquisition"), py::arg("nstarts"), py::arg("tol"),
+  //            py::arg("eta"), py::arg("delta"))
   //       .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
   //       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint,
   //       py::arg("x"),
   //            py::arg("y"))
   //       .def("updateModel", &sia::BayesianOptimizer::updateModel)
-  //       .def("getSolution", &sia::BayesianOptimizer::getSolution)
-  //       .def("gpr", &sia::BayesianOptimizer::gpr);
+  //       .def("getSolution", &sia::BayesianOptimizer::getSolution);
 }
