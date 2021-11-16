@@ -29,20 +29,20 @@ void export_py_optimizers(py::module& m_sup) {
       .value("GPR_OBJECTIVE", sia::ObjectiveType::GPR_OBJECTIVE)
       .export_values();
 
-  py::enum_<sia::AcquistionType>(m, "AcquistionType")
+  py::enum_<sia::AcquisitionType>(m, "AcquisitionType")
       .value("PROBABILITY_IMPROVEMENT",
-             sia::AcquistionType::PROBABILITY_IMPROVEMENT)
-      .value("EXPECTED_IMPROVEMENT", sia::AcquistionType::EXPECTED_IMPROVEMENT)
+             sia::AcquisitionType::PROBABILITY_IMPROVEMENT)
+      .value("EXPECTED_IMPROVEMENT", sia::AcquisitionType::EXPECTED_IMPROVEMENT)
       .value("UPPER_CONFIDENCE_BOUND",
-             sia::AcquistionType::UPPER_CONFIDENCE_BOUND)
+             sia::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
   py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer")
       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
-                    sia::ObjectiveType, sia::AcquistionType, std::size_t>(),
+                    sia::ObjectiveType, sia::AcquisitionType, std::size_t>(),
            py::arg("lower"), py::arg("upper"),
            py::arg("objective") = sia::ObjectiveType::GPR_OBJECTIVE,
-           py::arg("acquisition") = sia::AcquistionType::EXPECTED_IMPROVEMENT,
+           py::arg("acquisition") = sia::AcquisitionType::EXPECTED_IMPROVEMENT,
            py::arg("nstarts") = 10)
       .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),
@@ -57,6 +57,8 @@ void export_py_optimizers(py::module& m_sup) {
   py::class_<sia::SurrogateModel, PySurrogateModel>(m, "SurrogateModel")
       .def("addDataPoint", &sia::SurrogateModel::addDataPoint, py::arg("x"),
            py::arg("y"))
+      .def("inputData", &sia::SurrogateModel::inputData)
+      .def("outputData", &sia::SurrogateModel::outputData)
       .def("initialized", &sia::SurrogateModel::initialized)
       .def("updateModel", &sia::SurrogateModel::updateModel)
       .def("objective", &sia::SurrogateModel::objective, py::arg("x"),
@@ -70,6 +72,8 @@ void export_py_optimizers(py::module& m_sup) {
            py::arg("varf") = 1, py::arg("length") = 1, py::arg("beta") = 1)
       .def("addDataPoint", &sia::GPRSurrogateModel::addDataPoint, py::arg("x"),
            py::arg("y"))
+      .def("inputData", &sia::GPRSurrogateModel::inputData)
+      .def("outputData", &sia::GPRSurrogateModel::outputData)
       .def("initialized", &sia::GPRSurrogateModel::initialized)
       .def("updateModel", &sia::GPRSurrogateModel::updateModel)
       .def("objective", &sia::GPRSurrogateModel::objective, py::arg("x"),

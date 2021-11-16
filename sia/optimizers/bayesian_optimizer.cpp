@@ -19,7 +19,7 @@ static double cdf(double x) {
 BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
                                      const Eigen::VectorXd& upper,
                                      ObjectiveType objective,
-                                     AcquistionType acquisition,
+                                     AcquisitionType acquisition,
                                      std::size_t nstarts)
     : m_sampler(lower, upper),
       m_optimizer(lower, upper),
@@ -81,6 +81,14 @@ void SurrogateModel::addDataPoint(const Eigen::VectorXd& x, double y) {
   m_output_data.emplace_back(y);
 }
 
+const std::vector<Eigen::VectorXd>& SurrogateModel::inputData() const {
+  return m_input_data;
+}
+
+const std::vector<double>& SurrogateModel::outputData() const {
+  return m_output_data;
+}
+
 GPRSurrogateModel::GPRSurrogateModel(double varn,
                                      double varf,
                                      double length,
@@ -119,7 +127,7 @@ const Gaussian& GPRSurrogateModel::objective(const Eigen::VectorXd& x) {
 
 double GPRSurrogateModel::acquisition(const Eigen::VectorXd& x,
                                       double target,
-                                      AcquistionType type) {
+                                      AcquisitionType type) {
   SIA_EXCEPTION(initialized(),
                 "GPRSurrogateModel has not be initialized, call updateModel()");
 
@@ -138,7 +146,7 @@ double GPRSurrogateModel::acquisition(const Eigen::VectorXd& x,
       return mu + m_beta * std;
   }
 
-  LOG(ERROR) << "GPRSurrogateModel received unsupported AcquistionType";
+  LOG(ERROR) << "GPRSurrogateModel received unsupported AcquisitionType";
   return 0;
 }
 

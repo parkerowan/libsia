@@ -38,7 +38,7 @@ class PySurrogateModel : public sia::SurrogateModel {
   // Trampoline (need one for each virtual function)
   double acquisition(const Eigen::VectorXd& x,
                      double target,
-                     sia::AcquistionType type) override {
+                     sia::AcquisitionType type) override {
     PYBIND11_OVERRIDE_PURE(double, sia::SurrogateModel, acquisition, x, target,
                            type);
   }
