@@ -64,8 +64,11 @@ TEST(Optimizers, GradientDescent) {
 }
 
 TEST(Optimizers, BayesianOptimizer) {
-  sia::BayesianOptimizer bo(-Eigen::VectorXd::Ones(1),
-                            Eigen::VectorXd::Ones(1));
+  sia::GPRObjectiveModel objective;
+  sia::ExpectedImprovement acquisition(objective);
+  Eigen::VectorXd lb = -Eigen::VectorXd::Ones(1);
+  Eigen::VectorXd ub = Eigen::VectorXd::Ones(1);
+  sia::BayesianOptimizer bo(objective, acquisition, lb, ub);
 
   for (std::size_t i = 0; i < 20; ++i) {
     Eigen::VectorXd x = bo.selectNextSample();
@@ -74,5 +77,5 @@ TEST(Optimizers, BayesianOptimizer) {
     bo.updateModel();
   }
   Eigen::VectorXd xopt = bo.getSolution();
-  EXPECT_NEAR(xopt(0), 0, 5e-2);
+  EXPECT_NEAR(xopt(0), 0, 1e-2);
 }

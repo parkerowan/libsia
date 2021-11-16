@@ -5,35 +5,100 @@
 #include "sia/common/exception.h"
 #include "sia/optimizers/gradient_descent.h"
 
+#include <cmath>
+
 namespace sia {
 
-BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
-                                     const Eigen::VectorXd& upper)
-    : m_sampler(lower, upper) {}
+static double pdf(double x) {
+  return 1 / sqrt(2 * M_PI) * exp(-pow(x, 2) / 2);
+}
+
+static double cdf(double x) {
+  return (1 + erf(x / sqrt(2))) / 2;
+}
+
+BayesianOptimizer::BayesianOptimizer(ObjectiveModel& objective,
+                                     AcquisitionModel& acquisition,
+                                     const Eigen::VectorXd& lower,
+                                     const Eigen::VectorXd& upper,
+                                     std::size_t nstarts,
+                                     double tol,
+                                     double eta,
+                                     double delta)
+    : m_objective(objective),
+      m_acquisition(acquisition),
+      m_sampler(lower, upper),
+      m_nstarts(nstarts),
+      m_tol(tol),
+      m_eta(eta),
+      m_delta(delta) {}
 
 Eigen::VectorXd BayesianOptimizer::selectNextSample() {
   // If there is no model yet, just sample uniformly
-  if (m_gpr == nullptr) {
+  if (!m_objective.initialized()) {
     return m_sampler.sample();
   }
 
   // Optimize the acquisition model
-  // Hard-coded upper-confidence bound (UCB) with 0.1\sigma
-  GradientDescent optm(m_sampler.lower(), m_sampler.upper(), m_tol, m_beta);
-  auto acquisition_fcn = [=](const Eigen::VectorXd& x) {
-    double beta = 0.1;
-    Gaussian g = m_gpr->predict(x);
-    return -(g.mean()(0) + beta * sqrt(g.covariance()(0, 0)));
+  double target = m_objective.evaluate(getSolution()).mean()(0);
+  GradientDescent optm(m_sampler.lower(), m_sampler.upper(), m_tol, m_eta,
+                       m_delta);
+  auto f = [=](const Eigen::VectorXd& x) {
+    return -m_acquisition.evaluate(x, target);
   };
-  return optm.minimize(acquisition_fcn, m_sampler.samples(m_nstarts));
+  return optm.minimize(f, m_sampler.samples(m_nstarts));
 }
 
 void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x, double y) {
+  m_objective.addDataPoint(x, y);
+}
+
+void BayesianOptimizer::updateModel() {
+  m_objective.updateModel();
+}
+
+Eigen::VectorXd BayesianOptimizer::getSolution() {
+  if (!m_objective.initialized()) {
+    return m_sampler.sample();
+  }
+
+  // Optimize the objective function model
+  GradientDescent optm(m_sampler.lower(), m_sampler.upper(), m_tol, m_eta,
+                       m_delta);
+  auto f = [=](const Eigen::VectorXd& x) {
+    return -m_objective.evaluate(x).mean()(0);
+  };
+  return optm.minimize(f, m_sampler.samples(m_nstarts));
+}
+
+ObjectiveModel& BayesianOptimizer::objective() {
+  return m_objective;
+}
+
+AcquisitionModel& BayesianOptimizer::acquisition() {
+  return m_acquisition;
+}
+
+GPRObjectiveModel::GPRObjectiveModel(double varn, double varf, double length)
+    : m_varn(varn), m_varf(varf), m_length(length) {}
+
+const Gaussian& GPRObjectiveModel::evaluate(const Eigen::VectorXd& x) {
+  SIA_EXCEPTION(initialized(),
+                "GPRObjectiveModel has not be initialized, call updateModel()");
+  return m_gpr->predict(x);
+}
+
+void GPRObjectiveModel::addDataPoint(const Eigen::VectorXd& x, double y) {
   m_input_data.emplace_back(x);
   m_output_data.emplace_back(y);
 }
 
-void BayesianOptimizer::updateModel() {
+void GPRObjectiveModel::updateModel() {
+  SIA_EXCEPTION(m_input_data.size() > 0,
+                "GPRObjectiveModel expects data points to be added before "
+                "calling updateModel()");
+  assert(m_input_data.size() == m_output_data.size());
+
   // TODO:
   // - abstract the surrogate objective function model (support for regression
   // vs binary classification)
@@ -47,33 +112,48 @@ void BayesianOptimizer::updateModel() {
   }
   Eigen::MatrixXd y = Eigen::Map<Eigen::MatrixXd>(m_output_data.data(), 1,
                                                   m_output_data.size());
-  m_gpr = new GPR(X, y, 1e-4, 1, 1);
+  m_gpr = new GPR(X, y, m_varn, m_varf, m_length);
 }
 
-Eigen::VectorXd BayesianOptimizer::getSolution() {
-  if (m_gpr == nullptr) {
-    return m_sampler.sample();
-  }
-
-  std::size_t ntest = 100;
-  std::vector<Eigen::VectorXd> xtest = m_sampler.samples(ntest);
-  std::vector<double> ytest;
-  for (std::size_t i = 0; i < ntest; ++i) {
-    // Compute the acquisition model for a sample
-    Gaussian g = m_gpr->predict(xtest[i]);
-    double mu = g.mean()(0);
-    ytest.emplace_back(mu);
-  }
-
-  // Select the max of the function samples
-  Eigen::VectorXd Y = Eigen::Map<Eigen::VectorXd>(ytest.data(), ytest.size());
-  int imax;
-  Y.maxCoeff(&imax);
-  return xtest[imax];
+bool GPRObjectiveModel::initialized() const {
+  return m_gpr != nullptr;
 }
 
-GPR& BayesianOptimizer::gpr() {
-  return *m_gpr;
+AcquisitionModel::AcquisitionModel(ObjectiveModel& objective)
+    : m_objective(objective) {}
+
+ProbabilityImprovement::ProbabilityImprovement(ObjectiveModel& objective)
+    : AcquisitionModel(objective) {}
+
+double ProbabilityImprovement::evaluate(const Eigen::VectorXd& x,
+                                        double target) {
+  const auto& p = m_objective.evaluate(x);
+  double mu = p.mean()(0);
+  double std = sqrt(p.covariance()(0, 0));
+  return cdf((mu - target) / std);
+}
+
+ExpectedImprovement::ExpectedImprovement(ObjectiveModel& objective)
+    : AcquisitionModel(objective) {}
+
+double ExpectedImprovement::evaluate(const Eigen::VectorXd& x, double target) {
+  const auto& p = m_objective.evaluate(x);
+  double mu = p.mean()(0);
+  double std = sqrt(p.covariance()(0, 0));
+  return (mu - target) * cdf((mu - target) / std) +
+         std * pdf((mu - target) / std);
+}
+
+UpperConfidenceBound::UpperConfidenceBound(ObjectiveModel& objective,
+                                           double beta)
+    : AcquisitionModel(objective), m_beta(beta) {}
+
+double UpperConfidenceBound::evaluate(const Eigen::VectorXd& x, double target) {
+  (void)(target);
+  const auto& p = m_objective.evaluate(x);
+  double mu = p.mean()(0);
+  double std = sqrt(p.covariance()(0, 0));
+  return mu + m_beta * std;
 }
 
 }  // namespace sia
