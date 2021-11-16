@@ -13,5 +13,36 @@
 
 namespace py = pybind11;
 
+/// SurrogateModel trampoline class
+class PySurrogateModel : public sia::SurrogateModel {
+ public:
+  // Inherit the constructors
+  using sia::SurrogateModel::SurrogateModel;
+
+  // Trampoline (need one for each virtual function)
+  bool initialized() const override {
+    PYBIND11_OVERRIDE_PURE(bool, sia::SurrogateModel, initialized);
+  }
+
+  // Trampoline (need one for each virtual function)
+  void updateModel() override {
+    PYBIND11_OVERRIDE_PURE(void, sia::SurrogateModel, updateModel);
+  }
+
+  // Trampoline (need one for each virtual function)
+  const sia::Distribution& objective(const Eigen::VectorXd& x) override {
+    PYBIND11_OVERRIDE_PURE(sia::Distribution&, sia::SurrogateModel, objective,
+                           x);
+  }
+
+  // Trampoline (need one for each virtual function)
+  double acquisition(const Eigen::VectorXd& x,
+                     double target,
+                     sia::AcquistionType type) override {
+    PYBIND11_OVERRIDE_PURE(double, sia::SurrogateModel, acquisition, x, target,
+                           type);
+  }
+};
+
 // Define module
 void export_py_optimizers(py::module& m_sup);

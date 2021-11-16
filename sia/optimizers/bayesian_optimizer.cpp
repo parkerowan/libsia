@@ -27,43 +27,43 @@ BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
       m_nstarts(nstarts) {
   switch (objective) {
     case GPR_OBJECTIVE:
-      m_objective = new GPRObjectiveModel();
+      m_surrogate = new GPRSurrogateModel();
       break;
   }
-  SIA_EXCEPTION(m_objective != nullptr,
+  SIA_EXCEPTION(m_surrogate != nullptr,
                 "BayesianOptimizer received unsupported ObjectiveType");
 }
 
 Eigen::VectorXd BayesianOptimizer::selectNextSample() {
   // If there is no model yet, just sample uniformly
-  if (!m_objective->initialized()) {
+  if (!m_surrogate->initialized()) {
     return m_sampler.sample();
   }
 
   // Optimize the acquisition model
-  double target = m_objective->objective(getSolution()).mean()(0);
+  double target = m_surrogate->objective(getSolution()).mean()(0);
   auto f = [=](const Eigen::VectorXd& x) {
-    return -m_objective->acquisition(x, target, m_acquisition_type);
+    return -m_surrogate->acquisition(x, target, m_acquisition_type);
   };
   return m_optimizer.minimize(f, m_sampler.samples(m_nstarts));
 }
 
 void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x, double y) {
-  m_objective->addDataPoint(x, y);
+  m_surrogate->addDataPoint(x, y);
 }
 
 void BayesianOptimizer::updateModel() {
-  m_objective->updateModel();
+  m_surrogate->updateModel();
 }
 
 Eigen::VectorXd BayesianOptimizer::getSolution() {
-  if (!m_objective->initialized()) {
+  if (!m_surrogate->initialized()) {
     return m_sampler.sample();
   }
 
   // Optimize the objective function model
   auto f = [=](const Eigen::VectorXd& x) {
-    return -m_objective->objective(x).mean()(0);
+    return -m_surrogate->objective(x).mean()(0);
   };
   return m_optimizer.minimize(f, m_sampler.samples(m_nstarts));
 }
@@ -72,35 +72,33 @@ GradientDescent& BayesianOptimizer::optimizer() {
   return m_optimizer;
 }
 
-ObjectiveModel& BayesianOptimizer::objective() {
-  return *m_objective;
+SurrogateModel& BayesianOptimizer::surrogate() {
+  return *m_surrogate;
 }
 
-void ObjectiveModel::addDataPoint(const Eigen::VectorXd& x, double y) {
+void SurrogateModel::addDataPoint(const Eigen::VectorXd& x, double y) {
   m_input_data.emplace_back(x);
   m_output_data.emplace_back(y);
 }
 
-GPRObjectiveModel::GPRObjectiveModel(double varn,
+GPRSurrogateModel::GPRSurrogateModel(double varn,
                                      double varf,
                                      double length,
                                      double beta)
     : m_varn(varn), m_varf(varf), m_length(length), m_beta(beta) {}
 
-bool GPRObjectiveModel::initialized() const {
+bool GPRSurrogateModel::initialized() const {
   return m_gpr != nullptr;
 }
 
-void GPRObjectiveModel::updateModel() {
+void GPRSurrogateModel::updateModel() {
   SIA_EXCEPTION(m_input_data.size() > 0,
-                "GPRObjectiveModel expects data points to be added before "
+                "GPRSurrogateModel expects data points to be added before "
                 "calling updateModel()");
   assert(m_input_data.size() == m_output_data.size());
 
   // TODO:
-  // - abstract the surrogate objective function model (support for regression
-  // vs binary classification)
-  // - add flag to optimize the hyperparameters
+  // - add flag to optimize the GPR hyperparameters
   // - add efficient incremental update to the GPR class
   std::size_t ndim = m_input_data[0].size();
   std::size_t nsamples = m_input_data.size();
@@ -113,17 +111,17 @@ void GPRObjectiveModel::updateModel() {
   m_gpr = new GPR(X, y, m_varn, m_varf, m_length);
 }
 
-const Gaussian& GPRObjectiveModel::objective(const Eigen::VectorXd& x) {
+const Gaussian& GPRSurrogateModel::objective(const Eigen::VectorXd& x) {
   SIA_EXCEPTION(initialized(),
-                "GPRObjectiveModel has not be initialized, call updateModel()");
+                "GPRSurrogateModel has not be initialized, call updateModel()");
   return m_gpr->predict(x);
 }
 
-double GPRObjectiveModel::acquisition(const Eigen::VectorXd& x,
+double GPRSurrogateModel::acquisition(const Eigen::VectorXd& x,
                                       double target,
                                       AcquistionType type) {
   SIA_EXCEPTION(initialized(),
-                "GPRObjectiveModel has not be initialized, call updateModel()");
+                "GPRSurrogateModel has not be initialized, call updateModel()");
 
   // Evaluate the acquisition function
   const auto& p = objective(x);
@@ -140,7 +138,7 @@ double GPRObjectiveModel::acquisition(const Eigen::VectorXd& x,
       return mu + m_beta * std;
   }
 
-  LOG(ERROR) << "GPRObjectiveModel received unsupported AcquistionType";
+  LOG(ERROR) << "GPRSurrogateModel received unsupported AcquistionType";
   return 0;
 }
 

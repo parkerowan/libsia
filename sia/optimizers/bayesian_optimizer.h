@@ -13,7 +13,8 @@
 
 namespace sia {
 
-class ObjectiveModel;
+// Forward declaration
+class SurrogateModel;
 
 /// Type of objective model
 enum ObjectiveType {
@@ -64,35 +65,27 @@ class BayesianOptimizer {
   void addDataPoint(const Eigen::VectorXd& x, double y);
   void updateModel();
   Eigen::VectorXd getSolution();
-
-  // Access to optimizer
   GradientDescent& optimizer();
-
-  // Access to objective model
-  ObjectiveModel& objective();
+  SurrogateModel& surrogate();
 
  private:
   Uniform m_sampler;
   GradientDescent m_optimizer;
-  ObjectiveModel* m_objective{nullptr};
+  SurrogateModel* m_surrogate{nullptr};
   AcquistionType m_acquisition_type;
   std::size_t m_nstarts{10};
 };
 
-//
-// Objective models
-//
-
-class ObjectiveModel {
+/// The surrogate model provides a statistical approximation of the objective
+/// function and a corresponding acquisition function.
+/// - Objective: Function R^n -> p(y) that approximates the true objective
+/// - Acqusition: Utility function R^n -> R for selecting the next data point
+class SurrogateModel {
  public:
-  virtual void addDataPoint(const Eigen::VectorXd& x, double y);
+  void addDataPoint(const Eigen::VectorXd& x, double y);
   virtual bool initialized() const = 0;
   virtual void updateModel() = 0;
-
-  /// Function R^n -> p(y) that statistically approximates the objective
   virtual const Distribution& objective(const Eigen::VectorXd& x) = 0;
-
-  /// Utility function R^n -> R for selecting the next data point
   virtual double acquisition(const Eigen::VectorXd& x,
                              double target,
                              AcquistionType type) = 0;
@@ -102,14 +95,14 @@ class ObjectiveModel {
   std::vector<double> m_output_data;
 };
 
-/// Models the objective function using a GPR regression model.
-class GPRObjectiveModel : public ObjectiveModel {
+/// Surrogate using a GPR to model the objective.
+class GPRSurrogateModel : public SurrogateModel {
  public:
-  explicit GPRObjectiveModel(double varn = 1e-4,
+  explicit GPRSurrogateModel(double varn = 1e-4,
                              double varf = 1,
                              double length = 1,
                              double beta = 1);
-  virtual ~GPRObjectiveModel() = default;
+  virtual ~GPRSurrogateModel() = default;
   bool initialized() const override;
   void updateModel() override;
   const Gaussian& objective(const Eigen::VectorXd& x) override;
@@ -124,5 +117,7 @@ class GPRObjectiveModel : public ObjectiveModel {
   double m_beta;
   GPR* m_gpr{nullptr};
 };
+
+// TODO: Add support for Binary classification objective
 
 }  // namespace sia
