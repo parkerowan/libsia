@@ -44,7 +44,6 @@ class GPR : public Regression {
   const Gaussian& predict(const Eigen::VectorXd& x) override;
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-
   std::size_t numSamples() const;
 
   /// Computes the negative log likelihood loss on training data and
