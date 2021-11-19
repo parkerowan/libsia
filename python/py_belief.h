@@ -70,6 +70,29 @@ class PyDistribution : public sia::Distribution {
   }
 };
 
+/// Inference trampoline class
+class PyInference : public sia::Inference {
+ public:
+  // Inherit the constructors
+  using sia::Inference::Inference;
+
+  // Trampoline (need one for each virtual function)
+  const sia::Distribution& predict(const Eigen::VectorXd& x) override {
+    PYBIND11_OVERRIDE_PURE(const sia::Distribution&, sia::Inference, predict,
+                           x);
+  }
+
+  // Trampoline (need one for each virtual function)
+  std::size_t inputDimension() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, inputDimension);
+  }
+
+  // Trampoline (need one for each virtual function)
+  std::size_t outputDimension() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDimension);
+  }
+};
+
 /// Kernel trampoline class
 class PyKernel : public sia::Kernel {
  public:

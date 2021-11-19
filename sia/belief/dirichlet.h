@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "sia/belief/categorical.h"
 #include "sia/belief/distribution.h"
 
 #include <Eigen/Dense>
@@ -23,7 +24,6 @@ class Dirichlet : public Distribution {
   /// Creates a multivariate Dirichlet from vector of concentrations.
   explicit Dirichlet(const Eigen::VectorXd& alpha);
   virtual ~Dirichlet() = default;
-  std::size_t classify() const;
   std::size_t dimension() const override;
   const Eigen::VectorXd sample() override;
   double logProb(const Eigen::VectorXd& x) const override;
@@ -32,6 +32,9 @@ class Dirichlet : public Distribution {
   const Eigen::MatrixXd covariance() const override;
   const Eigen::VectorXd vectorize() const override;
   bool devectorize(const Eigen::VectorXd& data) override;
+
+  Categorical categorical() const;
+  std::size_t classify() const;
 
   const Eigen::VectorXd& alpha() const;
   void setAlpha(const Eigen::VectorXd& alpha);

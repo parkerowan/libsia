@@ -12,6 +12,7 @@ set(lib_libs
 
 set(lib_header
   sia.h
+  belief/categorical.h
   belief/dirichlet.h
   belief/distribution.h
   belief/gaussian.h
@@ -47,6 +48,7 @@ set(lib_header
 )
 
 set(lib_source
+  belief/categorical.cpp
   belief/dirichlet.cpp
   belief/distribution.cpp
   belief/gaussian.cpp

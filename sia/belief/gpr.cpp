@@ -136,10 +136,6 @@ std::size_t GPR::outputDimension() const {
   return m_output_samples.rows();
 }
 
-std::size_t GPR::numSamples() const {
-  return m_input_samples.cols();
-}
-
 double GPR::negLogLikLoss() {
   double neg_log_lik = 0;
   for (std::size_t i = 0; i < numSamples(); ++i) {
@@ -167,6 +163,10 @@ void GPR::setHyperparameters(const Eigen::VectorXd& p) {
   m_length = p(2);
 
   cacheRegressionModels();
+}
+
+std::size_t GPR::numSamples() const {
+  return m_input_samples.cols();
 }
 
 void GPR::cacheRegressionModels() {

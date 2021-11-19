@@ -16,7 +16,7 @@ namespace sia {
 ///
 /// References:
 /// [1]: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
-class GPR : public Regression {
+class GPR : public Inference {
  public:
   /// Supported basis/kernel functions for covariance
   enum CovFunction { SQUARED_EXPONENTIAL };
@@ -40,11 +40,10 @@ class GPR : public Regression {
                CovFunction type = SQUARED_EXPONENTIAL);
   virtual ~GPR();
 
-  /// Performs the regression $p(y|x)$.
+  /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-  std::size_t numSamples() const;
 
   /// Computes the negative log likelihood loss on training data and
   /// hyperparameters (varn, varf, length).  Hyperparameters are shared across
@@ -52,6 +51,7 @@ class GPR : public Regression {
   double negLogLikLoss();
   Eigen::VectorXd getHyperparameters() const;
   void setHyperparameters(const Eigen::VectorXd& p);
+  std::size_t numSamples() const;
 
  private:
   void cacheRegressionModels();

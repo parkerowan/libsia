@@ -50,13 +50,13 @@ class Distribution {
   std::mt19937& m_rng;
 };
 
-/// Base regression class describing $y ~ p(y|x)$.
-class Regression {
+/// Base class for prediction $p(y) = p(y|x)$ (regression or classification)
+class Inference {
  public:
-  Regression() = default;
-  virtual ~Regression() = default;
+  Inference() = default;
+  virtual ~Inference() = default;
 
-  /// Performs the regression $p(y|x)$.
+  /// Performs the inference $p(y|x)$
   virtual const Distribution& predict(const Eigen::VectorXd& x) = 0;
   virtual std::size_t inputDimension() const = 0;
   virtual std::size_t outputDimension() const = 0;

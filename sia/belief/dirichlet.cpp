@@ -26,13 +26,6 @@ Dirichlet::Dirichlet(const Eigen::VectorXd& alpha) : Dirichlet(alpha.size()) {
   setAlpha(alpha);
 }
 
-std::size_t Dirichlet::classify() const {
-  int r, c;
-  Eigen::VectorXd pi = mean();
-  pi.maxCoeff(&r, &c);
-  return r;
-}
-
 std::size_t Dirichlet::dimension() const {
   return m_alpha.size();
 }
@@ -106,6 +99,14 @@ bool Dirichlet::devectorize(const Eigen::VectorXd& data) {
   }
   setAlpha(data);
   return true;
+}
+
+Categorical Dirichlet::categorical() const {
+  return Categorical(mean());
+}
+
+std::size_t Dirichlet::classify() const {
+  return categorical().classify();
 }
 
 const Eigen::VectorXd& Dirichlet::alpha() const {

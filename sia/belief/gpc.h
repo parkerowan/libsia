@@ -22,7 +22,7 @@ namespace sia {
 /// [1]: D. Milios et. al., "Dirichlet-based Gaussian Processes for Large-Scale
 /// Calibrated Gaussian Process Calibration," NeurIPS, 2018.
 /// [2]: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
-class GPC : public Regression {
+class GPC : public Inference {
  public:
   /// Initialize GPC from training data.  Each column of input
   /// training data is a sample.  The output training data is a vector of class
@@ -44,12 +44,10 @@ class GPC : public Regression {
                double length = 10);
   virtual ~GPC();
 
-  /// Performs the regression $p(c|x)$.
+  /// Performs the inference $p(y|x)$
   const Dirichlet& predict(const Eigen::VectorXd& x) override;
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-
-  std::size_t numSamples() const;
 
   /// Computes the negative log likelihood loss on training data and
   /// hyperparameters (alpha, varf, length).  Hyperparameters are shared across
@@ -57,6 +55,7 @@ class GPC : public Regression {
   double negLogLikLoss();
   Eigen::VectorXd getHyperparameters() const;
   void setHyperparameters(const Eigen::VectorXd& p);
+  std::size_t numSamples() const;
 
   /// Returns a matrix of one-hot column vectors for the indices in x.  The
   /// number of output matrix colums will be the length of the x vector.  The

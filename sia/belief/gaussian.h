@@ -9,9 +9,9 @@
 
 namespace sia {
 
-/// Gaussian (normal) distribution defined by mean and covariance.  Uses the
-/// fast Cholesky decomposition (LLT) of the covariance matrix.  Supports
-/// positive definite covariance matrices.
+/// Multivariate Gaussian (normal) distribution defined by mean and covariance.
+/// Uses the fast Cholesky decomposition (LLT) of the covariance matrix.
+/// Supports positive definite covariance matrices.
 class Gaussian : public Distribution {
  public:
   /// Creates a standard multivariate normal (mu = 0, sigma = 1).
@@ -34,10 +34,9 @@ class Gaussian : public Distribution {
   const Eigen::VectorXd vectorize() const override;
   bool devectorize(const Eigen::VectorXd& data) override;
 
-  void setMean(const Eigen::VectorXd& mean);
-
   /// The covariance matrix must be symmetric and positive definite.
   void setCovariance(const Eigen::MatrixXd& covariance);
+  void setMean(const Eigen::VectorXd& mean);
   void setMeanAndCov(const Eigen::VectorXd& mean,
                      const Eigen::MatrixXd& covariance);
 
