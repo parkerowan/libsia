@@ -548,7 +548,7 @@ sns.despine(f, left=True, bottom=True)
 
 # Evaluate several choices of hyper parameters
 varf   = [1.0, 3.0, 0.3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-varn   = [0.7, 0.7, 0.7, 0.7, 1.2, 0.2, 0.7, 0.7, 0.7]
+varn   = [0.1, 0.1, 0.1, 0.1, 0.3, 0.02, 0.1, 0.1, 0.1]
 length = [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.2, 0.2]
 
 for i in range(len(ax)):
@@ -562,7 +562,7 @@ for i in range(len(ax)):
     for k in range(len(xtest)):
         gaussian = gpr.predict(np.array([xtest[k]]))
         gpr_mu[:, k] = gaussian.mean()
-        gpr_sig[:, k] = np.diag(gaussian.covariance())
+        gpr_sig[:, k] = np.sqrt(np.diag(gaussian.covariance()))
     
     # Plot the belief for each axis and overlay the training data
     ax[i].fill_between(xtest, gpr_mu[0, :] + 3 * gpr_sig[0, :], gpr_mu[0, :] - 3 * gpr_sig[0, :],  alpha=0.3)
@@ -591,11 +591,15 @@ from scipy.optimize import minimize
 gpr_naive = sia.GPR(np.array([xtrain]), ytrain)
 gpr_optm = sia.GPR(np.array([xtrain]), ytrain)
 
+def loss(p: np.array) -> float:
+    gpr_optm.setHyperparameters(p)
+    return gpr_optm.negLogLikLoss()
+
 # Optimize the hyperparameters using the L-BFGS-B algorithm
 # and the negative log likelihood loss function provided by the sia.GPR
-res = minimize(gpr_optm.negLogLikLoss, 
+res = minimize(loss, 
                x0=gpr_optm.getHyperparameters(),                
-               bounds=((2e-1, 10), (1e-2, 50), (1e-2, 50)),
+               bounds=((2e-2, 10), (1e-1, 50), (1e-1, 50)),
                options={'disp': True},
                method='L-BFGS-B')
 gpr_optm.setHyperparameters(res.x)
@@ -622,7 +626,7 @@ for i in range(len(models.values())):
     for k in range(len(xtest)):
         gaussian = models[key].predict(np.array([xtest[k]]))
         gpr_mu[:, k] = gaussian.mean()
-        gpr_sig[:, k] = np.diag(gaussian.covariance())
+        gpr_sig[:, k] = np.sqrt(np.diag(gaussian.covariance()))
     
     # Plot the belief for each axis and overlay the training data
     ax[i].fill_between(xtest, gpr_mu[0, :] + 3 * gpr_sig[0, :], gpr_mu[0, :] - 3 * gpr_sig[0, :],  alpha=0.3)
@@ -637,7 +641,7 @@ for i in range(len(models.values())):
 ```
 
     [0.1 1.  1. ]
-    [0.2        1.73491115 1.08063708]
+    [0.02       0.89032961 0.36597675]
 
 
 
@@ -656,7 +660,8 @@ for i in range(len(models.values())):
 class_prob = lambda x : -0.2 * x ** 2 + 0.6 * np.sin(6 * x) ** 2 + 0.2
 # class_prob = lambda x : x >= 0.5
 
-xtrain = np.random.uniform(0, 1, 100)
+ntrain = 100
+xtrain = np.random.uniform(0, 1, ntrain)
 ptrain = class_prob(xtrain)
 ytrain = np.array([int(np.random.uniform(0, 1, 1) <= class_prob(x)) for x in xtrain])
 
@@ -697,5 +702,70 @@ for i in range(len(ax)):
 
     
 ![png](belief_files/belief_25_0.png)
+    
+
+
+
+```python
+from scipy.optimize import minimize
+
+gpc_naive = sia.GPC(np.array([xtrain]), ytrain, alpha=0.1, varf=10, length=0.1)
+gpc_optm = sia.GPC(np.array([xtrain]), ytrain, alpha=0.1, varf=10, length=0.1)
+
+def loss(p: np.array) -> float:
+    gpc_optm.setHyperparameters(p)
+    return gpc_optm.negLogLikLoss()
+
+# Optimize the hyperparameters using the L-BFGS-B algorithm
+# and the negative log likelihood loss function provided by the sia.GPR
+res = minimize(loss, 
+               x0=gpc_optm.getHyperparameters(),                
+               bounds=((1e-1, 1e1), (1e-1, 50), (1e-1, 50)),
+               options={'disp': True},
+               method='L-BFGS-B')
+gpc_optm.setHyperparameters(res.x)
+print(gpc_naive.getHyperparameters())
+print(gpc_optm.getHyperparameters())
+
+models = {
+    "Naive": gpc_naive,
+    "Optimized": gpc_optm
+}
+
+# Plot the raw data
+f, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 4))
+ax = ax.flat
+sns.despine(f, left=True, bottom=True)
+
+for i in range(len(models.values())):
+    key = list(models.keys())[i]
+    
+    # Evaluate it
+    xtest = np.linspace(-0.1, 1.1, 101)
+    ptest = class_prob(xtest)
+    gpc_mu = np.zeros((2, len(xtest)))
+    gpc_sig = np.zeros((2, len(xtest)))
+    for k in range(len(xtest)):
+        dirichlet = models[key].predict(np.array([xtest[k]]))
+        gpc_mu[:, k] = dirichlet.mean()
+        gpc_sig[:, k] = np.diag(dirichlet.covariance())
+    
+    # Plot the belief for each axis and overlay the training data
+    ax[i].fill_between(xtest, gpc_mu[1, :] + 2 * gpc_sig[1, :], gpc_mu[1, :] - 2 * gpc_sig[1, :],  alpha=0.3)
+    ax[i].plot(xtest, gpc_mu[1, :], 'b', lw=2)
+    ax[i].plot(xtrain, ytrain, '.k', ms=3)
+    ax[i].plot(xtest, ptest, 'k', lw=1.2)
+    ax[i].set_ylim((-0.2, 1.2))
+    ax[i].axis("off")
+    ax[i].set_title("GPR {}".format(key));
+```
+
+    [ 0.1 10.   0.1]
+    [ 0.1 50.   0.1]
+
+
+
+    
+![png](belief_files/belief_26_1.png)
     
 
