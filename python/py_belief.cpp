@@ -310,7 +310,8 @@ void export_py_belief(py::module& m_sup) {
       .def("predict", &sia::GPR::predict, py::arg("x"))
       .def("inputDimension", &sia::GPR::inputDimension)
       .def("outputDimension", &sia::GPR::outputDimension)
-      .def("negLogLikLoss", &sia::GPR::negLogLikLoss)
+      .def("train", &sia::GPR::train)
+      .def("negLogMarginalLik", &sia::GPR::negLogMarginalLik)
       .def("getHyperparameters", &sia::GPR::getHyperparameters)
       .def("setHyperparameters", &sia::GPR::setHyperparameters, py::arg("p"))
       .def("numSamples", &sia::GPR::numSamples);
@@ -329,7 +330,7 @@ void export_py_belief(py::module& m_sup) {
       .def("predict", &sia::GPC::predict, py::arg("x"))
       .def("inputDimension", &sia::GPC::inputDimension)
       .def("outputDimension", &sia::GPC::outputDimension)
-      .def("negLogLikLoss", &sia::GPC::negLogLikLoss)
+      .def("negLogMarginalLik", &sia::GPC::negLogMarginalLik)
       .def("getHyperparameters", &sia::GPC::getHyperparameters)
       .def("setHyperparameters", &sia::GPC::setHyperparameters, py::arg("p"))
       .def("numSamples", &sia::GPC::numSamples);

@@ -45,10 +45,13 @@ class GPR : public Inference {
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
 
-  /// Computes the negative log likelihood loss on training data and
+  /// Train the hyperparameters
+  void train();
+
+  /// Computes the negative log marginal likelihood loss on training data and
   /// hyperparameters (varn, varf, length).  Hyperparameters are shared across
   /// output channels.
-  double negLogLikLoss();
+  double negLogMarginalLik();
   Eigen::VectorXd getHyperparameters() const;
   void setHyperparameters(const Eigen::VectorXd& p);
   std::size_t numSamples() const;
@@ -67,6 +70,9 @@ class GPR : public Inference {
                              const Eigen::VectorXd& varn,
                              double varf,
                              double length);
+    double logMarginalLik() const;
+    Eigen::VectorXd m_y;
+    Eigen::MatrixXd m_cached_L;
     Eigen::MatrixXd m_cached_L_inv;
     Eigen::VectorXd m_cached_alpha;
   };

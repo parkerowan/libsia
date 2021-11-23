@@ -487,7 +487,6 @@ TEST(Belief, GPR) {
   EXPECT_EQ(gpr.outputDimension(), 2);
 
   // Is there a theoretical bound on the error given the hyperparameters?
-  double log_lik = 0;
   const double EVAL_TOLERANCE = 2e-1;
   for (std::size_t i = 0; i < 10; ++i) {
     const auto& x = X.col(i);
@@ -496,10 +495,12 @@ TEST(Belief, GPR) {
     ASSERT_EQ(g.dimension(), 2);
     EXPECT_NEAR(g.mean()(0), y(0), EVAL_TOLERANCE);
     EXPECT_NEAR(g.mean()(1), y(1), EVAL_TOLERANCE);
-    log_lik += g.logProb(y);
   }
 
-  EXPECT_DOUBLE_EQ(gpr.negLogLikLoss(), -log_lik);
+  // Expect after training that the log marginal likelihood has been reduced
+  double log_marg_loss = gpr.negLogMarginalLik();
+  gpr.train();
+  EXPECT_LT(gpr.negLogMarginalLik(), log_marg_loss);
   Eigen::VectorXd p = Eigen::Vector3d{0.1, 0.2, 0.3};
   gpr.setHyperparameters(p);
   const auto& pn = gpr.getHyperparameters();
@@ -532,7 +533,7 @@ TEST(Belief, GPC) {
     log_lik += p.logProb(yoh);
   }
 
-  EXPECT_DOUBLE_EQ(gpc.negLogLikLoss(), -log_lik);
+  EXPECT_DOUBLE_EQ(gpc.negLogMarginalLik(), -log_lik);
   Eigen::VectorXd p = Eigen::Vector3d{0.1, 0.2, 0.3};
   gpc.setHyperparameters(p);
   const auto& pn = gpc.getHyperparameters();

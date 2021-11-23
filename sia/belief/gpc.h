@@ -52,7 +52,9 @@ class GPC : public Inference {
   /// Computes the negative log likelihood loss on training data and
   /// hyperparameters (alpha, varf, length).  Hyperparameters are shared across
   /// output channels.
-  double negLogLikLoss();
+
+  // FIXME: Not actually the log marginal likelihood, just the log likelihood
+  double negLogMarginalLik();
   Eigen::VectorXd getHyperparameters() const;
   void setHyperparameters(const Eigen::VectorXd& p);
   std::size_t numSamples() const;

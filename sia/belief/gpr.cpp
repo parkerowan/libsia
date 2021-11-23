@@ -4,11 +4,15 @@
 #include "sia/belief/gpr.h"
 #include "sia/common/exception.h"
 #include "sia/math/math.h"
+#include "sia/optimizers/gradient_descent.h"
 
 #include <glog/logging.h>
 #include <limits>
 
 namespace sia {
+
+const double SMALL_NUMBER = 1e-6;
+const double LARGE_NUMBER = 1e16;
 
 /// Kernel functions
 struct GPR::Kernel {
@@ -20,6 +24,10 @@ struct GPR::Kernel {
                       const Eigen::VectorXd& b,
                       double varf,
                       double length) const = 0;
+
+  /// Computes the kernel gradient w.r.t. the hyper parameters
+  // virtual Eigen::VectorXd grad(const Eigen::VectorXd& a,
+  //  const Eigen::VectorXd& b) const = 0;
 
   /// Evalutes the kernel to construct the na x 1 kernel vector K(a, b) where a,
   /// b are input samples with cols equal to samples.
@@ -136,12 +144,21 @@ std::size_t GPR::outputDimension() const {
   return m_output_samples.rows();
 }
 
-double GPR::negLogLikLoss() {
+void GPR::train() {
+  GradientDescent optm(SMALL_NUMBER * Eigen::Vector3d::Ones(),
+                       LARGE_NUMBER * Eigen::Vector3d::Ones());
+  auto loss = [this](const Eigen::VectorXd& x) {
+    this->setHyperparameters(x);
+    return this->negLogMarginalLik();
+  };
+  Eigen::VectorXd p = optm.minimize(loss, getHyperparameters());
+  setHyperparameters(p);
+}
+
+double GPR::negLogMarginalLik() {
   double neg_log_lik = 0;
-  for (std::size_t i = 0; i < numSamples(); ++i) {
-    const auto& x = m_input_samples.col(i);
-    const auto& y = m_output_samples.col(i);
-    neg_log_lik -= predict(x).logProb(y);
+  for (const auto& model : m_models) {
+    neg_log_lik -= model.logMarginalLik();
   }
   return neg_log_lik;
 }
@@ -200,8 +217,9 @@ GPR::RegressionModel::RegressionModel(Kernel* kernel,
                                       const Eigen::VectorXd& y,
                                       const Eigen::VectorXd& varn,
                                       double varf,
-                                      double length) {
-  // Algorithm 2.1 in: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
+                                      double length)
+    : m_y(y) {
+  // Algorithm 2.1 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   assert(kernel != nullptr);
   std::size_t n = X.cols();
   assert(std::size_t(varn.size()) == n);
@@ -209,14 +227,23 @@ GPR::RegressionModel::RegressionModel(Kernel* kernel,
   const Eigen::MatrixXd sig = varn.asDiagonal();
   const Eigen::MatrixXd Ksig = K + sig;
 
-  Eigen::MatrixXd L;
-  bool r = llt(Ksig, L);
+  bool r = llt(Ksig, m_cached_L);
   SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of sample matrix");
 
-  m_cached_L_inv =
-      L.triangularView<Eigen::Lower>().solve(Eigen::MatrixXd::Identity(n, n));
+  m_cached_L_inv = m_cached_L.triangularView<Eigen::Lower>().solve(
+      Eigen::MatrixXd::Identity(n, n));
 
   m_cached_alpha = m_cached_L_inv.transpose() * m_cached_L_inv * y;
+}
+
+double GPR::RegressionModel::logMarginalLik() const {
+  // Eqn 2.30 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
+  // Note the determinant of a triangular matrix is the product of its diagonal
+  // And the log(|K|) = log(det(L))^2 = 2 * sum(log(diag(L)))  // More stable
+  double n = m_y.size();
+  const Eigen::MatrixXd Kinv = m_cached_L_inv.transpose() * m_cached_L_inv;
+  const double log_kdet = 2 * m_cached_L.diagonal().array().log().sum();
+  return -(m_y.transpose() * Kinv * m_y + log_kdet + n * log(2 * M_PI)) / 2;
 }
 
 }  // namespace sia

@@ -6,7 +6,6 @@
 #include "sia/belief/uniform.h"
 
 #include <glog/logging.h>
-#include <iostream>
 
 namespace sia {
 

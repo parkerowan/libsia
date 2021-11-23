@@ -68,7 +68,7 @@ std::size_t GPC::numSamples() const {
   return m_input_samples.cols();
 }
 
-double GPC::negLogLikLoss() {
+double GPC::negLogMarginalLik() {
   double neg_log_lik = 0;
   std::size_t c = outputDimension();
   const Eigen::MatrixXd Y = getOneHot(m_output_samples, c);

@@ -78,7 +78,7 @@ class GMM : public Distribution, public Inference {
                          InitMethod init_method = InitMethod::STANDARD_RANDOM,
                          double regularization = DEFAULT_REGULARIZATION);
 
- protected:
+ private:
   Categorical m_belief;
   std::size_t m_num_clusters;
   std::size_t m_dimension;
