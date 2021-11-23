@@ -10,6 +10,7 @@ Welcome to libSIA!
    :maxdepth: 2
 
    belief/belief.md
+   inference/inference.md
    models/models.md
    estimators/estimators.md
    controllers/controllers.md

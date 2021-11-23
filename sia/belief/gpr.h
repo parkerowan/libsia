@@ -10,6 +10,14 @@
 
 namespace sia {
 
+// class Kernel {
+//  public:
+//   double eval(double a, double b) = 0;
+//   Eigen::VectorXd grad(double a, double b) = 0;
+//   const Eigen::VectorXd& hyperparameters() const = 0;
+//   void setHyperparameters(const Eigen::VectorXd& p) = 0;
+// }
+
 /// Gaussian Process Regression performs Gaussian regression to predict $p(y|x)$
 /// using a GP kernel prior.  This class implements algorithm 2.1 from Rasmussen
 /// and Williams, and assumes a zero mean prior.
@@ -48,7 +56,7 @@ class GPR : public Inference {
   /// Train the hyperparameters
   void train();
 
-  /// Computes the negative log marginal likelihood loss on training data and
+  /// Computes the negative log marginal likelihood loss given training data and
   /// hyperparameters (varn, varf, length).  Hyperparameters are shared across
   /// output channels.
   double negLogMarginalLik();
