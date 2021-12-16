@@ -18,6 +18,55 @@ SquaredExponential::SquaredExponential(double length,
   setHyperparameters(Eigen::Vector3d{length, signal_var, noise_var});
 }
 
+Eigen::VectorXd CovarianceFunction::evalVector(const Eigen::MatrixXd& a,
+                                               const Eigen::VectorXd& b) {
+  std::size_t na = a.cols();
+  Eigen::VectorXd k(na);
+  for (std::size_t i = 0; i < na; ++i) {
+    k(i) = eval(a.col(i), b);
+  }
+  return k;
+}
+
+Eigen::MatrixXd CovarianceFunction::evalMatrix(const Eigen::MatrixXd& a,
+                                               const Eigen::MatrixXd& b) {
+  std::size_t na = a.cols();
+  std::size_t nb = b.cols();
+  Eigen::MatrixXd K(na, nb);
+  for (std::size_t i = 0; i < nb; ++i) {
+    K.col(i) = evalVector(a, b.col(i));
+  }
+  return K;
+}
+
+std::vector<Eigen::MatrixXd> CovarianceFunction::gradTensor(
+    const Eigen::MatrixXd& a,
+    const Eigen::MatrixXd& b) {
+  std::size_t na = a.cols();
+  std::size_t nb = b.cols();
+  std::size_t np = numHyperparameters();
+  std::vector<Eigen::MatrixXd> dK(np, Eigen::MatrixXd(na, nb));
+  for (std::size_t i = 0; i < nb; ++i) {
+    for (std::size_t j = 0; j < na; ++j) {
+      Eigen::VectorXd g = grad(a.col(j), b.col(i));
+      for (std::size_t k = 0; k < np; ++k) {
+        dK[k](j, i) = g(k);
+      }
+    }
+  }
+  return dK;
+}
+
+CovarianceFunction* CovarianceFunction::create(Type type) {
+  switch (type) {
+    case SQUARED_EXPONENTIAL:
+      return new SquaredExponential();
+    default:
+      SIA_EXCEPTION(false,
+                    "CovarianceFunction::Type encountered unsupported type");
+  }
+}
+
 double SquaredExponential::eval(const Eigen::VectorXd& a,
                                 const Eigen::VectorXd& b) const {
   const Eigen::VectorXd e = a - b;
@@ -56,47 +105,6 @@ void SquaredExponential::setHyperparameters(const Eigen::VectorXd& p) {
                 "CovarianceFunction signal variance is expexted > 0");
   SIA_EXCEPTION(m_noise_var > 0,
                 "CovarianceFunction noise variance is expexted > 0");
-}
-
-Eigen::VectorXd evalVector(const CovarianceFunction& kernel,
-                           const Eigen::MatrixXd& a,
-                           const Eigen::VectorXd& b) {
-  std::size_t na = a.cols();
-  Eigen::VectorXd k(na);
-  for (std::size_t i = 0; i < na; ++i) {
-    k(i) = kernel.eval(a.col(i), b);
-  }
-  return k;
-}
-
-Eigen::MatrixXd evalMatrix(const CovarianceFunction& kernel,
-                           const Eigen::MatrixXd& a,
-                           const Eigen::MatrixXd& b) {
-  std::size_t na = a.cols();
-  std::size_t nb = b.cols();
-  Eigen::MatrixXd K(na, nb);
-  for (std::size_t i = 0; i < nb; ++i) {
-    K.col(i) = evalVector(kernel, a, b.col(i));
-  }
-  return K;
-}
-
-std::vector<Eigen::MatrixXd> gradTensor(const CovarianceFunction& kernel,
-                                        const Eigen::MatrixXd& a,
-                                        const Eigen::MatrixXd& b) {
-  std::size_t na = a.cols();
-  std::size_t nb = b.cols();
-  std::size_t np = kernel.numHyperparameters();
-  std::vector<Eigen::MatrixXd> dK(np, Eigen::MatrixXd(na, nb));
-  for (std::size_t i = 0; i < nb; ++i) {
-    for (std::size_t j = 0; j < na; ++j) {
-      Eigen::VectorXd grad = kernel.grad(a.col(j), b.col(i));
-      for (std::size_t k = 0; k < np; ++k) {
-        dK[k](j, i) = grad(k);
-      }
-    }
-  }
-  return dK;
 }
 
 }  // namespace sia

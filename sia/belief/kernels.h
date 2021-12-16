@@ -12,6 +12,11 @@ namespace sia {
 /// hyperarameters.
 class CovarianceFunction {
  public:
+  /// Determines which kernel function is used
+  enum Type {
+    SQUARED_EXPONENTIAL,
+  };
+
   virtual double eval(const Eigen::VectorXd& a,
                       const Eigen::VectorXd& b) const = 0;
   virtual Eigen::VectorXd grad(const Eigen::VectorXd& a,
@@ -19,9 +24,24 @@ class CovarianceFunction {
   virtual Eigen::VectorXd hyperparameters() const = 0;
   virtual void setHyperparameters(const Eigen::VectorXd& p) = 0;
   std::size_t numHyperparameters() const;
+
+  /// Evaluates k(a, b) for various permutations of a, b
+  Eigen::VectorXd evalVector(const Eigen::MatrixXd& a,
+                             const Eigen::VectorXd& b);
+  Eigen::MatrixXd evalMatrix(const Eigen::MatrixXd& a,
+                             const Eigen::MatrixXd& b);
+  std::vector<Eigen::MatrixXd> gradTensor(const Eigen::MatrixXd& a,
+                                          const Eigen::MatrixXd& b);
+
+ protected:
+  /// Kernel function factory
+  static CovarianceFunction* create(Type type);
 };
 
-/// The squared exp
+/// The squared exponential function.
+/// - length controls the kernel basis blending
+/// - noise_var controls the measurement likelihood uncertainty
+/// - signal_var controls the marginal variance of the Gaussian prior
 class SquaredExponential : public CovarianceFunction {
  public:
   explicit SquaredExponential(double length = 1.0,
@@ -40,20 +60,5 @@ class SquaredExponential : public CovarianceFunction {
   double m_signal_var;
   double m_noise_var;
 };
-
-// TODO: Make these hidden
-Eigen::VectorXd evalVector(const CovarianceFunction& kernel,
-                           const Eigen::MatrixXd& a,
-                           const Eigen::VectorXd& b);
-
-// TODO: Make these hidden
-Eigen::MatrixXd evalMatrix(const CovarianceFunction& kernel,
-                           const Eigen::MatrixXd& a,
-                           const Eigen::MatrixXd& b);
-
-// TODO: Make these hidden
-std::vector<Eigen::MatrixXd> gradTensor(const CovarianceFunction& kernel,
-                                        const Eigen::MatrixXd& a,
-                                        const Eigen::MatrixXd& b);
 
 }  // namespace sia
