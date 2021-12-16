@@ -12,6 +12,8 @@ namespace sia {
 // Forward declaration
 class KernelDensity;
 
+/// Technically, these are Smoothing Kernels.  See:
+/// https://vision.in.tum.de/_media/teaching/ss2013/ml_ss13/ml4cv_vi.pdf
 /// A kernel function maps a vector to a (semi)-positive scalar, is symmetric
 /// about x=0, and whose integral is 1.  See: Hansen, Lecture notes on
 /// nonparametrics, 2009.

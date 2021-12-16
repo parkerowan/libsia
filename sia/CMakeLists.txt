@@ -20,11 +20,12 @@ set(lib_header
   belief/gmr.h
   belief/gpc.h
   belief/gpr.h
-  common/exception.h
   belief/helpers.h
   belief/kernel_density.h
+  belief/kernels.h
   belief/particles.h
   belief/uniform.h
+  common/exception.h
   controllers/controllers.h
   controllers/cost.h
   controllers/ilqr.h
@@ -58,6 +59,7 @@ set(lib_source
   belief/gpr.cpp
   belief/helpers.cpp
   belief/kernel_density.cpp
+  belief/kernels.cpp
   belief/particles.cpp
   belief/uniform.cpp
   controllers/cost.cpp

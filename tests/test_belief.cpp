@@ -277,6 +277,10 @@ TEST(Belief, Particles) {
   EXPECT_NEAR(d.covariance()(0, 0), u.covariance()(0, 0), 5e-2);
 }
 
+TEST(Belief, CovarianceFunction) {
+  sia::SquaredExponential kernel;
+}
+
 TEST(Belief, Kernel) {
   Eigen::VectorXd z = Eigen::VectorXd::Zero(3);
   Eigen::VectorXd dz = 0.01 * Eigen::VectorXd::Ones(3);

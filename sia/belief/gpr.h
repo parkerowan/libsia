@@ -10,17 +10,9 @@
 
 namespace sia {
 
-// class Kernel {
-//  public:
-//   double eval(double a, double b) = 0;
-//   Eigen::VectorXd grad(double a, double b) = 0;
-//   const Eigen::VectorXd& hyperparameters() const = 0;
-//   void setHyperparameters(const Eigen::VectorXd& p) = 0;
-// }
-
-/// Gaussian Process Regression performs Gaussian regression to predict $p(y|x)$
-/// using a GP kernel prior.  This class implements algorithm 2.1 from Rasmussen
-/// and Williams, and assumes a zero mean prior.
+/// Gaussian Process Regression performs Gaussian regression to predict
+/// $p(y|x)$ using a GP kernel prior.  This class implements algorithm 2.1
+/// from Rasmussen and Williams, and assumes a zero mean prior.
 ///
 /// References:
 /// [1]: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
