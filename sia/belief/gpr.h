@@ -43,8 +43,8 @@ class GPR : public Inference {
   const Gaussian& predict(const Eigen::VectorXd& x) override;
 
   /// Computes the negative log marginal likelihood loss and gradients
-  double negLogMarginalLik();
-  Eigen::VectorXd negLogMarginalLikGrad();
+  double negLogMarginalLik() const;
+  Eigen::VectorXd negLogMarginalLikGrad() const;
 
   /// Train the hyperparameters
   void train();

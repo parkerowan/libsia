@@ -483,6 +483,19 @@ TEST(Belief, GPR) {
   EXPECT_EQ(gpr.inputDimension(), 3);
   EXPECT_EQ(gpr.outputDimension(), 2);
 
+  // Check the different noise models
+  double log_marg_loss = gpr.negLogMarginalLik();
+  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::VECTOR_NOISE);
+  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
+  gpr.setVectorNoise(1.0 * Eigen::VectorXd::Ones(2));
+  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
+
+  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::HETEROSKEDASTIC_NOISE);
+  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
+  gpr.setHeteroskedasticNoise(1.0 * Eigen::MatrixXd::Ones(2, 10));
+  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
+
+  // Check the hyperparameters are written
   Eigen::VectorXd p = Eigen::Vector2d{0.2, 1.0};
   gpr.setHyperparameters(p);
   const auto& pn = gpr.hyperparameters();
@@ -511,7 +524,7 @@ TEST(Belief, GPR) {
   }
 
   // Expect after training that the log marginal likelihood has been reduced
-  double log_marg_loss = gpr.negLogMarginalLik();
+  log_marg_loss = gpr.negLogMarginalLik();
   gpr.train();
   EXPECT_LT(gpr.negLogMarginalLik(), log_marg_loss);
 }

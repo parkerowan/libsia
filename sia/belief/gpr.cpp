@@ -15,6 +15,8 @@ const double SMALL_NUMBER = 1e-6;
 const double LARGE_NUMBER = 1e16;
 const double DEFAULT_NOISE_VAR = 0.1;
 
+// ----------------------------------------------------------------------------
+
 // Kernel basis function base class.  Kernels are symmetric and positive
 // definite.  The gradient functions returns the Jacobian w.r.t. to the kernel
 // hyperarameters.
@@ -193,7 +195,7 @@ const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
-double GPR::negLogMarginalLik() {
+double GPR::negLogMarginalLik() const {
   // Eqn 2.30 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   // Note the determinant of a triangular matrix is the product of its diagonal
   // And the log(|K|) = log(det(L))^2 = 2 * sum(log(diag(L)))  // More stable
@@ -209,7 +211,7 @@ double GPR::negLogMarginalLik() {
   return neg_log_lik;
 }
 
-Eigen::VectorXd GPR::negLogMarginalLikGrad() {
+Eigen::VectorXd GPR::negLogMarginalLikGrad() const {
   // Eqn 5.9 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   std::size_t np = m_kernel->numHyperparameters();
   Eigen::VectorXd g = Eigen::VectorXd::Zero(m_kernel->numHyperparameters());
@@ -269,6 +271,7 @@ void GPR::setScalarNoise(double variance) {
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
+  cacheRegressionModels();
 }
 
 void GPR::setVectorNoise(const Eigen::VectorXd& variance) {
@@ -277,6 +280,7 @@ void GPR::setVectorNoise(const Eigen::VectorXd& variance) {
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
+  cacheRegressionModels();
 }
 
 void GPR::setHeteroskedasticNoise(const Eigen::MatrixXd& variance) {
@@ -285,6 +289,7 @@ void GPR::setHeteroskedasticNoise(const Eigen::MatrixXd& variance) {
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
+  cacheRegressionModels();
 }
 
 void GPR::cacheRegressionModels() {
@@ -435,7 +440,7 @@ VectorNoiseFunction::VectorNoiseFunction(std::size_t num_samples,
 Eigen::VectorXd VectorNoiseFunction::variance(std::size_t channel) const {
   SIA_EXCEPTION(channel < std::size_t(m_variance.size()),
                 "VectorNoiseFunction received channel >= num outputs");
-  return m_variance * Eigen::VectorXd::Ones(m_num_samples);
+  return m_variance(channel) * Eigen::VectorXd::Ones(m_num_samples);
 }
 
 void VectorNoiseFunction::setVariance(const Eigen::VectorXd& variance) {
@@ -451,8 +456,8 @@ HeteroskedasticNoiseFunction::HeteroskedasticNoiseFunction(
     std::size_t num_samples,
     std::size_t num_outputs)
     : m_num_samples(num_samples), m_num_outputs(num_outputs) {
-  m_variance =
-      DEFAULT_NOISE_VAR * Eigen::VectorXd::Ones(num_outputs, num_samples);
+  setVariance(DEFAULT_NOISE_VAR *
+              Eigen::MatrixXd::Ones(num_outputs, num_samples));
 }
 
 Eigen::VectorXd HeteroskedasticNoiseFunction::variance(
