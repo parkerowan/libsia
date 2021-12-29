@@ -6,6 +6,8 @@
 #include <cmath>
 #include <limits>
 
+#include <iostream>
+
 TEST(Belief, Generator) {
   std::uniform_int_distribution<long> distribution(
       0, std::numeric_limits<long>::max());
@@ -483,10 +485,21 @@ TEST(Belief, GPR) {
   EXPECT_EQ(gpr.inputDimension(), 3);
   EXPECT_EQ(gpr.outputDimension(), 2);
 
-  Eigen::VectorXd p = Eigen::Vector2d{0.02, 1.0};
+  Eigen::VectorXd p = Eigen::Vector2d{0.2, 1.0};
   gpr.setHyperparameters(p);
   const auto& pn = gpr.hyperparameters();
   EXPECT_TRUE(pn.isApprox(p));
+
+  // Expect the log loss gradient to equate to the numerical approx
+  const double GRAD_TOLERANCE = 1e-4;
+  Eigen::VectorXd grad = gpr.negLogMarginalLikGrad();
+  auto loss = [&](const Eigen::VectorXd& x) {
+    gpr.setHyperparameters(x);
+    return gpr.negLogMarginalLik();
+  };
+  Eigen::VectorXd grad_approx = sia::dfdx(loss, gpr.hyperparameters());
+  Eigen::VectorXd e = grad - grad_approx;
+  EXPECT_NEAR(sqrt(e.dot(e)), 0, GRAD_TOLERANCE);
 
   // Is there a theoretical bound on the error given the hyperparameters?
   const double EVAL_TOLERANCE = 2e-1;
