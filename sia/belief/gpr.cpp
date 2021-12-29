@@ -13,6 +13,108 @@ namespace sia {
 
 const double SMALL_NUMBER = 1e-6;
 const double LARGE_NUMBER = 1e16;
+const double DEFAULT_NOISE_VAR = 0.1;
+
+// Terms for a 1D regression model
+struct GPR::RegressionModel {
+  explicit RegressionModel(const Eigen::MatrixXd& L,
+                           const Eigen::MatrixXd& Linv,
+                           const Eigen::MatrixXd& Kinv,
+                           const Eigen::VectorXd& alpha,
+                           const std::vector<Eigen::MatrixXd>& grad);
+  Eigen::MatrixXd cached_L;
+  Eigen::MatrixXd cached_L_inv;
+  Eigen::MatrixXd cached_K_inv;
+  Eigen::VectorXd cached_alpha;
+  std::vector<Eigen::MatrixXd> cached_grad;
+};
+
+// Kernel basis function base class.  Kernels are symmetric and positive
+// definite.  The gradient functions returns the Jacobian w.r.t. to the kernel
+// hyperarameters.
+struct GPR::KernelFunction {
+  virtual ~KernelFunction() = default;
+  virtual double eval(const Eigen::VectorXd& a,
+                      const Eigen::VectorXd& b) const = 0;
+  virtual Eigen::VectorXd grad(const Eigen::VectorXd& a,
+                               const Eigen::VectorXd& b) const = 0;
+  virtual Eigen::VectorXd hyperparameters() const = 0;
+  virtual void setHyperparameters(const Eigen::VectorXd& p) = 0;
+  std::size_t numHyperparameters() const;
+  static GPR::KernelFunction* create(GPR::KernelType kernel_type);
+};
+
+// The squared exponential function.
+// - length controls the kernel basis blending
+// - signal_var controls the marginal variance of the Gaussian prior
+class SquaredExponential : public GPR::KernelFunction {
+ public:
+  explicit SquaredExponential(double length = 1.0, double signal_var = 1.0);
+  virtual ~SquaredExponential() = default;
+  double eval(const Eigen::VectorXd& a,
+              const Eigen::VectorXd& b) const override;
+  Eigen::VectorXd grad(const Eigen::VectorXd& a,
+                       const Eigen::VectorXd& b) const override;
+  Eigen::VectorXd hyperparameters() const override;
+  void setHyperparameters(const Eigen::VectorXd& p) override;
+
+ private:
+  double m_length;
+  double m_signal_var;
+};
+
+// Noise function base class.
+struct GPR::NoiseFunction {
+  virtual ~NoiseFunction() = default;
+  virtual Eigen::VectorXd variance(std::size_t channel) const = 0;
+  static GPR::NoiseFunction* create(GPR::NoiseType noise_type,
+                                    std::size_t num_samples,
+                                    std::size_t num_outputs);
+};
+
+class ScalarNoiseFunction : public GPR::NoiseFunction {
+ public:
+  explicit ScalarNoiseFunction(std::size_t num_samples,
+                               std::size_t num_outputs);
+  virtual ~ScalarNoiseFunction() = default;
+  Eigen::VectorXd variance(std::size_t channel) const override;
+  void setVariance(double variance);
+
+ private:
+  std::size_t m_num_samples;
+  std::size_t m_num_outputs;
+  double m_variance;
+};
+
+class VectorNoiseFunction : public GPR::NoiseFunction {
+ public:
+  explicit VectorNoiseFunction(std::size_t num_samples,
+                               std::size_t num_outputs);
+  virtual ~VectorNoiseFunction() = default;
+  Eigen::VectorXd variance(std::size_t channel) const override;
+  void setVariance(const Eigen::VectorXd& variance);
+
+ private:
+  std::size_t m_num_samples;
+  std::size_t m_num_outputs;
+  Eigen::VectorXd m_variance;
+};
+
+class HeteroskedasticNoiseFunction : public GPR::NoiseFunction {
+ public:
+  explicit HeteroskedasticNoiseFunction(std::size_t num_samples,
+                                        std::size_t num_outputs);
+  virtual ~HeteroskedasticNoiseFunction() = default;
+  Eigen::VectorXd variance(std::size_t channel) const override;
+  void setVariance(const Eigen::MatrixXd& variance);
+
+ private:
+  std::size_t m_num_samples;
+  std::size_t m_num_outputs;
+  Eigen::MatrixXd m_variance;
+};
+
+// ----------------------------------------------------------------------------
 
 // Evalutes the kernel to construct the na x 1 kernel vector K(a, b) where a,
 // b are input samples with cols equal to samples.
@@ -63,15 +165,7 @@ static std::vector<Eigen::MatrixXd> gradTensor(
   return dK;
 }
 
-// Kernel function factory
-static GPR::KernelFunction* createKernel(GPR::KernelType kernel_type) {
-  switch (kernel_type) {
-    case GPR::SQUARED_EXPONENTIAL:
-      return new SquaredExponential();
-    default:
-      SIA_EXCEPTION(false, "Encountered unsupported GPR::KernelType");
-  }
-}
+// ----------------------------------------------------------------------------
 
 GPR::GPR(const Eigen::MatrixXd& input_samples,
          const Eigen::MatrixXd& output_samples,
@@ -79,15 +173,19 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
          GPR::NoiseType noise_type)
     : m_input_samples(input_samples),
       m_output_samples(output_samples),
-      m_belief(output_samples.rows()),
-      m_noise_type(noise_type) {
-  m_kernel = createKernel(kernel_type);
+      m_belief(output_samples.rows()) {
+  m_kernel = KernelFunction::create(kernel_type);
   assert(m_kernel != nullptr);
+
+  m_noise = NoiseFunction::create(noise_type, numSamples(), outputDimension());
+  assert(m_noise != nullptr);
+
   cacheRegressionModel();
 }
 
 GPR::~GPR() {
   delete m_kernel;
+  delete m_noise;
 }
 
 const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
@@ -182,21 +280,45 @@ std::size_t GPR::numHyperparameters() const {
   return m_kernel->numHyperparameters();
 }
 
+void GPR::setScalarNoise(double variance) {
+  delete m_noise;
+  auto noise = new ScalarNoiseFunction(numSamples(), outputDimension());
+  assert(noise != nullptr);
+  noise->setVariance(variance);
+  m_noise = noise;
+}
+
+void GPR::setVectorNoise(const Eigen::VectorXd& variance) {
+  delete m_noise;
+  auto noise = new VectorNoiseFunction(numSamples(), outputDimension());
+  assert(noise != nullptr);
+  noise->setVariance(variance);
+  m_noise = noise;
+}
+
+void GPR::setHeteroskedasticNoise(const Eigen::MatrixXd& variance) {
+  delete m_noise;
+  auto noise =
+      new HeteroskedasticNoiseFunction(numSamples(), outputDimension());
+  assert(noise != nullptr);
+  noise->setVariance(variance);
+  m_noise = noise;
+}
+
 void GPR::cacheRegressionModel() {
   std::size_t n = numSamples();
   std::size_t m = outputDimension();
   const Eigen::MatrixXd& X = m_input_samples;
+  const Eigen::MatrixXd K = evalMatrix(*m_kernel, X, X);
   m_models.clear();
   m_models.reserve(m);
   for (std::size_t i = 0; i < m; ++i) {
     // Algorithm 2.1 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
     const Eigen::VectorXd& Y = m_output_samples.row(i);
-    const Eigen::MatrixXd K = evalMatrix(*m_kernel, X, X);
 
-    // Compute noise matrix
-    // TODO: based on noise model
-    double noise_var = 0.1;
-    const Eigen::MatrixXd sI = noise_var * Eigen::MatrixXd::Identity(n, n);
+    // Compute noise matrix for the ith channel
+    const Eigen::MatrixXd sI = m_noise->variance(i).asDiagonal();
+    assert(sI.rows() == n);
 
     // Cholesky decomposition of K
     const Eigen::MatrixXd Ksig = K + sI;
@@ -219,6 +341,8 @@ void GPR::cacheRegressionModel() {
   }
 }
 
+// ----------------------------------------------------------------------------
+
 GPR::RegressionModel::RegressionModel(const Eigen::MatrixXd& L,
                                       const Eigen::MatrixXd& L_inv,
                                       const Eigen::MatrixXd& K_inv,
@@ -232,6 +356,18 @@ GPR::RegressionModel::RegressionModel(const Eigen::MatrixXd& L,
 
 std::size_t GPR::KernelFunction::numHyperparameters() const {
   return hyperparameters().size();
+}
+
+// ----------------------------------------------------------------------------
+
+GPR::KernelFunction* GPR::KernelFunction::create(GPR::KernelType kernel_type) {
+  switch (kernel_type) {
+    case GPR::SE_KERNEL:
+      return new SquaredExponential();
+    default:
+      SIA_EXCEPTION(
+          false, "GPR::KernelFunction encountered unsupported GPR::KernelType");
+  }
 }
 
 SquaredExponential::SquaredExponential(double length, double signal_var) {
@@ -263,12 +399,96 @@ Eigen::VectorXd SquaredExponential::hyperparameters() const {
 }
 
 void SquaredExponential::setHyperparameters(const Eigen::VectorXd& p) {
-  SIA_EXCEPTION(numHyperparameters() == 2,
+  SIA_EXCEPTION(p.size() == 2,
                 "SquaredExponential hyperparameter dim expexted to be 2");
   m_length = p(0);
   m_signal_var = p(1);
   SIA_EXCEPTION(m_length > 0, "SquaredExponential expects length scale > 0");
   SIA_EXCEPTION(m_signal_var > 0, "SquaredExponential expects signal var > 0");
+}
+
+// ----------------------------------------------------------------------------
+
+GPR::NoiseFunction* GPR::NoiseFunction::create(GPR::NoiseType noise_type,
+                                               std::size_t num_samples,
+                                               std::size_t num_outputs) {
+  switch (noise_type) {
+    case GPR::SCALAR_NOISE:
+      return new ScalarNoiseFunction(num_samples, num_outputs);
+    case GPR::VECTOR_NOISE:
+      return new VectorNoiseFunction(num_samples, num_outputs);
+    case GPR::HETEROSKEDASTIC_NOISE:
+      return new HeteroskedasticNoiseFunction(num_samples, num_outputs);
+    default:
+      SIA_EXCEPTION(
+          false, "GPR::NoiseFunction encountered unsupported GPR::NoiseType");
+  }
+}
+
+ScalarNoiseFunction::ScalarNoiseFunction(std::size_t num_samples,
+                                         std::size_t num_outputs)
+    : m_num_samples(num_samples), m_num_outputs(num_outputs) {
+  setVariance(DEFAULT_NOISE_VAR);
+}
+
+Eigen::VectorXd ScalarNoiseFunction::variance(std::size_t channel) const {
+  SIA_EXCEPTION(channel < m_num_outputs,
+                "ScalarNoiseFunction received channel >= num outputs");
+  return m_variance * Eigen::VectorXd::Ones(m_num_samples);
+}
+
+void ScalarNoiseFunction::setVariance(double variance) {
+  SIA_EXCEPTION(m_variance > 0, "ScalarNoiseFunction expects variance > 0");
+  m_variance = variance;
+}
+
+VectorNoiseFunction::VectorNoiseFunction(std::size_t num_samples,
+                                         std::size_t num_outputs)
+    : m_num_samples(num_samples), m_num_outputs(num_outputs) {
+  setVariance(DEFAULT_NOISE_VAR * Eigen::VectorXd::Ones(num_outputs));
+}
+
+Eigen::VectorXd VectorNoiseFunction::variance(std::size_t channel) const {
+  SIA_EXCEPTION(channel < std::size_t(m_variance.size()),
+                "VectorNoiseFunction received channel >= num outputs");
+  return m_variance * Eigen::VectorXd::Ones(m_num_samples);
+}
+
+void VectorNoiseFunction::setVariance(const Eigen::VectorXd& variance) {
+  SIA_EXCEPTION(variance.minCoeff() > 0,
+                "VectorNoiseFunction expects variance > 0");
+  SIA_EXCEPTION(
+      std::size_t(variance.size()) == m_num_outputs,
+      "VectorNoiseFunction variance dim expexted to be output dimension");
+  m_variance = variance;
+}
+
+HeteroskedasticNoiseFunction::HeteroskedasticNoiseFunction(
+    std::size_t num_samples,
+    std::size_t num_outputs)
+    : m_num_samples(num_samples), m_num_outputs(num_outputs) {
+  m_variance =
+      DEFAULT_NOISE_VAR * Eigen::VectorXd::Ones(num_outputs, num_samples);
+}
+
+Eigen::VectorXd HeteroskedasticNoiseFunction::variance(
+    std::size_t channel) const {
+  SIA_EXCEPTION(channel < m_num_outputs,
+                "HeteroskedasticNoiseFunction received channel >= num outputs");
+  return m_variance.row(channel);
+}
+
+void HeteroskedasticNoiseFunction::setVariance(
+    const Eigen::MatrixXd& variance) {
+  SIA_EXCEPTION(variance.minCoeff() > 0,
+                "HeteroskedasticNoiseFunction expects variance > 0");
+  SIA_EXCEPTION(
+      std::size_t(variance.rows()) == m_num_outputs,
+      "VectorNoiseFunction variance rows expexted to be output dimension");
+  SIA_EXCEPTION(
+      std::size_t(variance.cols()) == m_num_samples,
+      "VectorNoiseFunction variance cols expexted to be sample dimension");
+  m_variance = variance;
 }
 
 }  // namespace sia
