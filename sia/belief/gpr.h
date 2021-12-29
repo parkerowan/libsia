@@ -65,12 +65,26 @@ class GPR : public Inference {
   void setHeteroskedasticNoise(const Eigen::MatrixXd& variance);
 
   // Forward declarations
-  struct RegressionModel;
   struct KernelFunction;
   struct NoiseFunction;
 
  private:
-  void cacheRegressionModel();
+  void cacheRegressionModels();
+
+  // Terms for a 1D regression model
+  struct RegressionModel {
+    explicit RegressionModel(const Eigen::MatrixXd& L,
+                             const Eigen::MatrixXd& Linv,
+                             const Eigen::MatrixXd& Kinv,
+                             const Eigen::VectorXd& alpha,
+                             const std::vector<Eigen::MatrixXd>& grad);
+    virtual ~RegressionModel() = default;
+    Eigen::MatrixXd cached_L;
+    Eigen::MatrixXd cached_L_inv;
+    Eigen::MatrixXd cached_K_inv;
+    Eigen::VectorXd cached_alpha;
+    std::vector<Eigen::MatrixXd> cached_grad;
+  };
 
   Eigen::MatrixXd m_input_samples;
   Eigen::MatrixXd m_output_samples;

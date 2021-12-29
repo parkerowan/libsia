@@ -15,20 +15,6 @@ const double SMALL_NUMBER = 1e-6;
 const double LARGE_NUMBER = 1e16;
 const double DEFAULT_NOISE_VAR = 0.1;
 
-// Terms for a 1D regression model
-struct GPR::RegressionModel {
-  explicit RegressionModel(const Eigen::MatrixXd& L,
-                           const Eigen::MatrixXd& Linv,
-                           const Eigen::MatrixXd& Kinv,
-                           const Eigen::VectorXd& alpha,
-                           const std::vector<Eigen::MatrixXd>& grad);
-  Eigen::MatrixXd cached_L;
-  Eigen::MatrixXd cached_L_inv;
-  Eigen::MatrixXd cached_K_inv;
-  Eigen::VectorXd cached_alpha;
-  std::vector<Eigen::MatrixXd> cached_grad;
-};
-
 // Kernel basis function base class.  Kernels are symmetric and positive
 // definite.  The gradient functions returns the Jacobian w.r.t. to the kernel
 // hyperarameters.
@@ -64,7 +50,8 @@ class SquaredExponential : public GPR::KernelFunction {
   double m_signal_var;
 };
 
-// Noise function base class.
+// Noise function base class.  The variance is returned for all samples along
+// the specified output channel.
 struct GPR::NoiseFunction {
   virtual ~NoiseFunction() = default;
   virtual Eigen::VectorXd variance(std::size_t channel) const = 0;
@@ -181,7 +168,7 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
   m_noise = NoiseFunction::create(noise_type, numSamples(), outputDimension());
   assert(m_noise != nullptr);
 
-  cacheRegressionModel();
+  cacheRegressionModels();
 }
 
 const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
@@ -269,7 +256,7 @@ Eigen::VectorXd GPR::hyperparameters() const {
 
 void GPR::setHyperparameters(const Eigen::VectorXd& p) {
   m_kernel->setHyperparameters(p);
-  cacheRegressionModel();
+  cacheRegressionModels();
 }
 
 std::size_t GPR::numHyperparameters() const {
@@ -300,7 +287,7 @@ void GPR::setHeteroskedasticNoise(const Eigen::MatrixXd& variance) {
   m_noise = noise;
 }
 
-void GPR::cacheRegressionModel() {
+void GPR::cacheRegressionModels() {
   std::size_t n = numSamples();
   std::size_t m = outputDimension();
   const Eigen::MatrixXd& X = m_input_samples;
@@ -313,7 +300,6 @@ void GPR::cacheRegressionModel() {
 
     // Compute noise matrix for the ith channel
     const Eigen::MatrixXd sI = m_noise->variance(i).asDiagonal();
-    assert(sI.rows() == n);
 
     // Cholesky decomposition of K
     const Eigen::MatrixXd Ksig = K + sI;
