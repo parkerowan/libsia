@@ -41,7 +41,8 @@ struct GPR::KernelFunction {
   virtual Eigen::VectorXd hyperparameters() const = 0;
   virtual void setHyperparameters(const Eigen::VectorXd& p) = 0;
   std::size_t numHyperparameters() const;
-  static GPR::KernelFunction* create(GPR::KernelType kernel_type);
+  static std::shared_ptr<GPR::KernelFunction> create(
+      GPR::KernelType kernel_type);
 };
 
 // The squared exponential function.
@@ -67,9 +68,9 @@ class SquaredExponential : public GPR::KernelFunction {
 struct GPR::NoiseFunction {
   virtual ~NoiseFunction() = default;
   virtual Eigen::VectorXd variance(std::size_t channel) const = 0;
-  static GPR::NoiseFunction* create(GPR::NoiseType noise_type,
-                                    std::size_t num_samples,
-                                    std::size_t num_outputs);
+  static std::shared_ptr<GPR::NoiseFunction> create(GPR::NoiseType noise_type,
+                                                    std::size_t num_samples,
+                                                    std::size_t num_outputs);
 };
 
 class ScalarNoiseFunction : public GPR::NoiseFunction {
@@ -183,11 +184,6 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
   cacheRegressionModel();
 }
 
-GPR::~GPR() {
-  delete m_kernel;
-  delete m_noise;
-}
-
 const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
   // Algorithm 2.1 in: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   // For each output channel
@@ -281,25 +277,24 @@ std::size_t GPR::numHyperparameters() const {
 }
 
 void GPR::setScalarNoise(double variance) {
-  delete m_noise;
-  auto noise = new ScalarNoiseFunction(numSamples(), outputDimension());
+  auto noise =
+      std::make_shared<ScalarNoiseFunction>(numSamples(), outputDimension());
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
 }
 
 void GPR::setVectorNoise(const Eigen::VectorXd& variance) {
-  delete m_noise;
-  auto noise = new VectorNoiseFunction(numSamples(), outputDimension());
+  auto noise =
+      std::make_shared<VectorNoiseFunction>(numSamples(), outputDimension());
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
 }
 
 void GPR::setHeteroskedasticNoise(const Eigen::MatrixXd& variance) {
-  delete m_noise;
-  auto noise =
-      new HeteroskedasticNoiseFunction(numSamples(), outputDimension());
+  auto noise = std::make_shared<HeteroskedasticNoiseFunction>(
+      numSamples(), outputDimension());
   assert(noise != nullptr);
   noise->setVariance(variance);
   m_noise = noise;
@@ -360,10 +355,11 @@ std::size_t GPR::KernelFunction::numHyperparameters() const {
 
 // ----------------------------------------------------------------------------
 
-GPR::KernelFunction* GPR::KernelFunction::create(GPR::KernelType kernel_type) {
+std::shared_ptr<GPR::KernelFunction> GPR::KernelFunction::create(
+    GPR::KernelType kernel_type) {
   switch (kernel_type) {
     case GPR::SE_KERNEL:
-      return new SquaredExponential();
+      return std::make_shared<SquaredExponential>();
     default:
       SIA_EXCEPTION(
           false, "GPR::KernelFunction encountered unsupported GPR::KernelType");
@@ -409,16 +405,18 @@ void SquaredExponential::setHyperparameters(const Eigen::VectorXd& p) {
 
 // ----------------------------------------------------------------------------
 
-GPR::NoiseFunction* GPR::NoiseFunction::create(GPR::NoiseType noise_type,
-                                               std::size_t num_samples,
-                                               std::size_t num_outputs) {
+std::shared_ptr<GPR::NoiseFunction> GPR::NoiseFunction::create(
+    GPR::NoiseType noise_type,
+    std::size_t num_samples,
+    std::size_t num_outputs) {
   switch (noise_type) {
     case GPR::SCALAR_NOISE:
-      return new ScalarNoiseFunction(num_samples, num_outputs);
+      return std::make_shared<ScalarNoiseFunction>(num_samples, num_outputs);
     case GPR::VECTOR_NOISE:
-      return new VectorNoiseFunction(num_samples, num_outputs);
+      return std::make_shared<VectorNoiseFunction>(num_samples, num_outputs);
     case GPR::HETEROSKEDASTIC_NOISE:
-      return new HeteroskedasticNoiseFunction(num_samples, num_outputs);
+      return std::make_shared<HeteroskedasticNoiseFunction>(num_samples,
+                                                            num_outputs);
     default:
       SIA_EXCEPTION(
           false, "GPR::NoiseFunction encountered unsupported GPR::NoiseType");

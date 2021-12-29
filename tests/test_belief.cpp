@@ -6,8 +6,6 @@
 #include <cmath>
 #include <limits>
 
-#include <iostream>
-
 TEST(Belief, Generator) {
   std::uniform_int_distribution<long> distribution(
       0, std::numeric_limits<long>::max());

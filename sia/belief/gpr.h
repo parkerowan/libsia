@@ -7,6 +7,7 @@
 #include "sia/belief/gaussian.h"
 
 #include <Eigen/Dense>
+#include <memory>
 
 namespace sia {
 
@@ -36,7 +37,7 @@ class GPR : public Inference {
                const Eigen::MatrixXd& output_samples,
                KernelType kernel_type = SE_KERNEL,
                NoiseType noise_type = SCALAR_NOISE);
-  virtual ~GPR();
+  virtual ~GPR() = default;
 
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
@@ -74,8 +75,8 @@ class GPR : public Inference {
   Eigen::MatrixXd m_input_samples;
   Eigen::MatrixXd m_output_samples;
   Gaussian m_belief;
-  KernelFunction* m_kernel{nullptr};
-  NoiseFunction* m_noise{nullptr};
+  std::shared_ptr<KernelFunction> m_kernel{nullptr};
+  std::shared_ptr<NoiseFunction> m_noise{nullptr};
   std::vector<RegressionModel> m_models;
 };
 
