@@ -13,7 +13,6 @@
 #include "sia/belief/gpr.h"
 #include "sia/belief/helpers.h"
 #include "sia/belief/kernel_density.h"
-#include "sia/belief/kernels.h"
 #include "sia/belief/particles.h"
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"

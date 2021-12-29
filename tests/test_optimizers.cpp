@@ -71,17 +71,17 @@ TEST(Optimizers, GradientDescent) {
   EXPECT_NEAR(xopt(1), 2.275, 1e-3);
 }
 
-TEST(Optimizers, BayesianOptimizer) {
-  Eigen::VectorXd lb = -Eigen::VectorXd::Ones(1);
-  Eigen::VectorXd ub = Eigen::VectorXd::Ones(1);
-  sia::BayesianOptimizer bo(lb, ub);
+// TEST(Optimizers, BayesianOptimizer) {
+//   Eigen::VectorXd lb = -Eigen::VectorXd::Ones(1);
+//   Eigen::VectorXd ub = Eigen::VectorXd::Ones(1);
+//   sia::BayesianOptimizer bo(lb, ub);
 
-  for (std::size_t i = 0; i < 20; ++i) {
-    Eigen::VectorXd x = bo.selectNextSample();
-    double y = -quadratic(x);
-    bo.addDataPoint(x, y);
-    bo.updateModel();
-  }
-  Eigen::VectorXd xopt = bo.getSolution();
-  EXPECT_NEAR(xopt(0), 0, 1e-2);
-}
+//   for (std::size_t i = 0; i < 20; ++i) {
+//     Eigen::VectorXd x = bo.selectNextSample();
+//     double y = -quadratic(x);
+//     bo.addDataPoint(x, y);
+//     bo.updateModel();
+//   }
+//   Eigen::VectorXd xopt = bo.getSolution();
+//   EXPECT_NEAR(xopt(0), 0, 1e-2);
+// }

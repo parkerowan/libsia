@@ -18,11 +18,10 @@ set(lib_header
   belief/gaussian.h
   belief/gmm.h
   belief/gmr.h
-  belief/gpc.h
+  # belief/gpc.h
   belief/gpr.h
   belief/helpers.h
   belief/kernel_density.h
-  belief/kernels.h
   belief/particles.h
   belief/uniform.h
   common/exception.h
@@ -41,7 +40,7 @@ set(lib_header
   models/models.h
   models/nonlinear_gaussian.h
   models/simulate.h
-  optimizers/bayesian_optimizer.h
+  # optimizers/bayesian_optimizer.h
   optimizers/gradient_descent.h
   runner/buffer.h
   runner/recorder.h
@@ -55,11 +54,10 @@ set(lib_source
   belief/gaussian.cpp
   belief/gmm.cpp
   belief/gmr.cpp
-  belief/gpc.cpp
+  # belief/gpc.cpp
   belief/gpr.cpp
   belief/helpers.cpp
   belief/kernel_density.cpp
-  belief/kernels.cpp
   belief/particles.cpp
   belief/uniform.cpp
   controllers/cost.cpp
@@ -74,7 +72,7 @@ set(lib_source
   models/models.cpp
   models/nonlinear_gaussian.cpp
   models/simulate.cpp
-  optimizers/bayesian_optimizer.cpp
+  # optimizers/bayesian_optimizer.cpp
   optimizers/gradient_descent.cpp
   runner/buffer.cpp
   runner/recorder.cpp
