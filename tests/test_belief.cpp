@@ -496,6 +496,7 @@ TEST(Belief, GPR) {
   EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
 
   // Check the hyperparameters are written
+  gpr = sia::GPR(X, Y);
   Eigen::VectorXd p = Eigen::Vector2d{0.2, 1.0};
   gpr.setHyperparameters(p);
   const auto& pn = gpr.hyperparameters();
