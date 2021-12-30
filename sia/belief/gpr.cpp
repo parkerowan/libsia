@@ -28,7 +28,7 @@ struct GPR::KernelFunction {
                                const Eigen::VectorXd& b) const = 0;
   virtual Eigen::VectorXd hyperparameters() const = 0;
   virtual void setHyperparameters(const Eigen::VectorXd& p) = 0;
-  std::size_t numHyperparameters() const;
+  virtual std::size_t numHyperparameters() const;
   static std::shared_ptr<GPR::KernelFunction> create(
       GPR::KernelType kernel_type);
 };

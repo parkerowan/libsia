@@ -6,6 +6,8 @@
 #include <cmath>
 #include <limits>
 
+#include <iostream>
+
 TEST(Belief, Generator) {
   std::uniform_int_distribution<long> distribution(
       0, std::numeric_limits<long>::max());
@@ -204,6 +206,46 @@ TEST(Belief, Dirichlet) {
   sia::Dirichlet d(Eigen::Vector2d{0.370833, 0.321336});
   EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), INFINITY);
   EXPECT_NE(d.logProb(Eigen::Vector2d{1, 0}), -INFINITY);
+}
+
+TEST(Belief, Categorical) {
+  sia::Categorical a(2);
+  ASSERT_EQ(a.dimension(), 2);
+
+  sia::Categorical b(Eigen::Vector2d{0.4, 0.6});
+  ASSERT_EQ(b.dimension(), 2);
+  EXPECT_DOUBLE_EQ(b.probs()(0), 0.4);
+  EXPECT_DOUBLE_EQ(b.probs()(1), 0.6);
+
+  EXPECT_DOUBLE_EQ(b.mean()(0), 0.4);
+  EXPECT_DOUBLE_EQ(b.mean()(1), 0.6);
+
+  EXPECT_DOUBLE_EQ(b.mode()(0), 0);
+  EXPECT_DOUBLE_EQ(b.mode()(1), 1);
+
+  EXPECT_EQ(b.classify(), 1);
+  EXPECT_TRUE(b.oneHot(b.classify()).isApprox(b.mode()));
+  EXPECT_EQ(b.category(b.probs()), b.classify());
+
+  std::size_t ns = 10000;
+  Eigen::MatrixXd s = Eigen::MatrixXd::Zero(2, ns);
+  for (std::size_t i = 0; i < ns; ++i) {
+    s.col(i) = b.sample();
+  }
+  double n = static_cast<double>(ns);
+  const Eigen::VectorXd mean = s.rowwise().sum() / n;
+  const Eigen::MatrixXd e = (s.array().colwise() - b.mean().array()).matrix();
+  const Eigen::MatrixXd cov = e * e.transpose() / (n - 1);
+  EXPECT_NEAR(b.mean()(0), mean(0), 5e-2);
+  EXPECT_NEAR(b.mean()(1), mean(1), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 0), cov(0, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(0, 1), cov(0, 1), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 0), cov(1, 0), 5e-2);
+  EXPECT_NEAR(b.covariance()(1, 1), cov(1, 1), 5e-2);
+
+  const auto v = b.vectorize();
+  EXPECT_TRUE(a.devectorize(v));
+  EXPECT_TRUE(a.probs().isApprox(b.probs()));
 }
 
 TEST(Belief, Particles) {

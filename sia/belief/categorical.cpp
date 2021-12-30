@@ -52,7 +52,7 @@ const Eigen::VectorXd Categorical::mode() const {
 
 const Eigen::MatrixXd Categorical::covariance() const {
   std::size_t n = dimension();
-  Eigen::MatrixXd cov = Eigen::VectorXd::Zero(n, n);
+  Eigen::MatrixXd cov = Eigen::MatrixXd::Zero(n, n);
   cov = -m_probs * m_probs.transpose();
   cov.diagonal() = m_probs.array() * (1.0 - m_probs.array());
   return cov;
