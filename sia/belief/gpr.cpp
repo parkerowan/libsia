@@ -236,7 +236,11 @@ void GPR::train() {
     this->setHyperparameters(x);
     return this->negLogMarginalLik();
   };
-  Eigen::VectorXd p = optm.minimize(loss, this->hyperparameters());
+  auto jacobian = [this](const Eigen::VectorXd& x) {
+    (void)x;  // OK since the optimizer always calls loss before jacobian
+    return this->negLogMarginalLikGrad();
+  };
+  Eigen::VectorXd p = optm.minimize(loss, this->hyperparameters(), jacobian);
   this->setHyperparameters(p);
 }
 

@@ -4,8 +4,6 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
-#include <iostream>
-
 const double SMALL_NUMBER = 1e-6;
 
 double quadratic(const Eigen::VectorXd& x) {
@@ -65,7 +63,9 @@ TEST(Optimizers, GradientDescent) {
   // bounds active at 2 optima - 10 internal multiple starts
   lb = Eigen::Vector2d{0, -10};
   ub = Eigen::Vector2d{7, 10};
-  sia::GradientDescent c(lb, ub, 10);
+  sia::GradientDescent::Options opt;
+  opt.n_starts = 10;
+  sia::GradientDescent c(lb, ub, opt);
   xopt = c.minimize(branin);
   EXPECT_NEAR(xopt(0), M_PI, 1e-3);
   EXPECT_NEAR(xopt(1), 2.275, 1e-3);
