@@ -40,6 +40,7 @@ class Categorical : public Distribution {
 
   /// Converts the category to a one-hot encoding probability
   Eigen::VectorXd oneHot(std::size_t category) const;
+  Eigen::MatrixXd oneHot(const Eigen::VectorXi& category) const;
 
   /// Converts a one-hot encoding probability to a category
   std::size_t category(const Eigen::VectorXd& probs) const;

@@ -8,6 +8,7 @@
 #include "sia/belief/gpr.h"
 
 #include <Eigen/Dense>
+#include <memory>
 
 namespace sia {
 
@@ -15,8 +16,8 @@ namespace sia {
 /// $p(c|x)$, where c is a discrete index representing a category.  This class
 /// implements GPC with Dirichlet distributions, where the underlying GPR
 /// predicts approximate concentration parameters of the Dirichlet distribution.
-/// This yields much faster inference than the more widely used GPC approach
-/// developed in Rasmussen and Williams [2]
+/// This yields much faster inference than the more widely used exact Laplacian
+/// GPC approach developed in Rasmussen and Williams [2]
 ///
 /// References:
 /// [1]: D. Milios et. al., "Dirichlet-based Gaussian Processes for Large-Scale
@@ -29,53 +30,50 @@ class GPC : public Inference {
   /// indices.  The dimension of the underlying classifier will be determined by
   /// the max value found in output_samples, with an assumption that class
   /// indices are 0-indexed.  1 > alpha > 0 controls the minimum value of the
-  /// Dirichlet concentrations, varf > 0 uncertainty of the Gaussian prior (i.e.
-  /// outside of the training domain); and length > 0 controls the kernel basis
-  /// blending.  The covariance type determines the kernel basis.
+  /// Dirichlet concentrations.  The kernel type determines the kernel basis.
   explicit GPC(const Eigen::MatrixXd& input_samples,
                const Eigen::VectorXi& output_samples,
                double alpha = 0.01,
-               double varf = 0.1,
-               double length = 10);
+               GPR::KernelType kernel_type = GPR::SE_KERNEL);
   explicit GPC(const Eigen::MatrixXd& input_samples,
                const std::vector<int>& output_samples,
                double alpha = 0.01,
-               double varf = 0.1,
-               double length = 10);
-  virtual ~GPC();
+               GPR::KernelType kernel_type = GPR::SE_KERNEL);
+  virtual ~GPC() = default;
 
   /// Performs the inference $p(y|x)$
   const Dirichlet& predict(const Eigen::VectorXd& x) override;
+
+  /// Computes the negative log marginal likelihood loss and gradients
+  double negLogMarginalLik() const;
+  Eigen::VectorXd negLogMarginalLikGrad() const;
+
+  /// Train the hyperparameters
+  void train();
+
+  /// Dimensions
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-
-  /// Computes the negative log likelihood loss on training data and
-  /// hyperparameters (alpha, varf, length).  Hyperparameters are shared across
-  /// output channels.
-
-  // FIXME: Not actually the log marginal likelihood, just the log likelihood
-  double negLogMarginalLik();
-  Eigen::VectorXd getHyperparameters() const;
-  void setHyperparameters(const Eigen::VectorXd& p);
   std::size_t numSamples() const;
 
-  /// Returns a matrix of one-hot column vectors for the indices in x.  The
-  /// number of output matrix colums will be the length of the x vector.  The
-  /// number of output rows with be num_classes (assuming zero-indexed).
-  static Eigen::MatrixXd getOneHot(const Eigen::VectorXi& x,
-                                   std::size_t num_classes);
+  /// Access the hyperparameters
+  Eigen::VectorXd hyperparameters() const;
+  void setHyperparameters(const Eigen::VectorXd& p);
+  std::size_t numHyperparameters() const;
+
+  /// Set the alpha value
+  void setAlpha(double alpha);
 
  private:
   void cacheRegressionModel();
   static std::size_t getNumClasses(const Eigen::VectorXi& x);
 
   Dirichlet m_belief;
-  GPR* m_gpr;
+  std::shared_ptr<GPR> m_gpr;
   Eigen::MatrixXd m_input_samples;
   Eigen::VectorXi m_output_samples;
   double m_alpha;
-  double m_varf;
-  double m_length;
+  GPR::KernelType m_kernel_type;
 };
 
 }  // namespace sia

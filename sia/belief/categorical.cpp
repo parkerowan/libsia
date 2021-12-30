@@ -99,6 +99,16 @@ Eigen::VectorXd Categorical::oneHot(std::size_t category) const {
   return probs;
 }
 
+Eigen::MatrixXd Categorical::oneHot(const Eigen::VectorXi& category) const {
+  SIA_EXCEPTION(std::size_t(category.maxCoeff()) < dimension(),
+                "Categorical distribution expects category index to be < dim");
+  Eigen::MatrixXd probs = Eigen::MatrixXd::Zero(dimension(), category.size());
+  for (int i = 0; i < category.size(); ++i) {
+    probs.col(i) = oneHot(category(i));
+  }
+  return probs;
+}
+
 std::size_t Categorical::category(const Eigen::VectorXd& probs) const {
   int category;
   probs.maxCoeff(&category);

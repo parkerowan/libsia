@@ -13,14 +13,12 @@ namespace sia {
 GPC::GPC(const Eigen::MatrixXd& input_samples,
          const Eigen::VectorXi& output_samples,
          double alpha,
-         double varf,
-         double length)
+         GPR::KernelType kernel_type)
     : m_belief(getNumClasses(output_samples)),
       m_input_samples(input_samples),
       m_output_samples(output_samples),
       m_alpha(alpha),
-      m_varf(varf),
-      m_length(length) {
+      m_kernel_type(kernel_type) {
   SIA_EXCEPTION(input_samples.cols() == output_samples.size(),
                 "Inconsistent number of input cols to output length");
 
@@ -30,21 +28,15 @@ GPC::GPC(const Eigen::MatrixXd& input_samples,
 GPC::GPC(const Eigen::MatrixXd& input_samples,
          const std::vector<int>& output_samples,
          double alpha,
-         double varf,
-         double length)
+         GPR::KernelType kernel_type)
     : GPC(input_samples,
           Eigen::Map<const Eigen::VectorXi>(output_samples.data(),
                                             output_samples.size()),
           alpha,
-          varf,
-          length) {}
-
-GPC::~GPC() {
-  delete m_gpr;
-}
+          kernel_type) {}
 
 const Dirichlet& GPC::predict(const Eigen::VectorXd& x) {
-  SIA_EXCEPTION(m_gpr != nullptr, "Gaussian Process is uninitialized");
+  assert(m_gpr != nullptr);
 
   // Section 4 in: https://arxiv.org/pdf/1805.10915.pdf
   // Infer the log concentration for each output class, eqn. 6
@@ -54,6 +46,21 @@ const Dirichlet& GPC::predict(const Eigen::VectorXd& x) {
   // Generate the expectation via softmax, eqn. 7
   m_belief.setAlpha(alpha);
   return m_belief;
+}
+
+double GPC::negLogMarginalLik() const {
+  assert(m_gpr != nullptr);
+  return m_gpr->negLogMarginalLik();
+}
+
+Eigen::VectorXd GPC::negLogMarginalLikGrad() const {
+  assert(m_gpr != nullptr);
+  return m_gpr->negLogMarginalLikGrad();
+}
+
+void GPC::train() {
+  assert(m_gpr != nullptr);
+  return m_gpr->train();
 }
 
 std::size_t GPC::inputDimension() const {
@@ -68,64 +75,39 @@ std::size_t GPC::numSamples() const {
   return m_input_samples.cols();
 }
 
-double GPC::negLogMarginalLik() {
-  double neg_log_lik = 0;
-  std::size_t c = outputDimension();
-  const Eigen::MatrixXd Y = getOneHot(m_output_samples, c);
-  for (std::size_t i = 0; i < numSamples(); ++i) {
-    const auto& x = m_input_samples.col(i);
-    const auto& y = Y.col(i);
-    neg_log_lik -= predict(x).logProb(y);
-  }
-  return neg_log_lik;
-}
-
-Eigen::VectorXd GPC::getHyperparameters() const {
-  return Eigen::Vector3d(m_alpha, m_varf, m_length);
+Eigen::VectorXd GPC::hyperparameters() const {
+  assert(m_gpr != nullptr);
+  return m_gpr->hyperparameters();
 }
 
 void GPC::setHyperparameters(const Eigen::VectorXd& p) {
-  SIA_EXCEPTION(p.size() == 3, "Hyperparameter vector dim expected to be 3");
-
-  m_alpha = p(0);
-  m_varf = p(1);
-  m_length = p(2);
-
-  cacheRegressionModel();
+  assert(m_gpr != nullptr);
+  return m_gpr->setHyperparameters(p);
 }
 
-// Returns a matrix of one-hot classifications [num classes x sum samples]
-// TODO: move this to a discrete Categorical representation
-Eigen::MatrixXd GPC::getOneHot(const Eigen::VectorXi& x,
-                               std::size_t num_classes) {
-  int max_x = x.maxCoeff();
-  SIA_EXCEPTION(max_x < (int)num_classes,
-                "GPC expects the indices in x to be < number of classes");
+std::size_t GPC::numHyperparameters() const {
+  assert(m_gpr != nullptr);
+  return m_gpr->numHyperparameters();
+}
 
-  int min_x = x.minCoeff();
-  SIA_EXCEPTION(min_x >= 0, "GPC expects the indices in x to be >= 0");
-
-  std::size_t n = x.size();
-  Eigen::MatrixXd Y = Eigen::MatrixXd::Zero(num_classes, n);
-  for (std::size_t i = 0; i < n; ++i) {
-    assert(x(i) < (int)num_classes);
-    assert(x(i) >= 0);
-    Y(x(i), i) = 1.0;
-  }
-  return Y;
+void GPC::setAlpha(double alpha) {
+  m_alpha = alpha;
+  cacheRegressionModel();
 }
 
 void GPC::cacheRegressionModel() {
   // Section 4 in: https://arxiv.org/pdf/1805.10915.pdf
-  std::size_t c = outputDimension();
-  const Eigen::MatrixXd A = getOneHot(m_output_samples, c).array() + m_alpha;
+  Categorical c(outputDimension());
+  const Eigen::MatrixXd A = c.oneHot(m_output_samples).array() + m_alpha;
 
   // Transform concentrations to lognormal distribution, eqn. 5
   const Eigen::MatrixXd s2i = (1 / A.array() + 1).array().log();
   const Eigen::MatrixXd yi = A.array().log() - s2i.array() / 2;
 
   // Create multivariate GPR for each log concentration, eqn. 6
-  m_gpr = new GPR(m_input_samples, yi, s2i, m_varf, m_length);
+  m_gpr = std::make_shared<GPR>(m_input_samples, yi, m_kernel_type,
+                                GPR::HETEROSKEDASTIC_NOISE);
+  m_gpr->setHeteroskedasticNoise(s2i);
 }
 
 std::size_t GPC::getNumClasses(const Eigen::VectorXi& x) {
