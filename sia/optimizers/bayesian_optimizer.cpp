@@ -190,7 +190,15 @@ void GPRSurrogateModel::updateModel(bool train) {
   }
   Eigen::MatrixXd y = Eigen::Map<Eigen::MatrixXd>(m_output_data.data(), 1,
                                                   m_output_data.size());
-  m_gpr = std::make_shared<GPR>(X, y);
+
+  // Update the GPR instance
+  if (m_gpr == nullptr) {
+    m_gpr = std::make_shared<GPR>(X, y);
+  } else {
+    m_gpr->setData(X, y);
+  }
+
+  // Optionally train the GPR hyperparameters
   if (train) {
     m_gpr->train();
   }

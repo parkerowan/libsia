@@ -39,6 +39,10 @@ class GPR : public Inference {
                NoiseType noise_type = SCALAR_NOISE);
   virtual ~GPR() = default;
 
+  /// Recompute with new data but same hyperparameters
+  void setData(const Eigen::MatrixXd& input_samples,
+               const Eigen::MatrixXd& output_samples);
+
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
 

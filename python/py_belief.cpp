@@ -296,6 +296,8 @@ void export_py_belief(py::module& m_sup) {
           py::arg("input_samples"), py::arg("output_samples"),
           py::arg("kernel_type") = sia::GPR::SE_KERNEL,
           py::arg("noise_type") = sia::GPR::SCALAR_NOISE)
+      .def("setData", &sia::GPR::setData, py::arg("input_samples"),
+           py::arg("output_samples"))
       .def("predict", &sia::GPR::predict, py::arg("x"))
       .def("negLogMarginalLik", &sia::GPR::negLogMarginalLik)
       .def("negLogMarginalLikGrad", &sia::GPR::negLogMarginalLikGrad)
