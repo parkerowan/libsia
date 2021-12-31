@@ -329,35 +329,12 @@ TEST(Belief, Particles) {
   EXPECT_NEAR(d.covariance()(0, 0), u.covariance()(0, 0), 5e-2);
 }
 
-TEST(Belief, Kernel) {
-  Eigen::VectorXd z = Eigen::VectorXd::Zero(3);
-  Eigen::VectorXd dz = 0.01 * Eigen::VectorXd::Ones(3);
-
-  sia::UniformKernel a(z.size());
-  EXPECT_EQ(a.type(), sia::Kernel::UNIFORM);
-  EXPECT_GE(a.evaluate(z), a.evaluate(z + dz));
-  EXPECT_GE(a.evaluate(z), a.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(a.evaluate(z + dz), a.evaluate(z - dz));
-
-  sia::GaussianKernel b(z.size());
-  EXPECT_EQ(b.type(), sia::Kernel::GAUSSIAN);
-  EXPECT_GT(b.evaluate(z), b.evaluate(z + dz));
-  EXPECT_GT(b.evaluate(z), b.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(b.evaluate(z + dz), b.evaluate(z - dz));
-
-  sia::EpanechnikovKernel c(z.size());
-  EXPECT_EQ(c.type(), sia::Kernel::EPANECHNIKOV);
-  EXPECT_GT(c.evaluate(z), c.evaluate(z + dz));
-  EXPECT_GT(c.evaluate(z), c.evaluate(z - dz));
-  EXPECT_DOUBLE_EQ(c.evaluate(z + dz), c.evaluate(z - dz));
-}
-
 TEST(Belief, KernelDensity) {
   auto samples = sia::Particles::uniform(Eigen::Vector2d(-1, -2),
                                          Eigen::Vector2d(3, 4), 100);
 
   sia::KernelDensity a(samples.values(), samples.weights());
-  EXPECT_EQ(a.getKernelType(), sia::Kernel::EPANECHNIKOV);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::EPANECHNIKOV);
   EXPECT_GT(a.probability(samples.value(0)), 0);
   ASSERT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -382,13 +359,13 @@ TEST(Belief, KernelDensity) {
   EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
 
-  a.setKernelType(sia::Kernel::UNIFORM);
-  EXPECT_EQ(a.getKernelType(), sia::Kernel::UNIFORM);
+  a.setKernelType(sia::KernelDensity::UNIFORM);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::UNIFORM);
 
   // Expect if user specified that silverman is used as initialize bandwidth
-  sia::KernelDensity c(samples, sia::Kernel::GAUSSIAN,
+  sia::KernelDensity c(samples, sia::KernelDensity::GAUSSIAN,
                        sia::KernelDensity::USER_SPECIFIED);
-  EXPECT_EQ(c.getKernelType(), sia::Kernel::GAUSSIAN);
+  EXPECT_EQ(c.getKernelType(), sia::KernelDensity::GAUSSIAN);
   EXPECT_EQ(c.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);
@@ -606,7 +583,7 @@ TEST(Belief, GPC) {
   gpc.train();
   EXPECT_LT(gpc.negLogMarginalLik(), loss);
 
-  const double GRAD_TOLERANCE = 1e-2;
+  const double GRAD_TOLERANCE = 2e-2;
   Eigen::VectorXd grad = gpc.negLogMarginalLikGrad();
   EXPECT_NEAR(grad.norm(), 0, GRAD_TOLERANCE);
 
