@@ -40,7 +40,7 @@ set(lib_header
   models/models.h
   models/nonlinear_gaussian.h
   models/simulate.h
-  # optimizers/bayesian_optimizer.h
+  optimizers/bayesian_optimizer.h
   optimizers/gradient_descent.h
   runner/buffer.h
   runner/recorder.h
@@ -72,7 +72,7 @@ set(lib_source
   models/models.cpp
   models/nonlinear_gaussian.cpp
   models/simulate.cpp
-  # optimizers/bayesian_optimizer.cpp
+  optimizers/bayesian_optimizer.cpp
   optimizers/gradient_descent.cpp
   runner/buffer.cpp
   runner/recorder.cpp
