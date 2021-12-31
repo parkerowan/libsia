@@ -361,11 +361,16 @@ TEST(Belief, KernelDensity) {
 
   a.setKernelType(sia::KernelDensity::UNIFORM);
   EXPECT_EQ(a.getKernelType(), sia::KernelDensity::UNIFORM);
+  EXPECT_GT(a.probability(samples.value(0)), 0);
+
+  a.setBandwidthMode(sia::KernelDensity::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT_RULE);
 
   // Expect if user specified that silverman is used as initialize bandwidth
   sia::KernelDensity c(samples, sia::KernelDensity::GAUSSIAN,
                        sia::KernelDensity::USER_SPECIFIED);
   EXPECT_EQ(c.getKernelType(), sia::KernelDensity::GAUSSIAN);
+  EXPECT_GT(c.probability(samples.value(0)), 0);
   EXPECT_EQ(c.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
   EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);

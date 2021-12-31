@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "sia/belief/categorical.h"
 #include "sia/belief/dirichlet.h"
 #include "sia/belief/distribution.h"
 #include "sia/belief/gaussian.h"
@@ -90,23 +91,6 @@ class PyInference : public sia::Inference {
   // Trampoline (need one for each virtual function)
   std::size_t outputDimension() const override {
     PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDimension);
-  }
-};
-
-/// Kernel trampoline class
-class PyKernel : public sia::Kernel {
- public:
-  // Inherit the constructors
-  using sia::Kernel::Kernel;
-
-  // Trampoline (need one for each virtual function)
-  double evaluate(const Eigen::VectorXd& x) const override {
-    PYBIND11_OVERRIDE_PURE(double, sia::Kernel, evaluate, x);
-  }
-
-  // Trampoline (need one for each virtual function)
-  sia::Kernel::Type type() const override {
-    PYBIND11_OVERRIDE_PURE(sia::Kernel::Type, sia::Kernel, type);
   }
 };
 
