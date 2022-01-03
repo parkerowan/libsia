@@ -288,7 +288,7 @@ void export_py_models(py::module& m_sup) {
              sia::LinearizableMeasurement, sia::MeasurementModel>(
       m, "LinearGaussianMeasurementCT")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double>(),
-           py::arg("H"), py::arg("Rpsd"), py::arg("double"))
+           py::arg("H"), py::arg("Rpsd"), py::arg("dt"))
       .def("measurement", &sia::LinearGaussianMeasurementCT::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::LinearGaussianMeasurementCT::h, py::arg("state"))

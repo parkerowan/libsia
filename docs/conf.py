@@ -31,6 +31,7 @@ release = '0.2.1'
 # ones.
 extensions = [
     'recommonmark',
+    'nbsphinx',
     'sphinx_markdown_tables',
     'sphinx.ext.mathjax',
 ]
