@@ -1,4 +1,4 @@
-# libSIA - Stochastic Model-based Estimation and Control
+# libSIA - Model-based Reinforcement Learning
 
 [![pipeline status](https://gitlab.com/parkerowan/libsia/badges/master/pipeline.svg)](https://gitlab.com/parkerowan/libsia/commits/master)
 [![codecov](https://codecov.io/gl/parkerowan/libsia/branch/master/graph/badge.svg?token=H5P0UCFFR1)](https://codecov.io/gl/parkerowan/libsia)
