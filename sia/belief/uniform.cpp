@@ -48,7 +48,7 @@ double Uniform::logProb(const Eigen::VectorXd& x) const {
     }
   }
 
-  // Compute the log prob (probability = 1 / sum(b-a))
+  // Compute the log prob (probability = 1 / prod(b-a))
   Eigen::VectorXd e = upper() - lower();
   return -e.array().log().sum();
 }
