@@ -26,14 +26,21 @@ GPC::GPC(const Eigen::MatrixXd& input_samples,
 }
 
 GPC::GPC(const Eigen::MatrixXd& input_samples,
-         const std::vector<int>& output_samples,
+         const Eigen::VectorXi& output_samples,
+         const Eigen::VectorXd& hyperparameters,
          double alpha,
          GPR::KernelType kernel_type)
-    : GPC(input_samples,
-          Eigen::Map<const Eigen::VectorXi>(output_samples.data(),
-                                            output_samples.size()),
-          alpha,
-          kernel_type) {}
+    : m_belief(getNumClasses(output_samples)),
+      m_input_samples(input_samples),
+      m_output_samples(output_samples),
+      m_alpha(alpha),
+      m_kernel_type(kernel_type) {
+  SIA_EXCEPTION(input_samples.cols() == output_samples.size(),
+                "Inconsistent number of input cols to output length");
+
+  cacheRegressionModel();
+  m_gpr->setHyperparameters(hyperparameters);
+}
 
 const Dirichlet& GPC::predict(const Eigen::VectorXd& x) {
   assert(m_gpr != nullptr);

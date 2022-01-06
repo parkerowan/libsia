@@ -296,6 +296,11 @@ void export_py_belief(py::module& m_sup) {
           py::arg("input_samples"), py::arg("output_samples"),
           py::arg("kernel_type") = sia::GPR::SE_KERNEL,
           py::arg("noise_type") = sia::GPR::SCALAR_NOISE)
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                    const Eigen::VectorXd&, double, sia::GPR::KernelType>(),
+           py::arg("input_samples"), py::arg("output_samples"),
+           py::arg("hyperparameters"), py::arg("noise_variance"),
+           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
       .def("setData", &sia::GPR::setData, py::arg("input_samples"),
            py::arg("output_samples"))
       .def("predict", &sia::GPR::predict, py::arg("x"))
@@ -306,7 +311,8 @@ void export_py_belief(py::module& m_sup) {
       .def("outputDimension", &sia::GPR::outputDimension)
       .def("numSamples", &sia::GPR::numSamples)
       .def("hyperparameters", &sia::GPR::hyperparameters)
-      .def("setHyperparameters", &sia::GPR::setHyperparameters, py::arg("p"))
+      .def("setHyperparameters", &sia::GPR::setHyperparameters,
+           py::arg("hyperparameters"))
       .def("numHyperparameters", &sia::GPR::numHyperparameters)
       .def("setScalarNoise", &sia::GPR::setScalarNoise, py::arg("variance"))
       .def("setVectorNoise", &sia::GPR::setVectorNoise, py::arg("variance"))
@@ -319,10 +325,10 @@ void export_py_belief(py::module& m_sup) {
            py::arg("input_samples"), py::arg("output_samples"),
            py::arg("alpha") = 0.01,
            py::arg("kernel_type") = sia::GPR::SE_KERNEL)
-      .def(py::init<const Eigen::MatrixXd&, const std::vector<int>&, double,
-                    sia::GPR::KernelType>(),
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&,
+                    const Eigen::VectorXd&, double, sia::GPR::KernelType>(),
            py::arg("input_samples"), py::arg("output_samples"),
-           py::arg("alpha") = 0.01,
+           py::arg("hyperparameters"), py::arg("alpha") = 0.01,
            py::arg("kernel_type") = sia::GPR::SE_KERNEL)
       .def("predict", &sia::GPC::predict, py::arg("x"))
       .def("negLogMarginalLik", &sia::GPC::negLogMarginalLik)
@@ -332,7 +338,8 @@ void export_py_belief(py::module& m_sup) {
       .def("outputDimension", &sia::GPC::outputDimension)
       .def("numSamples", &sia::GPC::numSamples)
       .def("hyperparameters", &sia::GPC::hyperparameters)
-      .def("setHyperparameters", &sia::GPC::setHyperparameters, py::arg("p"))
+      .def("setHyperparameters", &sia::GPC::setHyperparameters,
+           py::arg("hyperparameters"))
       .def("numHyperparameters", &sia::GPC::numHyperparameters)
       .def("setAlpha", &sia::GPC::setAlpha, py::arg("alpha"));
 }

@@ -181,6 +181,27 @@ GPR::GPR(const Eigen::MatrixXd& input_samples,
   cacheRegressionModels();
 }
 
+GPR::GPR(const Eigen::MatrixXd& input_samples,
+         const Eigen::MatrixXd& output_samples,
+         const Eigen::VectorXd& hyperparameters,
+         double noise_variance,
+         KernelType kernel_type)
+    : m_input_samples(input_samples),
+      m_output_samples(output_samples),
+      m_belief(output_samples.rows()) {
+  m_kernel = KernelFunction::create(kernel_type);
+  assert(m_kernel != nullptr);
+  m_kernel->setHyperparameters(hyperparameters);
+
+  auto noise =
+      std::make_shared<ScalarNoiseFunction>(numSamples(), outputDimension());
+  assert(noise != nullptr);
+  noise->setVariance(noise_variance);
+  m_noise = noise;
+
+  cacheRegressionModels();
+}
+
 void GPR::setData(const Eigen::MatrixXd& input_samples,
                   const Eigen::MatrixXd& output_samples) {
   SIA_EXCEPTION(std::size_t(input_samples.rows()) == inputDimension(),
@@ -283,8 +304,8 @@ Eigen::VectorXd GPR::hyperparameters() const {
   return m_kernel->hyperparameters();
 }
 
-void GPR::setHyperparameters(const Eigen::VectorXd& p) {
-  m_kernel->setHyperparameters(p);
+void GPR::setHyperparameters(const Eigen::VectorXd& hyperparams) {
+  m_kernel->setHyperparameters(hyperparams);
   cacheRegressionModels();
 }
 
@@ -462,7 +483,7 @@ void ScalarNoiseFunction::setNumSamples(std::size_t num_samples) {
 }
 
 void ScalarNoiseFunction::setVariance(double variance) {
-  SIA_EXCEPTION(m_variance > 0, "ScalarNoiseFunction expects variance > 0");
+  SIA_EXCEPTION(variance > 0, "ScalarNoiseFunction expects variance > 0");
   m_variance = variance;
 }
 

@@ -78,7 +78,7 @@ const Particles& PF::correct(const Eigen::VectorXd& observation) {
     lp(i) = m_measurement.measurement(xp.col(i)).logProb(observation);
   }
 
-  // Correction step: update the weights usinfg Bayes' rule
+  // Correction step: update the weights using Bayes' rule
   wp = (wp.array().log() + lp.array()).exp();
   wp = wp.array() / wp.sum();
   VLOG(2) << "lp(0): " << lp(0) << " wp(0): " << wp(0);

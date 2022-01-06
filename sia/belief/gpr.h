@@ -15,6 +15,9 @@ namespace sia {
 /// $p(y|x)$ using a GP kernel prior.  This class implements algorithm 2.1
 /// from Rasmussen and Williams, and assumes a zero mean prior.
 ///
+/// Hyperparameters for Kernel Types:
+/// - SE_KERNEL: (length, signal_var)
+///
 /// References:
 /// [1]: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
 class GPR : public Inference {
@@ -37,6 +40,11 @@ class GPR : public Inference {
                const Eigen::MatrixXd& output_samples,
                KernelType kernel_type = SE_KERNEL,
                NoiseType noise_type = SCALAR_NOISE);
+  explicit GPR(const Eigen::MatrixXd& input_samples,
+               const Eigen::MatrixXd& output_samples,
+               const Eigen::VectorXd& hyperparameters,
+               double noise_variance,
+               KernelType kernel_type = SE_KERNEL);
   virtual ~GPR() = default;
 
   /// Recompute with new data but same hyperparameters
@@ -60,7 +68,7 @@ class GPR : public Inference {
 
   /// Access the hyperparameters
   Eigen::VectorXd hyperparameters() const;
-  void setHyperparameters(const Eigen::VectorXd& p);
+  void setHyperparameters(const Eigen::VectorXd& hyperparameters);
   std::size_t numHyperparameters() const;
 
   /// Set the white noise variance hyperparameters

@@ -19,6 +19,8 @@ namespace sia {
 /// This yields much faster inference than the more widely used exact Laplacian
 /// GPC approach developed in Rasmussen and Williams [2]
 ///
+/// See GPR for Kernel Type hyperparameter options.
+///
 /// References:
 /// [1]: D. Milios et. al., "Dirichlet-based Gaussian Processes for Large-Scale
 /// Calibrated Gaussian Process Calibration," NeurIPS, 2018.
@@ -36,7 +38,8 @@ class GPC : public Inference {
                double alpha = 0.01,
                GPR::KernelType kernel_type = GPR::SE_KERNEL);
   explicit GPC(const Eigen::MatrixXd& input_samples,
-               const std::vector<int>& output_samples,
+               const Eigen::VectorXi& output_samples,
+               const Eigen::VectorXd& hyperparameters,
                double alpha = 0.01,
                GPR::KernelType kernel_type = GPR::SE_KERNEL);
   virtual ~GPC() = default;
