@@ -15,7 +15,7 @@ namespace sia {
 ///
 
 /// A linear dynamics model with zero-mean additive Gaussian noise
-/// $x_k = F x_k-1 + G u_k + w_k, w_k \sim N(0, Q_k)$.
+/// $x_k+1 = F x_k + G u_k + w_k, w_k \sim N(0, Q_k)$.
 class LinearGaussianDynamics : public LinearizableDynamics {
  public:
   explicit LinearGaussianDynamics(const Eigen::MatrixXd& F,
@@ -23,15 +23,15 @@ class LinearGaussianDynamics : public LinearizableDynamics {
                                   const Eigen::MatrixXd& Q);
   virtual ~LinearGaussianDynamics() = default;
 
-  /// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
+  /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   Gaussian& dynamics(const Eigen::VectorXd& state,
                      const Eigen::VectorXd& control) override;
 
-  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
   Eigen::VectorXd f(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 
-  /// Process noise covariance $V[x_k] = S(x_k-1, u_k)$.
+  /// Process noise covariance $V[x_k+1] = S(x_k, u_k)$.
   Eigen::MatrixXd Q(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 
