@@ -6,9 +6,15 @@
 hub_prefix=owan
 image=libsia
 target_dir=libsia
+run_image=$image
 dir="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # functions
+remote()
+{
+  run_image=$hub_prefix/$image:latest
+}
+
 build()
 {
   docker build -t $image $dir/..
@@ -19,7 +25,7 @@ bash()
   # https://cntnr.io/running-guis-with-docker-on-mac-os-x-a14df6a76efc
   docker run --rm -it \
     -v $dir/..:/$target_dir \
-    $image /bin/bash
+    $run_image /bin/bash
 }
 
 push()
@@ -28,12 +34,17 @@ push()
   docker push $hub_prefix/$image:latest
 }
 
+pull()
+{
+  docker pull $hub_prefix/$image:latest
+}
+
 jupyter()
 {
   docker run --rm -it \
     -p 8888:8888 \
     -v $dir/..:/$target_dir \
-    $image \
+    $run_image \
     jupyter lab \
     --ip=0.0.0.0 \
     --port=8888 \
@@ -53,7 +64,9 @@ Commands:
   --build        Builds the Docker container
   --bash         Runs a CLI bash connected to the kernel server
   --push         Pushes the latest image to the docker hub
+  --push         Pulls the latest image from the docker hub
   --jupyter      Runs a jupyter notebook server
+  --remote       Optional (before --bash or --jupyter) to use remote
 
 EOF
 }
@@ -73,11 +86,16 @@ while [ "$1" != "" ]; do
     --push )        shift
                     push
                     ;;
+    --pull )        shift
+                    push
+                    ;;
     --jupyter )     shift
                     jupyter
+                    ;;
+    --remote )      shift
+                    remote
                     ;;
     * )             help
                     exit 1
   esac
-  shift
 done
