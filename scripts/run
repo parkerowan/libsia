@@ -64,7 +64,7 @@ Commands:
   --build        Builds the Docker container
   --bash         Runs a CLI bash connected to the kernel server
   --push         Pushes the latest image to the docker hub
-  --push         Pulls the latest image from the docker hub
+  --pull         Pulls the latest image from the docker hub
   --jupyter      Runs a jupyter notebook server
   --remote       Optional (before --bash or --jupyter) to use remote
 
@@ -87,7 +87,7 @@ while [ "$1" != "" ]; do
                     push
                     ;;
     --pull )        shift
-                    push
+                    pull
                     ;;
     --jupyter )     shift
                     jupyter
