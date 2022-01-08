@@ -34,11 +34,11 @@ const Gaussian& EKF::predict(const Eigen::VectorXd& control) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& u = control;
-  const auto Q = m_dynamics.Q(x, control);
+  const auto F = m_dynamics.F(x, u);
+  const auto Q = m_dynamics.Q(x, u);
 
   // Propogate
   x = m_dynamics.f(x, u);
-  const auto F = m_dynamics.F(x, u);
   P = F * P * F.transpose() + Q;
 
   m_belief.setMean(x);
@@ -51,10 +51,10 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   auto x = m_belief.mean();
   auto P = m_belief.covariance();
   const auto& y = observation;
+  const auto H = m_measurement.H(x);
   const auto R = m_measurement.R(x);
 
   // Gain
-  const auto H = m_measurement.H(x);
   Eigen::MatrixXd HPHTRinv;
   bool r = svdInverse(H * P * H.transpose() + R, HPHTRinv);
   SIA_EXCEPTION(r, "Matrix inversion failed in EKF gain computation");
