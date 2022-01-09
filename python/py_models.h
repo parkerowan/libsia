@@ -11,7 +11,7 @@
 #include "sia/models/linear_gaussian.h"
 #include "sia/models/models.h"
 #include "sia/models/nonlinear_gaussian.h"
-#include "sia/models/simulate.h"
+// #include "sia/models/simulate.h"
 
 namespace py = pybind11;
 

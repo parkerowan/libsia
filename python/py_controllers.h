@@ -11,6 +11,7 @@
 #include "sia/belief/distribution.h"
 #include "sia/controllers/controllers.h"
 #include "sia/controllers/cost.h"
+#include "sia/models/trajectory.h"
 
 namespace py = pybind11;
 
@@ -112,6 +113,18 @@ class PyController : public sia::Controller {
   const Eigen::VectorXd& policy(const sia::Distribution& state) override {
     PYBIND11_OVERRIDE_PURE(const Eigen::VectorXd&, sia::Controller, policy,
                            state);
+  }
+
+  // Trampoline (need one for each virtual function)
+  const sia::Trajectory<Eigen::VectorXd>& controls() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::Trajectory<Eigen::VectorXd>&,
+                           sia::Controller, controls);
+  }
+
+  // Trampoline (need one for each virtual function)
+  const sia::Trajectory<Eigen::VectorXd>& states() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::Trajectory<Eigen::VectorXd>&,
+                           sia::Controller, states);
   }
 };
 

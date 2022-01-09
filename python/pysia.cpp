@@ -22,5 +22,5 @@ PYBIND11_MODULE(pysia, m) {
   export_py_math(m);
   export_py_models(m);
   export_py_optimizers(m);
-  export_py_runner(m);
+  // export_py_runner(m);
 }

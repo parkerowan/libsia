@@ -39,12 +39,13 @@ set(lib_header
   models/linear_gaussian.h
   models/models.h
   models/nonlinear_gaussian.h
-  models/simulate.h
+  models/trajectory.h
+  # models/simulate.h
   optimizers/bayesian_optimizer.h
   optimizers/gradient_descent.h
-  runner/buffer.h
-  runner/recorder.h
-  runner/runner.h
+  # runner/buffer.h
+  # runner/recorder.h
+  # runner/runner.h
 )
 
 set(lib_source
@@ -71,12 +72,12 @@ set(lib_source
   models/linear_gaussian.cpp
   models/models.cpp
   models/nonlinear_gaussian.cpp
-  models/simulate.cpp
+  # models/simulate.cpp
   optimizers/bayesian_optimizer.cpp
   optimizers/gradient_descent.cpp
-  runner/buffer.cpp
-  runner/recorder.cpp
-  runner/runner.cpp
+  # runner/buffer.cpp
+  # runner/recorder.cpp
+  # runner/runner.cpp
 )
 
 FUNCTIONS_CREATE_CPP_SHARED_LIB(

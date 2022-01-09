@@ -74,9 +74,13 @@ class iLQR : public Controller {
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
-  /// Return the states and controls for the rollout
-  const std::vector<Eigen::VectorXd>& getControls() const;
-  const std::vector<Eigen::VectorXd>& getStates() const;
+  /// Returns the solution control trajectory $U$ over the horizon
+  const Trajectory<Eigen::VectorXd>& controls() const override;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  const Trajectory<Eigen::VectorXd>& states() const override;
+
+  /// Return the metrics
   const Metrics& getMetrics() const;
 
  private:

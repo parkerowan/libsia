@@ -48,6 +48,12 @@ class MPPI : public Controller {
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
+  /// Returns the solution control trajectory $U$ over the horizon
+  const Trajectory<Eigen::VectorXd>& controls() const override;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  const Trajectory<Eigen::VectorXd>& states() const override;
+
  private:
   void cacheSigmaInv();
 
@@ -59,6 +65,7 @@ class MPPI : public Controller {
   Eigen::MatrixXd m_sigma_inv;
   double m_lambda;
   std::vector<Eigen::VectorXd> m_controls;
+  std::vector<Eigen::VectorXd> m_states;
 };
 
 }  // namespace sia

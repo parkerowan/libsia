@@ -5,6 +5,7 @@
 
 #include "sia/belief/distribution.h"
 #include "sia/models/models.h"
+#include "sia/models/trajectory.h"
 
 #include <Eigen/Dense>
 #include <map>
@@ -24,6 +25,12 @@ class Controller {
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   virtual const Eigen::VectorXd& policy(const Distribution& state) = 0;
+
+  /// Returns the solution control trajectory $U$ over the horizon
+  virtual const Trajectory<Eigen::VectorXd>& controls() const = 0;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  virtual const Trajectory<Eigen::VectorXd>& states() const = 0;
 };
 
 }  // namespace sia

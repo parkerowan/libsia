@@ -10,7 +10,7 @@
 namespace sia {
 
 /// Defines a cost function for an optimal control problem comprised of
-/// $J(x,u) = c_f(x_T) + \sum_{i=1}^{T-1} c(x,u,i)$
+/// $J(x,u) = c_f(x_T) + \sum_{i=0}^{T-1} c(x,u,i)$
 /// where $c_f$ is the terminal cost and $c$ is the running cost.
 class CostFunction {
  public:

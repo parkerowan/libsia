@@ -42,7 +42,7 @@ iLQR::iLQR(LinearizableDynamics& dynamics,
 
 const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
   auto tic = steady_clock::now();
-  auto& N = m_horizon;
+  auto T = m_horizon;
 
   // Shift the control through the buffer so that we use the previously computed
   // cost to initialize the trajectory.
@@ -51,9 +51,9 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
 
   // Rollout the dynamics for the initial control
   m_states.clear();
-  m_states.reserve(N);
+  m_states.reserve(T);
   m_states.emplace_back(state.mean());
-  for (std::size_t i = 0; i < N - 1; ++i) {
+  for (std::size_t i = 0; i < T - 1; ++i) {
     m_states.emplace_back(m_dynamics.f(m_states.at(i), m_controls.at(i)));
   }
 
@@ -67,16 +67,16 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
     // 1. Backward pass
     std::vector<Eigen::VectorXd> feedforward;
     std::vector<Eigen::MatrixXd> feedback;
-    feedforward.reserve(N - 1);
-    feedback.reserve(N - 1);
+    feedforward.reserve(T - 1);
+    feedback.reserve(T - 1);
 
     // Initialize terminal value function Gradient and Hessian
     double dJa = 0;
     double dJb = 0;
-    Eigen::VectorXd Vpx = m_cost.cfx(m_states.at(N - 1));
-    Eigen::MatrixXd Vpxx = m_cost.cfxx(m_states.at(N - 1));
-    std::size_t n = m_states.at(N - 1).size();
-    for (int i = N - 2; i >= 0; --i) {
+    Eigen::VectorXd Vpx = m_cost.cfx(m_states.at(T - 1));
+    Eigen::MatrixXd Vpxx = m_cost.cfxx(m_states.at(T - 1));
+    std::size_t n = m_states.at(T - 1).size();
+    for (int i = T - 2; i >= 0; --i) {
       const auto& x = m_states.at(i);
       const auto& u = m_controls.at(i);
 
@@ -134,7 +134,7 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
       dJb += dVb;
     }
 
-    // Flip the gain vector/matrices order to match forward advance in time
+    // Flip the gain vector/matrices order to advance forward in time
     std::reverse(feedforward.begin(), feedforward.end());
     std::reverse(feedback.begin(), feedback.end());
 
@@ -147,10 +147,10 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
     do {
       new_states.clear();
       new_controls.clear();
-      new_states.reserve(N);
-      new_controls.reserve(N);
+      new_states.reserve(T);
+      new_controls.reserve(T);
       new_states.emplace_back(m_states.at(0));
-      for (std::size_t i = 0; i < N - 1; ++i) {
+      for (std::size_t i = 0; i < T - 1; ++i) {
         // Compute eqns (8a-b) to find the control law
         const Eigen::VectorXd& u = m_controls.at(i);
         const Eigen::VectorXd& xhat = new_states.at(i);
@@ -200,11 +200,11 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
   return m_controls.at(0);
 }
 
-const std::vector<Eigen::VectorXd>& iLQR::getControls() const {
+const Trajectory<Eigen::VectorXd>& iLQR::controls() const {
   return m_controls;
 }
 
-const std::vector<Eigen::VectorXd>& iLQR::getStates() const {
+const Trajectory<Eigen::VectorXd>& iLQR::states() const {
   return m_states;
 }
 

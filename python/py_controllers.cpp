@@ -16,7 +16,11 @@ void export_py_controllers(py::module& m_sup) {
       .def("eval", &sia::CostFunction::eval, py::arg("x"), py::arg("u"));
 
   py::class_<sia::Controller, PyController>(m, "Controller")
-      .def("policy", &sia::Controller::policy, py::arg("state"));
+      .def("policy", &sia::Controller::policy, py::arg("state"))
+      .def("controls", &sia::Controller::controls,
+           py::return_value_policy::reference_internal)
+      .def("states", &sia::Controller::states,
+           py::return_value_policy::reference_internal);
 
   py::class_<sia::DifferentiableCost, sia::CostFunction, PyDifferentiableCost>(
       m, "DifferentiableCost")
@@ -96,7 +100,11 @@ void export_py_controllers(py::module& m_sup) {
       .def(py::init<sia::LinearGaussianDynamics&, sia::QuadraticCost&,
                     std::size_t>(),
            py::arg("dynamics"), py::arg("cost"), py::arg("horizon"))
-      .def("policy", &sia::LQR::policy, py::arg("state"));
+      .def("policy", &sia::LQR::policy, py::arg("state"))
+      .def("controls", &sia::LQR::controls,
+           py::return_value_policy::reference_internal)
+      .def("states", &sia::LQR::states,
+           py::return_value_policy::reference_internal);
 
   auto ilqr =
       py::class_<sia::iLQR, sia::Controller>(m, "iLQR")
@@ -108,9 +116,9 @@ void export_py_controllers(py::module& m_sup) {
                py::arg("epsilon") = 1e-1, py::arg("tau") = 0.5,
                py::arg("min_z") = 1e-1, py::arg("mu") = 0)
           .def("policy", &sia::iLQR::policy, py::arg("state"))
-          .def("getControls", &sia::iLQR::getControls,
+          .def("controls", &sia::iLQR::controls,
                py::return_value_policy::reference_internal)
-          .def("getStates", &sia::iLQR::getStates,
+          .def("states", &sia::iLQR::states,
                py::return_value_policy::reference_internal)
           .def("getMetrics", &sia::iLQR::getMetrics,
                py::return_value_policy::reference_internal);
@@ -131,5 +139,9 @@ void export_py_controllers(py::module& m_sup) {
                     const Eigen::MatrixXd&, double>(),
            py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
            py::arg("num_samples"), py::arg("sigma"), py::arg("lam") = 1.0)
-      .def("policy", &sia::MPPI::policy, py::arg("state"));
+      .def("policy", &sia::MPPI::policy, py::arg("state"))
+      .def("controls", &sia::MPPI::controls,
+           py::return_value_policy::reference_internal)
+      .def("states", &sia::MPPI::states,
+           py::return_value_policy::reference_internal);
 }
