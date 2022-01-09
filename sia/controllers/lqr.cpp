@@ -24,7 +24,7 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   const auto& G = m_dynamics.G();
 
   m_controls.clear();
-  m_controls.reserve(T - 1);
+  m_controls.reserve(T);
 
   m_states.clear();
   m_states.reserve(T);
@@ -32,15 +32,15 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   // 1. Backward recursion dynamic Ricatti equation to compute the cost to go
   std::vector<Eigen::MatrixXd> feedback;
   std::vector<Eigen::VectorXd> feedforward;
-  feedback.reserve(T - 1);
-  feedforward.reserve(T - 1);
+  feedback.reserve(T);
+  feedforward.reserve(T);
 
   // Initialize terminal value function Gradient and Hessian
   Eigen::MatrixXd P = Qf;
-  Eigen::VectorXd v = Qf * m_cost.xd(T - 1);
+  Eigen::VectorXd v = Qf * m_cost.xd(T);
   Eigen::MatrixXd QuuInv;
 
-  for (int i = T - 2; i >= 0; --i) {
+  for (int i = T - 1; i >= 0; --i) {
     bool r = svdInverse(R + G.transpose() * P * G, QuuInv);
     SIA_EXCEPTION(r, "Matrix inversion failed in LQR cost to go computation");
     const Eigen::MatrixXd K = QuuInv * G.transpose() * P * F;
@@ -58,7 +58,7 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   std::reverse(feedforward.begin(), feedforward.end());
 
   // 2. Forward pass to compute the optimal control and states
-  for (std::size_t i = 0; i < T - 1; ++i) {
+  for (std::size_t i = 0; i < T; ++i) {
     const Eigen::VectorXd u = -feedback.at(i) * x + feedforward.at(i);
     m_controls.emplace_back(u);
     m_states.emplace_back(x);
