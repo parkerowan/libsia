@@ -81,7 +81,7 @@ class iLQR : public Controller {
   const Trajectory<Eigen::VectorXd>& states() const override;
 
   /// Return the metrics
-  const Metrics& getMetrics() const;
+  const Metrics& metrics() const;
 
  private:
   LinearizableDynamics& m_dynamics;

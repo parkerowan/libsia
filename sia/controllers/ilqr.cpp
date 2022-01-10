@@ -205,7 +205,7 @@ const Trajectory<Eigen::VectorXd>& iLQR::states() const {
   return m_states;
 }
 
-const iLQR::Metrics& iLQR::getMetrics() const {
+const iLQR::Metrics& iLQR::metrics() const {
   return m_metrics;
 }
 

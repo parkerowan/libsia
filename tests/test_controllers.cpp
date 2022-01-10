@@ -182,10 +182,10 @@ TEST(Controllers, iLQR) {
 
   // Expect that the iLQR converged in 1 iteration and no backstepping was
   // needed since the system is linear
-  EXPECT_EQ(mpc.getMetrics().iter, 1);
-  EXPECT_EQ(mpc.getMetrics().backstep_iter, 1);
-  EXPECT_DOUBLE_EQ(mpc.getMetrics().alpha, 1.0);
-  EXPECT_DOUBLE_EQ(mpc.getMetrics().dJ, 0.0);
+  EXPECT_EQ(mpc.metrics().iter, 1);
+  EXPECT_EQ(mpc.metrics().backstep_iter, 1);
+  EXPECT_DOUBLE_EQ(mpc.metrics().alpha, 1.0);
+  EXPECT_DOUBLE_EQ(mpc.metrics().dJ, 0.0);
 
   // Check the state and control rollout
   ASSERT_EQ(mpc.states().size(), horizon);
@@ -236,5 +236,5 @@ TEST(Controllers, MPPI) {
   // Check the state and control rollout
   ASSERT_EQ(mpc.states().size(), horizon);
   ASSERT_EQ(mpc.controls().size(), horizon);
-  // EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
+  EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
 }

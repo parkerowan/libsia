@@ -120,7 +120,7 @@ void export_py_controllers(py::module& m_sup) {
                py::return_value_policy::reference_internal)
           .def("states", &sia::iLQR::states,
                py::return_value_policy::reference_internal)
-          .def("getMetrics", &sia::iLQR::getMetrics,
+          .def("metrics", &sia::iLQR::metrics,
                py::return_value_policy::reference_internal);
 
   py::class_<sia::iLQR::Metrics>(ilqr, "Metrics")

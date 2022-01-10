@@ -24,8 +24,8 @@ MPPI::MPPI(DynamicsModel& dynamics,
 }
 
 const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
-  auto& T = m_horizon;
-  auto& K = m_num_samples;
+  auto T = m_horizon;
+  auto K = m_num_samples;
   auto x = state.mean();
 
   // Shift the control through the buffer so that we use the previously computed
@@ -63,6 +63,7 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
   w /= w.sum();
 
   // Update controls and states
+  x = state.mean();
   m_states.emplace_back(x);
   for (std::size_t i = 0; i < T - 1; ++i) {
     Eigen::VectorXd e = Eigen::VectorXd::Zero(eps.at(0).at(0).size());
@@ -70,9 +71,9 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
       e += w(k) * eps.at(k).at(i);
     }
     m_controls.at(i) += e;
-    m_states.emplace_back(m_dynamics.dynamics(x, m_controls.at(i)).mean());
+    x = m_dynamics.dynamics(x, m_controls.at(i)).mean();
+    m_states.emplace_back(x);
   }
-
   return m_controls.at(0);
 }
 
