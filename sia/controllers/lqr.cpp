@@ -37,7 +37,7 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
 
   // Initialize terminal value function Gradient and Hessian
   Eigen::MatrixXd P = Qf;
-  Eigen::VectorXd v = Qf * m_cost.xd(T);
+  Eigen::VectorXd v = Qf * m_cost.xd(T - 1);
   Eigen::MatrixXd QuuInv;
 
   for (int i = T - 1; i >= 0; --i) {

@@ -114,7 +114,7 @@ void export_py_controllers(py::module& m_sup) {
                py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
                py::arg("max_iter") = 1, py::arg("max_backsteps") = 1,
                py::arg("epsilon") = 1e-1, py::arg("tau") = 0.5,
-               py::arg("min_z") = 1e-1, py::arg("mu") = 0)
+               py::arg("min_z") = 1e-2, py::arg("mu") = 0)
           .def("policy", &sia::iLQR::policy, py::arg("state"))
           .def("controls", &sia::iLQR::controls,
                py::return_value_policy::reference_internal)

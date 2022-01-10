@@ -67,7 +67,7 @@ class iLQR : public Controller {
                 std::size_t max_backsteps = 1,
                 double epsilon = 1e-1,
                 double tau = 0.5,
-                double min_z = 1e-1,
+                double min_z = 1e-2,
                 double mu = 0);
   virtual ~iLQR() = default;
 
