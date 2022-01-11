@@ -143,5 +143,9 @@ void export_py_controllers(py::module& m_sup) {
       .def("controls", &sia::MPPI::controls,
            py::return_value_policy::reference_internal)
       .def("states", &sia::MPPI::states,
+           py::return_value_policy::reference_internal)
+      .def("rolloutStates", &sia::MPPI::rolloutStates,
+           py::return_value_policy::reference_internal)
+      .def("rolloutWeights", &sia::MPPI::rolloutWeights,
            py::return_value_policy::reference_internal);
 }

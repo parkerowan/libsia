@@ -237,4 +237,6 @@ TEST(Controllers, MPPI) {
   ASSERT_EQ(mpc.states().size(), horizon);
   ASSERT_EQ(mpc.controls().size(), horizon);
   EXPECT_TRUE(mpc.states().at(0).isApprox(state.mean()));
+  ASSERT_EQ(mpc.rolloutStates().size(), num_samples);
+  ASSERT_EQ(mpc.rolloutWeights().size(), num_samples);
 }

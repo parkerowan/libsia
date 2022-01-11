@@ -54,6 +54,12 @@ class MPPI : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
+  /// Returns the sampled state trajectories $X$ over the horizon
+  const std::vector<Trajectory<Eigen::VectorXd>>& rolloutStates() const;
+
+  /// Returns the weight vector for each sampled rollout
+  const Eigen::VectorXd& rolloutWeights() const;
+
  private:
   void cacheSigmaInv();
 
@@ -64,8 +70,10 @@ class MPPI : public Controller {
   Gaussian m_sigma;
   Eigen::MatrixXd m_sigma_inv;
   double m_lambda;
-  std::vector<Eigen::VectorXd> m_controls;
-  std::vector<Eigen::VectorXd> m_states;
+  Trajectory<Eigen::VectorXd> m_controls;
+  Trajectory<Eigen::VectorXd> m_states;
+  std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;
+  Eigen::VectorXd m_rollout_weights;
 };
 
 }  // namespace sia

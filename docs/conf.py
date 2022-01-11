@@ -18,11 +18,11 @@ from recommonmark.transform import AutoStructify
 # -- Project information -----------------------------------------------------
 
 project = 'libSIA'
-copyright = '2021, Parker Owan'
+copyright = '2018-2022, Parker Owan'
 author = 'Parker Owan'
 
 # The full version, including alpha/beta/rc tags
-release = '0.2.1'
+release = '0.3.0'
 
 # -- General configuration ---------------------------------------------------
 
