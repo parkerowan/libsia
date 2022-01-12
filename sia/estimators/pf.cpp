@@ -20,12 +20,7 @@ PF::PF(DynamicsModel& dynamics,
       m_resample_threshold(resample_threshold),
       m_roughening_factor(roughening_factor) {}
 
-void PF::reset(const Particles& particles) {
-  m_belief = particles;
-  m_first_pass = true;
-}
-
-const Particles& PF::getBelief() const {
+const Particles& PF::belief() const {
   return m_belief;
 }
 

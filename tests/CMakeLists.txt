@@ -16,7 +16,6 @@ set(test_source
   test_math.cpp
   test_models.cpp
   test_optimizers.cpp
-  # test_runner.cpp
 )
 FUNCTIONS_CREATE_CPP_TEST(
   TARGET "${test_target}"

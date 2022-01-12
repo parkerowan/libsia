@@ -4,11 +4,10 @@
 #pragma once
 
 #include "sia/belief/distribution.h"
+#include "sia/common/trajectory.h"
 #include "sia/models/models.h"
-#include "sia/models/trajectory.h"
 
 #include <Eigen/Dense>
-#include <map>
 
 namespace sia {
 
@@ -16,8 +15,7 @@ namespace sia {
 /// the system dynamics for a control trajectory forward in time over a finite
 /// horizon.  The first control is applied at the current time step.  MPC is
 /// known to be useful for correcting for inaccuracies in the dynamics model,
-/// since a new forward simulation is computed with each ne updated state
-/// estimate.
+/// since a new plan is computed with each new state estimate.
 class Controller {
  public:
   Controller() = default;

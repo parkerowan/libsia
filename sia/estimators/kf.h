@@ -20,8 +20,7 @@ class KF : public Estimator {
               LinearGaussianMeasurement& measurement,
               const Gaussian& state);
   virtual ~KF() = default;
-  void reset(const Gaussian& state);
-  const Gaussian& getBelief() const override;
+  const Gaussian& belief() const override;
 
   /// Performs the combined prediction and correction.
   const Gaussian& estimate(const Eigen::VectorXd& observation,

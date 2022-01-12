@@ -12,17 +12,16 @@ TEST(Estimators, KF) {
   sia::Gaussian prior(0, 10);
   sia::KF kf(dynamics, measurement, prior);
 
+  sia::Gaussian belief = kf.belief();
+  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
+  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
+
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
   u << 1;
-  sia::Gaussian belief = kf.estimate(y, u);
+  belief = kf.estimate(y, u);
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
-
-  kf.reset(prior);
-  belief = kf.getBelief();
-  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
-  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
 
 TEST(Estimators, EKF) {
@@ -31,17 +30,16 @@ TEST(Estimators, EKF) {
   sia::Gaussian prior(0, 10);
   sia::EKF ekf(dynamics, measurement, prior);
 
+  sia::Gaussian belief = ekf.belief();
+  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
+  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
+
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
   u << 1;
-  sia::Gaussian belief = ekf.estimate(y, u);
+  belief = ekf.estimate(y, u);
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
-
-  ekf.reset(prior);
-  belief = ekf.getBelief();
-  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
-  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
 
 TEST(Estimators, PF) {
@@ -53,10 +51,14 @@ TEST(Estimators, PF) {
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
   sia::PF pf(dynamics, measurement, prior, 1.0, 0.01);
 
+  sia::Particles belief = pf.belief();
+  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
+  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
+
   Eigen::Matrix<double, 1, 1> y, u;
   y << 0.1;
   u << 1;
-  sia::Particles belief = pf.estimate(y, u);
+  belief = pf.estimate(y, u);
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 
@@ -64,9 +66,4 @@ TEST(Estimators, PF) {
   sia::Particles belief2 = pf.estimate(y, u);
   EXPECT_NE(belief.mean()(0), belief2.mean()(0));
   EXPECT_NE(belief.covariance()(0, 0), belief2.covariance()(0, 0));
-
-  pf.reset(prior);
-  belief = pf.getBelief();
-  EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
-  EXPECT_DOUBLE_EQ(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }

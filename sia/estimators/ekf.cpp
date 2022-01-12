@@ -14,11 +14,7 @@ EKF::EKF(LinearizableDynamics& dynamics,
          const Gaussian& state)
     : m_dynamics(dynamics), m_measurement(measurement), m_belief(state) {}
 
-void EKF::reset(const Gaussian& state) {
-  m_belief = state;
-}
-
-const Gaussian& EKF::getBelief() const {
+const Gaussian& EKF::belief() const {
   return m_belief;
 }
 

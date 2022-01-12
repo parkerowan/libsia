@@ -8,7 +8,7 @@ void export_py_estimators(py::module& m_sup) {
   py::module m = m_sup;
 
   py::class_<sia::Estimator, PyRecursiveBayesEstimator>(m, "Estimator")
-      .def("getBelief", &sia::Estimator::getBelief)
+      .def("belief", &sia::Estimator::belief)
       .def("estimate", &sia::Estimator::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("predict", &sia::Estimator::predict, py::arg("control"),
@@ -20,8 +20,7 @@ void export_py_estimators(py::module& m_sup) {
       .def(py::init<sia::LinearGaussianDynamics&,
                     sia::LinearGaussianMeasurement&, const sia::Gaussian&>(),
            py::arg("dynamics"), py::arg("measurement"), py::arg("state"))
-      .def("reset", &sia::KF::reset, py::arg("state"))
-      .def("getBelief", &sia::KF::getBelief)
+      .def("belief", &sia::KF::belief)
       .def("estimate", &sia::KF::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("predict", &sia::KF::predict, py::arg("control"),
@@ -33,8 +32,7 @@ void export_py_estimators(py::module& m_sup) {
       .def(py::init<sia::LinearizableDynamics&, sia::LinearizableMeasurement&,
                     const sia::Gaussian&>(),
            py::arg("dynamics"), py::arg("measurement"), py::arg("state"))
-      .def("reset", &sia::EKF::reset, py::arg("state"))
-      .def("getBelief", &sia::EKF::getBelief)
+      .def("belief", &sia::EKF::belief)
       .def("estimate", &sia::EKF::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("predict", &sia::EKF::predict, py::arg("control"),
@@ -47,8 +45,7 @@ void export_py_estimators(py::module& m_sup) {
                     const sia::Particles&, double, double>(),
            py::arg("dynamics"), py::arg("measurement"), py::arg("particles"),
            py::arg("resample_threshold") = 1, py::arg("roughening_factor") = 0)
-      .def("reset", &sia::PF::reset, py::arg("particles"))
-      .def("getBelief", &sia::PF::getBelief)
+      .def("belief", &sia::PF::belief)
       .def("estimate", &sia::PF::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("predict", &sia::PF::predict, py::arg("control"),

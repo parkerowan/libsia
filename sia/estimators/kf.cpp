@@ -14,11 +14,7 @@ KF::KF(LinearGaussianDynamics& dynamics,
        const Gaussian& state)
     : m_dynamics(dynamics), m_measurement(measurement), m_belief(state) {}
 
-void KF::reset(const Gaussian& state) {
-  m_belief = state;
-}
-
-const Gaussian& KF::getBelief() const {
+const Gaussian& KF::belief() const {
   return m_belief;
 }
 

@@ -45,36 +45,37 @@ void export_py_optimizers(py::module& m_sup) {
                &sia::GradientDescent::minimize),
            py::arg("f"), py::arg("x0"), py::arg("jacobian") = nullptr);
 
-  //   py::enum_<sia::ObjectiveType>(m, "ObjectiveType")
-  //       .value("GPR_OBJECTIVE", sia::ObjectiveType::GPR_OBJECTIVE)
-  //       .export_values();
+  auto bo = py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer");
 
-  //   py::enum_<sia::AcquisitionType>(m, "AcquisitionType")
-  //       .value("PROBABILITY_IMPROVEMENT",
-  //              sia::AcquisitionType::PROBABILITY_IMPROVEMENT)
-  //       .value("EXPECTED_IMPROVEMENT",
-  //       sia::AcquisitionType::EXPECTED_IMPROVEMENT)
-  //       .value("UPPER_CONFIDENCE_BOUND",
-  //              sia::AcquisitionType::UPPER_CONFIDENCE_BOUND)
-  //       .export_values();
+  py::enum_<sia::BayesianOptimizer::ObjectiveType>(bo, "ObjectiveType")
+      .value("GPR_OBJECTIVE", sia::BayesianOptimizer::GPR_OBJECTIVE)
+      .export_values();
 
-  //   py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer")
-  //       .def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
-  //                     sia::ObjectiveType, sia::AcquisitionType,
-  //                     std::size_t>(),
-  //            py::arg("lower"), py::arg("upper"),
-  //            py::arg("objective") = sia::ObjectiveType::GPR_OBJECTIVE,
-  //            py::arg("acquisition") =
-  //            sia::AcquisitionType::EXPECTED_IMPROVEMENT, py::arg("nstarts") =
-  //            10)
-  //       .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
-  //       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint,
-  //       py::arg("x"),
-  //            py::arg("y"))
-  //       .def("updateModel", &sia::BayesianOptimizer::updateModel)
-  //       .def("getSolution", &sia::BayesianOptimizer::getSolution)
-  //       .def("optimizer", &sia::BayesianOptimizer::optimizer,
-  //            py::return_value_policy::reference_internal)
-  //       .def("surrogate", &sia::BayesianOptimizer::surrogate,
-  //            py::return_value_policy::reference_internal);
+  py::enum_<sia::BayesianOptimizer::AcquisitionType>(bo, "AcquisitionType")
+      .value("PROBABILITY_IMPROVEMENT",
+             sia::BayesianOptimizer::PROBABILITY_IMPROVEMENT)
+      .value("EXPECTED_IMPROVEMENT",
+             sia::BayesianOptimizer::EXPECTED_IMPROVEMENT)
+      .value("UPPER_CONFIDENCE_BOUND",
+             sia::BayesianOptimizer::UPPER_CONFIDENCE_BOUND)
+      .export_values();
+
+  bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
+                  sia::BayesianOptimizer::ObjectiveType,
+                  sia::BayesianOptimizer::AcquisitionType, std::size_t>(),
+         py::arg("lower"), py::arg("upper"),
+         py::arg("objective") = sia::BayesianOptimizer::GPR_OBJECTIVE,
+         py::arg("acquisition") = sia::BayesianOptimizer::EXPECTED_IMPROVEMENT,
+         py::arg("nstarts") = 10)
+      .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
+      .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),
+           py::arg("y"))
+      .def("updateModel", &sia::BayesianOptimizer::updateModel,
+           py::arg("train") = true)
+      .def("getSolution", &sia::BayesianOptimizer::getSolution)
+      .def("optimizer", &sia::BayesianOptimizer::optimizer,
+           py::return_value_policy::reference_internal)
+      .def("objective", &sia::BayesianOptimizer::objective, py::arg("x"),
+           py::return_value_policy::reference_internal)
+      .def("acquisition", &sia::BayesianOptimizer::acquisition, py::arg("x"));
 }

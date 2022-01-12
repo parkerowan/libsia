@@ -9,7 +9,6 @@
 #include "python/py_math.h"
 #include "python/py_models.h"
 #include "python/py_optimizers.h"
-#include "python/py_runner.h"
 
 namespace py = pybind11;
 
@@ -22,5 +21,4 @@ PYBIND11_MODULE(pysia, m) {
   export_py_math(m);
   export_py_models(m);
   export_py_optimizers(m);
-  // export_py_runner(m);
 }

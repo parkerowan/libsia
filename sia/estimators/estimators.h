@@ -25,7 +25,7 @@ class Estimator {
  public:
   Estimator() = default;
   virtual ~Estimator() = default;
-  virtual const Distribution& getBelief() const = 0;
+  virtual const Distribution& belief() const = 0;
 
   /// Performs the combined prediction and correction.
   virtual const Distribution& estimate(const Eigen::VectorXd& observation,

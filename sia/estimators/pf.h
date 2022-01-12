@@ -29,8 +29,7 @@ class PF : public Estimator {
               double resample_threshold = 1.0,
               double roughening_factor = 0.0);
   virtual ~PF() = default;
-  void reset(const Particles& particles);
-  const Particles& getBelief() const override;
+  const Particles& belief() const override;
 
   /// Performs the combined prediction and correction.
   const Particles& estimate(const Eigen::VectorXd& observation,

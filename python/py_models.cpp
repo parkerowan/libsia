@@ -36,43 +36,6 @@ void export_py_models(py::module& m_sup) {
       .def("R", &sia::LinearizableMeasurement::R, py::arg("state"))
       .def("H", &sia::LinearizableMeasurement::H, py::arg("state"));
 
-  //   py::class_<sia::Trajectory>(m, "Trajectory")
-  //       .def_readwrite("states", &sia::Trajectory::states)
-  //       .def_readwrite("controls", &sia::Trajectory::controls)
-  //       .def_readwrite("measurements", &sia::Trajectory::measurements);
-
-  //   py::class_<sia::Trajectories>(m, "Trajectories")
-  //       .def(py::init<const std::vector<sia::Trajectory>&>(),
-  //       py::arg("data")) .def("data", &sia::Trajectories::data) .def("size",
-  //       &sia::Trajectories::size) .def("states", &sia::Trajectories::states,
-  //       py::arg("k")) .def("controls", &sia::Trajectories::controls,
-  //       py::arg("k")) .def("measurements", &sia::Trajectories::measurements,
-  //       py::arg("k"));
-
-  //   m.def("simulate",
-  //         static_cast<sia::Trajectory (*)(
-  //             sia::DynamicsModel&, sia::MeasurementModel&, const
-  //             Eigen::VectorXd&, const Eigen::MatrixXd&,
-  //             bool)>(&sia::simulate),
-  //         py::arg("dynamics"), py::arg("measurement"), py::arg("state"),
-  //         py::arg("controls"), py::arg("sample") = true);
-
-  //   m.def("simulate",
-  //         static_cast<sia::Trajectories (*)(
-  //             sia::DynamicsModel&, sia::MeasurementModel&,
-  //             const std::vector<Eigen::VectorXd>&, const Eigen::MatrixXd&,
-  //             bool)>( &sia::simulate),
-  //         py::arg("dynamics"), py::arg("measurement"), py::arg("states"),
-  //         py::arg("controls"), py::arg("sample") = true);
-
-  //   m.def("simulate",
-  //         static_cast<sia::Trajectories (*)(
-  //             sia::DynamicsModel&, sia::MeasurementModel&,
-  //             const std::vector<Eigen::VectorXd>&,
-  //             const std::vector<Eigen::MatrixXd>&, bool)>(&sia::simulate),
-  //         py::arg("dynamics"), py::arg("measurement"), py::arg("states"),
-  //         py::arg("controls"), py::arg("sample") = true);
-
   py::class_<sia::NonlinearGaussianDynamics, sia::LinearizableDynamics,
              sia::DynamicsModel>(m, "NonlinearGaussianDynamics")
       .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&>(),

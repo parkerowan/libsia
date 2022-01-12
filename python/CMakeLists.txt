@@ -15,7 +15,6 @@ set(py_sources
   py_math.cpp
   py_models.cpp
   py_optimizers.cpp
-  py_runner.cpp
   pysia.cpp
 )
 FUNCTIONS_CREATE_PYBIND11_MODULE(

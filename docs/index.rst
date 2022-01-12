@@ -15,7 +15,6 @@ Sia is a C++/Python library for model-based Reinforcement Learning (or stochasti
    * Distributions for representing belief including Gaussian, Dirichlet, uniform, categorical, particle, Kernel densities (KDE), Gaussian mixture models (GMM), Gaussian mixture regression (GMR), Gaussian Process Regression (GPR), and Gaussian Process Classification (GPC).
    * Built-in constrained Gradient Descent and Bayesian Optimization.
    * Math functions for Runge-Kutta integration, SVD-based matrix inversion.
-   * Runner and recorder for easy simulation and data trace collection.
    * Minimal dependencies in the core library (Eigen, glog).
    * Python bindings with Pybind11.
    * C++ and Python examples and tutorials.

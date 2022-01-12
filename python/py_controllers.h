@@ -9,9 +9,9 @@
 #include <pybind11/stl.h>
 
 #include "sia/belief/distribution.h"
+#include "sia/common/trajectory.h"
 #include "sia/controllers/controllers.h"
 #include "sia/controllers/cost.h"
-#include "sia/models/trajectory.h"
 
 namespace py = pybind11;
 
