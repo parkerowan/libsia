@@ -39,6 +39,9 @@ class GMR : public Inference {
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
 
+  /// Access to the GMM
+  GMM& gmm();
+
  private:
   void cacheRegressionModels();
 

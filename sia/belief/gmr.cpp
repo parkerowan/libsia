@@ -81,6 +81,10 @@ std::size_t GMR::outputDimension() const {
   return m_output_indices.size();
 }
 
+GMM& GMR::gmm() {
+  return m_gmm;
+}
+
 void GMR::cacheRegressionModels() {
   std::size_t K = m_gmm.numClusters();
   m_models.clear();

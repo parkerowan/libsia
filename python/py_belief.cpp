@@ -276,7 +276,8 @@ void export_py_belief(py::module& m_sup) {
            py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
       .def("predict", &sia::GMR::predict, py::arg("x"))
       .def("inputDimension", &sia::GMR::inputDimension)
-      .def("outputDimension", &sia::GMR::outputDimension);
+      .def("outputDimension", &sia::GMR::outputDimension)
+      .def("gmm", &sia::GMR::gmm, py::return_value_policy::reference_internal);
 
   py::class_<sia::GPR, sia::Inference> gpr(m, "GPR");
 
