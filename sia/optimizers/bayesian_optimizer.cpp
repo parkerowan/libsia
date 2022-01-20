@@ -180,8 +180,7 @@ void GPRSurrogateModel::updateModel(bool train) {
                 "calling updateModel()");
   assert(m_input_data.size() == m_output_data.size());
 
-  // TODO:
-  // - add efficient incremental update to the GPR class
+  // TODO: Add efficient incremental update to the GPR class
   std::size_t ndim = m_input_data[0].size();
   std::size_t nsamples = m_input_data.size();
   Eigen::MatrixXd X = Eigen::MatrixXd(ndim, nsamples);
