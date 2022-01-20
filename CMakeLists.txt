@@ -13,7 +13,7 @@ cmake_policy(SET CMP0054 NEW)
 option(TEST_COVERAGE "Generate a make coverage command" OFF)
 option(BUILD_EXAMPLES "Builds the examples" ON)
 option(PYTHON_BINDINGS "Make the python bindings" OFF)
-option(SPHINX_DOCS "Make the sphinx documentation" OFF)
+option(SPHINX_DOCS "Make the sphinx documentation" ON)
 
 # CTest
 enable_testing()
