@@ -21,12 +21,21 @@ Sia is a C++/Python library for model-based Reinforcement Learning (or stochasti
    * Extensive unit tests with gtest.
    * BSD-3 permissive license.
 
+README
+========================================================================
+
+.. include:: README.md
+   :parser: myst_parser.sphinx_
+
 Table of Contents
 ==================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   notebooks/build.ipynb
-   notebooks/overview.ipynb
-   tutorials.rst
+   docs/notebooks/build.ipynb
+   docs/notebooks/overview.ipynb
+   docs/tutorials.rst
+   examples/examples.rst
+   LICENSE.md
+   CHANGELOG.md
