@@ -7,7 +7,7 @@
 #include <iostream>
 
 // Test parameters
-std::size_t max_dim_power = 7;
+std::size_t max_dim_power = 5;
 std::size_t num_steps = 20;
 std::size_t horizon = 20;
 std::string datafile = "/libsia/data/benchmarks.csv";
@@ -65,10 +65,7 @@ sia::QuadraticCost create_cost(std::size_t nstates, std::size_t ncontrols) {
 
 // write data header
 void write_header(std::ofstream& ofs) {
-  ofs << "nstate,ncontrol,nmeas,";
-  ofs << "LQR (µs),iLQR (µs),MPPI (µs),";
-  ofs << "KF (µs),EKF (µs),PF (µs),";
-  ofs << "\n";
+  ofs << "Nstate,Ncontrol,Nmeas,Algorithm,Time (µs)\n";
 }
 
 // write to file
@@ -78,14 +75,34 @@ void write_data(std::ofstream& ofs,
                 std::size_t nmeas,
                 double lqr_et_us,
                 double ilqr_et_us,
-                double mppi_et_us,
+                double mppi_et_us_100,
+                double mppi_et_us_500,
+                double mppi_et_us_2000,
                 double kf_et_us,
                 double ekf_et_us,
-                double pf_et_us) {
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",";
-  ofs << lqr_et_us << "," << ilqr_et_us << "," << mppi_et_us << ",";
-  ofs << kf_et_us << "," << ekf_et_us << "," << pf_et_us << ",";
-  ofs << "\n";
+                double pf_et_us_100,
+                double pf_et_us_500,
+                double pf_et_us_2000) {
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",LQR," << lqr_et_us
+      << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",iLQR," << ilqr_et_us
+      << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (100),"
+      << mppi_et_us_100 << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (500),"
+      << mppi_et_us_500 << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (2000),"
+      << mppi_et_us_2000 << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",KF," << kf_et_us
+      << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",EKF," << ekf_et_us
+      << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (100),"
+      << pf_et_us_100 << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (500),"
+      << pf_et_us_500 << "\n";
+  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (2000),"
+      << pf_et_us_2000 << "\n";
 }
 
 // To profile, run:
@@ -99,8 +116,6 @@ int main(int argc, char* argv[]) {
   std::size_t nstates = 4;
   std::size_t ncontrols = 4;
   std::size_t nmeas = 4;
-  std::size_t mppi_samples = 100;
-  std::size_t pf_particles = 100;
   std::size_t dim_mult = 2;
 
   // Open file to write test data to
@@ -117,7 +132,9 @@ int main(int argc, char* argv[]) {
 
     // Init the state
     sia::Gaussian state(nstates);
-    sia::Particles particles(nstates, pf_particles);
+    sia::Particles particles_100(nstates, 100);
+    sia::Particles particles_500(nstates, 500);
+    sia::Particles particles_2000(nstates, 2000);
 
     // Create the system equations
     auto dynamics = create_dynamics(nstates, ncontrols);
@@ -130,14 +147,18 @@ int main(int argc, char* argv[]) {
     // Create the estimators
     sia::KF kf(dynamics, measurement, state);
     sia::EKF ekf(dynamics, measurement, state);
-    sia::PF pf(dynamics, measurement, particles);
+    sia::PF pf_100(dynamics, measurement, particles_100);
+    sia::PF pf_500(dynamics, measurement, particles_500);
+    sia::PF pf_2000(dynamics, measurement, particles_2000);
 
     // Create the controllers
     sia::LQR lqr(dynamics, cost, horizon);
     sia::iLQR ilqr(dynamics, cost, u0);
 
     Eigen::MatrixXd sigma = Eigen::MatrixXd::Identity(ncontrols, ncontrols);
-    sia::MPPI mppi(dynamics, cost, u0, mppi_samples, sigma);
+    sia::MPPI mppi_100(dynamics, cost, u0, 100, sigma);
+    sia::MPPI mppi_500(dynamics, cost, u0, 500, sigma);
+    sia::MPPI mppi_2000(dynamics, cost, u0, 2000, sigma);
 
     // Initialize the state
     Eigen::VectorXd x = Eigen::VectorXd::Random(nstates);
@@ -145,10 +166,14 @@ int main(int argc, char* argv[]) {
     // Elapsed time (us)
     unsigned lqr_et_us = 0;
     unsigned ilqr_et_us = 0;
-    unsigned mppi_et_us = 0;
+    unsigned mppi_et_us_100 = 0;
+    unsigned mppi_et_us_500 = 0;
+    unsigned mppi_et_us_2000 = 0;
     unsigned kf_et_us = 0;
     unsigned ekf_et_us = 0;
-    unsigned pf_et_us = 0;
+    unsigned pf_et_us_100 = 0;
+    unsigned pf_et_us_500 = 0;
+    unsigned pf_et_us_2000 = 0;
 
     // Compute the algorithms
     for (std::size_t k = 0; k < num_steps; ++k) {
@@ -164,9 +189,19 @@ int main(int argc, char* argv[]) {
       ilqr_et_us += get_elapsed_us(tic, toc);
 
       tic = steady_clock::now();
-      u = mppi.policy(state);
+      u = mppi_100.policy(state);
       toc = steady_clock::now();
-      mppi_et_us += get_elapsed_us(tic, toc);
+      mppi_et_us_100 += get_elapsed_us(tic, toc);
+
+      tic = steady_clock::now();
+      u = mppi_500.policy(state);
+      toc = steady_clock::now();
+      mppi_et_us_500 += get_elapsed_us(tic, toc);
+
+      tic = steady_clock::now();
+      u = mppi_2000.policy(state);
+      toc = steady_clock::now();
+      mppi_et_us_2000 += get_elapsed_us(tic, toc);
 
       // Simulate the system forward and sample from the propogated
       x = dynamics.dynamics(x, u).sample();
@@ -184,18 +219,32 @@ int main(int argc, char* argv[]) {
       ekf_et_us += get_elapsed_us(tic, toc);
 
       tic = steady_clock::now();
-      particles = pf.estimate(y, u);
+      particles_100 = pf_100.estimate(y, u);
       toc = steady_clock::now();
-      pf_et_us += get_elapsed_us(tic, toc);
+      pf_et_us_100 += get_elapsed_us(tic, toc);
+
+      tic = steady_clock::now();
+      particles_500 = pf_500.estimate(y, u);
+      toc = steady_clock::now();
+      pf_et_us_500 += get_elapsed_us(tic, toc);
+
+      tic = steady_clock::now();
+      particles_2000 = pf_2000.estimate(y, u);
+      toc = steady_clock::now();
+      pf_et_us_2000 += get_elapsed_us(tic, toc);
     }
 
     write_data(ofs, nstates, ncontrols, nmeas,
                double(lqr_et_us) / double(num_steps),
                double(ilqr_et_us) / double(num_steps),
-               double(mppi_et_us) / double(num_steps),
+               double(mppi_et_us_100) / double(num_steps),
+               double(mppi_et_us_500) / double(num_steps),
+               double(mppi_et_us_2000) / double(num_steps),
                double(kf_et_us) / double(num_steps),
                double(ekf_et_us) / double(num_steps),
-               double(pf_et_us) / double(num_steps));
+               double(pf_et_us_100) / double(num_steps),
+               double(pf_et_us_500) / double(num_steps),
+               double(pf_et_us_2000) / double(num_steps));
   }
 
   ofs.close();

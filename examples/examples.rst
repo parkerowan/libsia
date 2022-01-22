@@ -8,3 +8,4 @@ Examples
    lorenz/lorenz.ipynb
    navigator/navigator.ipynb
    cartpole/cartpole.ipynb
+   benchmarks/benchmarks.ipynb
