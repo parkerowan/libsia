@@ -23,6 +23,16 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
                             const std::vector<std::size_t>& rows,
                             const std::vector<std::size_t>& cols);
 
+/// Stacks two matrices on top of each other, must have same num cols
+Eigen::MatrixXd stack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
+
+/// Construct a vector of indices from [m to n)
+std::vector<std::size_t> indices(std::size_t m, std::size_t n);
+
+/// Concatenate vectors of data
+template <typename T>
+std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b);
+
 /// Computes the LLT decomposition of positive definite matrix A, returns true
 /// on success.
 bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L);

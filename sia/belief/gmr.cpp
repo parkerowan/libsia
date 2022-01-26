@@ -10,6 +10,8 @@
 
 namespace sia {
 
+// Note: the initial cached x is set to 1 here so that it differs from the first
+// evaluation and the GMR is reset.
 GMR::GMR(const std::vector<Gaussian>& gaussians,
          const std::vector<double>& priors,
          std::vector<std::size_t> input_indices,
@@ -19,7 +21,8 @@ GMR::GMR(const std::vector<Gaussian>& gaussians,
       m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
-      m_regularization(regularization) {
+      m_regularization(regularization),
+      m_cached_test_x(Eigen::VectorXd::Ones(inputDimension())) {
   cacheRegressionModels();
 }
 
@@ -31,12 +34,17 @@ GMR::GMR(const GMM& gmm,
       m_belief(input_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
-      m_regularization(regularization) {
+      m_regularization(regularization),
+      m_cached_test_x(Eigen::VectorXd::Ones(inputDimension())) {
   cacheRegressionModels();
 }
 
-// TODO: Check if x has changed, if not return cached values
 const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
+  if (x.isApprox(m_cached_test_x)) {
+    return m_belief;
+  }
+  m_cached_test_x = x;
+
   // Zero out the outputs
   std::size_t d = m_output_indices.size();
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(d);
@@ -71,6 +79,21 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   // Create Gaussian and output
   m_belief = Gaussian(mu, sig);
   return m_belief;
+}
+
+double GMR::negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
+  SIA_EXCEPTION(X.cols() == Y.cols(),
+                "Test data X, Y expected to have sample number of cols");
+  SIA_EXCEPTION(std::size_t(X.rows()) == inputDimension(),
+                "Test data X rows expected to be input dimension");
+  SIA_EXCEPTION(std::size_t(Y.rows()) == outputDimension(),
+                "Test data Y rows expected to be output dimension");
+  double neg_log_lik = 0;
+  for (int i = 0; i < X.cols(); ++i) {
+    const Gaussian g = predict(X.col(i));
+    neg_log_lik -= g.logProb(Y.col(i));
+  }
+  return neg_log_lik;
 }
 
 std::size_t GMR::inputDimension() const {
@@ -112,6 +135,9 @@ void GMR::cacheRegressionModels() {
     m_models.emplace_back(GMR::RegressionModel(mu_x, mu_y, sigma_xx, sigma_xy,
                                                sigma_yx, sigma_yy));
   }
+
+  // Evaluate the initial output for x = 0.  Note the initial x = 1
+  predict(Eigen::VectorXd::Zero(inputDimension()));
 }
 
 GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,

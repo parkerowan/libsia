@@ -7,6 +7,13 @@
 
 namespace sia {
 
+template <typename T>
+std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b) {
+  std::vector<T> ab = a;
+  ab.insert(ab.end(), b.begin(), b.end());
+  return ab;
+}
+
 template <typename... Args>
 const Eigen::MatrixXd numericalJacobian(
     std::function<const Eigen::VectorXd(const Eigen::VectorXd&, Args...)> f,

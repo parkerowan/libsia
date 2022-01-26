@@ -26,6 +26,7 @@
 #include "sia/estimators/kf.h"
 #include "sia/estimators/pf.h"
 #include "sia/math/math.h"
+#include "sia/models/gmr_models.h"
 #include "sia/models/linear_gaussian.h"
 #include "sia/models/models.h"
 #include "sia/models/nonlinear_gaussian.h"

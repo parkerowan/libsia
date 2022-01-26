@@ -37,6 +37,7 @@ set(lib_header
   estimators/pf.h
   math/math.h
   math/math_impl.h
+  models/gmr_models.h
   models/linear_gaussian.h
   models/models.h
   models/nonlinear_gaussian.h
@@ -65,6 +66,7 @@ set(lib_source
   estimators/kf.cpp
   estimators/pf.cpp
   math/math.cpp
+  models/gmr_models.cpp
   models/linear_gaussian.cpp
   models/models.cpp
   models/nonlinear_gaussian.cpp

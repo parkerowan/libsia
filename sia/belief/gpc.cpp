@@ -65,6 +65,19 @@ Eigen::VectorXd GPC::negLogMarginalLikGrad() const {
   return m_gpr->negLogMarginalLikGrad();
 }
 
+double GPC::negLogLik(const Eigen::MatrixXd& X, const Eigen::VectorXi& Y) {
+  SIA_EXCEPTION(X.cols() == Y.size(),
+                "Test data X, Y expected to have sample number of cols");
+  SIA_EXCEPTION(std::size_t(X.rows()) == inputDimension(),
+                "Test data X rows expected to be input dimension");
+  double neg_log_lik = 0;
+  for (int i = 0; i < X.cols(); ++i) {
+    const Categorical c = predict(X.col(i)).categorical();
+    neg_log_lik -= c.logProb(c.oneHot(Y(i)));
+  }
+  return neg_log_lik;
+}
+
 void GPC::train() {
   assert(m_gpr != nullptr);
   return m_gpr->train();

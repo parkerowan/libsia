@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/math/math.h"
+#include "sia/common/exception.h"
 
 #include <glog/logging.h>
 #include <Eigen/SVD>
@@ -27,6 +28,28 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
     }
   }
   return Y;
+}
+
+Eigen::MatrixXd stack(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B) {
+  SIA_EXCEPTION(A.cols() == B.cols(),
+                "A, B expected to have sample number of cols");
+  int m = A.rows();
+  int n = B.rows();
+  int p = A.cols();
+  Eigen::MatrixXd AB = Eigen::MatrixXd(m + n, p);
+  AB.topRows(m) = A;
+  AB.bottomRows(n) = B;
+  return AB;
+}
+
+std::vector<std::size_t> indices(std::size_t m, std::size_t n) {
+  SIA_EXCEPTION(n > m, "Final index n must be > initial index m");
+  std::vector<std::size_t> idx;
+  idx.reserve(n - m);
+  for (std::size_t i = m; i < n; ++i) {
+    idx.emplace_back(i);
+  }
+  return idx;
 }
 
 bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L) {

@@ -51,6 +51,10 @@ class GPC : public Inference {
   double negLogMarginalLik() const;
   Eigen::VectorXd negLogMarginalLikGrad() const;
 
+  /// Computes the negative log likelihood loss on test data.  Colums are
+  /// samples.  The rows of X = number of inputs
+  double negLogLik(const Eigen::MatrixXd& X, const Eigen::VectorXi& Y);
+
   /// Train the hyperparameters
   void train();
 

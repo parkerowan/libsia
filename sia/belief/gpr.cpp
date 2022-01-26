@@ -272,6 +272,21 @@ Eigen::VectorXd GPR::negLogMarginalLikGrad() const {
   return g;
 }
 
+double GPR::negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
+  SIA_EXCEPTION(X.cols() == Y.cols(),
+                "Test data X, Y expected to have sample number of cols");
+  SIA_EXCEPTION(std::size_t(X.rows()) == inputDimension(),
+                "Test data X rows expected to be input dimension");
+  SIA_EXCEPTION(std::size_t(Y.rows()) == outputDimension(),
+                "Test data Y rows expected to be output dimension");
+  double neg_log_lik = 0;
+  for (int i = 0; i < X.cols(); ++i) {
+    const Gaussian g = predict(X.col(i));
+    neg_log_lik -= g.logProb(Y.col(i));
+  }
+  return neg_log_lik;
+}
+
 void GPR::train() {
   std::size_t n = numHyperparameters();
   GradientDescent optm(SMALL_NUMBER * Eigen::VectorXd::Ones(n),

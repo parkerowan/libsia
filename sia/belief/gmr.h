@@ -36,6 +36,12 @@ class GMR : public Inference {
 
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
+
+  /// Computes the negative log likelihood loss on test data.  Colums are
+  /// samples.  The rows of X = number of inputs, rows of Y = num outputs
+  double negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
+
+  /// Dimensions
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
 
@@ -66,6 +72,7 @@ class GMR : public Inference {
   std::vector<std::size_t> m_output_indices;
   std::vector<RegressionModel> m_models;
   double m_regularization;
+  Eigen::VectorXd m_cached_test_x;
 };
 
 }  // namespace sia

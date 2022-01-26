@@ -46,10 +46,15 @@ class GMM : public Distribution, public Inference {
 
   /// Performs the inference $p(y|x)$
   const Categorical& predict(const Eigen::VectorXd& x) override;
+  std::size_t classify(const Eigen::VectorXd& x);
+
+  /// Computes the negative log likelihood loss for the generative model on test
+  /// data.  Colums are samples.  The rows of X = number of inputs
+  double negLogLik(const Eigen::MatrixXd& X);
+
+  /// Dimensions
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
-
-  std::size_t classify(const Eigen::VectorXd& x);
 
   std::size_t numClusters() const;
   double prior(std::size_t i) const;

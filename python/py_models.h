@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "sia/models/gmr_models.h"
 #include "sia/models/linear_gaussian.h"
 #include "sia/models/models.h"
 #include "sia/models/nonlinear_gaussian.h"

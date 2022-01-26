@@ -159,16 +159,26 @@ const Categorical& GMM::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
+std::size_t GMM::classify(const Eigen::VectorXd& x) {
+  return predict(x).classify();
+}
+
+double GMM::negLogLik(const Eigen::MatrixXd& X) {
+  SIA_EXCEPTION(std::size_t(X.rows()) == inputDimension(),
+                "Test data X rows expected to be input dimension");
+  double neg_log_lik = 0;
+  for (int i = 0; i < X.cols(); ++i) {
+    neg_log_lik -= logProb(X.col(i));
+  }
+  return neg_log_lik;
+}
+
 std::size_t GMM::inputDimension() const {
   return dimension();
 }
 
 std::size_t GMM::outputDimension() const {
   return numClusters();
-}
-
-std::size_t GMM::classify(const Eigen::VectorXd& x) {
-  return predict(x).classify();
 }
 
 std::size_t GMM::numClusters() const {

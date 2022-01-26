@@ -277,4 +277,18 @@ void export_py_models(py::module& m_sup) {
       .def("getTimeStep", &sia::LinearGaussianMeasurementCT::getTimeStep)
       .def("setTimeStep", &sia::LinearGaussianMeasurementCT::setTimeStep,
            py::arg("dt"));
+
+  py::class_<sia::GMRDynamics, sia::LinearizableDynamics, sia::DynamicsModel>(
+      m, "GMRDynamics")
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                    const Eigen::MatrixXd&, std::size_t>(),
+           py::arg("Xk"), py::arg("Uk"), py::arg("Xkp1"), py::arg("K"))
+      .def("dynamics", &sia::GMRDynamics::dynamics, py::arg("state"),
+           py::arg("control"), py::return_value_policy::reference_internal)
+      .def("f", &sia::GMRDynamics::f, py::arg("state"), py::arg("control"))
+      .def("Q", &sia::GMRDynamics::Q, py::arg("state"), py::arg("control"))
+      .def("gmr", &sia::GMRDynamics::gmr,
+           py::return_value_policy::reference_internal)
+      .def("negLogLik", &sia::GMRDynamics::negLogLik, py::arg("Xk"),
+           py::arg("Uk"), py::arg("Xkp1"));
 }
