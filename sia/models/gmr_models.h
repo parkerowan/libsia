@@ -16,8 +16,23 @@ namespace sia {
 ///
 
 /// A nonlinear Gaussian dynamics model based on GMR inference
+///
 /// $p(x_k+1) = GMR(x_k, u_k)$.
-/// Default Jacobians use central difference.
+///
+/// The default constructor builds a GMR model with K clusters based on the data
+/// D = {x_k, u_k, x_k+1}.  The GMR input is chosen as X = {x_k, u_k} and the
+/// output is chosen as Y = {x_k+1 - x_k}.  This choice of normalized output
+/// biases the model to predicting small changes in state outside of the
+/// demonstration domain.  Default Jacobians use central difference.
+///
+/// The negative log likelihood is the following for the
+///
+/// $L = - \sum_i log p(y_i | x_i)$
+///
+/// Choice of K influences the resolution of the model.  K = 1 yields a linear
+/// model, while K = num samples yields a kernel regression.  The appropriate
+/// model can be chosen based on AIC, BIC (information criteria) or
+/// cross-validation.
 class GMRDynamics : public LinearizableDynamics {
  public:
   /// The dynamics equation is $x_k+1 = f(x_k, u_k)$.  This constructor defines
@@ -40,11 +55,14 @@ class GMRDynamics : public LinearizableDynamics {
   Eigen::MatrixXd Q(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 
-  /// Access the underlying GMR
-  GMR& gmr();
+  /// Computes the negative log likelihood loss on test data using the GMR
+  /// negLogLik routine.  Colums are samples.
   double negLogLik(const Eigen::MatrixXd& Xk,
                    const Eigen::MatrixXd& Uk,
                    const Eigen::MatrixXd& Xkp1);
+
+  /// Access the underlying GMR
+  GMR& gmr();
 
  protected:
   GMR createGMR(const Eigen::MatrixXd& Xk,
@@ -61,25 +79,56 @@ class GMRDynamics : public LinearizableDynamics {
 };
 
 /// A nonlinear Gaussian measurement model based on GMR inference
+///
 /// $p(y) = GMR(x)$.
-/// Default Jacobians use central difference.
-// class GMRMeasurement : public LinearizableMeasurement {
-//  public:
-//   /// The measurement equation is $y = h(x)$.
-//   explicit GMRMeasurement();
-//   virtual ~GMRMeasurement() = default;
+///
+/// The default constructor builds a GMR model with K clusters based on the data
+/// D = {x_k, y_k}.  Default Jacobians use central difference.
+///
+/// The negative log likelihood is the following for the
+///
+/// $L = - \sum_i log p(y_i | x_i)$
+///
+/// Choice of K influences the resolution of the model.  K = 1 yields a linear
+/// model, while K = num samples yields a kernel regression.  The appropriate
+/// model can be chosen based on AIC, BIC (information criteria) or
+/// cross-validation.
+class GMRMeasurement : public LinearizableMeasurement {
+ public:
+  /// The measurement equation is $y = h(x)$.  This constructor defines
+  /// the model from initial data.  Cols are samples.
+  explicit GMRMeasurement(const Eigen::MatrixXd& X,
+                          const Eigen::MatrixXd& Y,
+                          std::size_t K);
+  virtual ~GMRMeasurement() = default;
 
-//   /// Predicts the statistical observation $p(y | x)$.
-//   Gaussian& measurement(const Eigen::VectorXd& state) override;
+  /// Predicts the statistical observation $p(y | x)$.
+  Gaussian& measurement(const Eigen::VectorXd& state) override;
 
-//   /// Expected observation $E[y] = h(x)$.
-//   Eigen::VectorXd h(const Eigen::VectorXd& state) override;
+  /// Expected observation $E[y] = h(x)$.
+  Eigen::VectorXd h(const Eigen::VectorXd& state) override;
 
-//   /// Measurement noise covariance $V[y] = R(x)$.
-//   Eigen::MatrixXd R(const Eigen::VectorXd& state) override;
+  /// Measurement noise covariance $V[y] = R(x)$.
+  Eigen::MatrixXd R(const Eigen::VectorXd& state) override;
 
-//  protected:
-//   Gaussian m_prob_measurement;
-// };
+  /// Computes the negative log likelihood loss on test data using the GMR
+  /// negLogLik routine.  Colums are samples.
+  double negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
+
+  /// Access the underlying GMR
+  GMR& gmr();
+
+ protected:
+  GMR createGMR(const Eigen::MatrixXd& X,
+                const Eigen::MatrixXd& Y,
+                std::size_t K,
+                const std::vector<std::size_t>& input_indices,
+                const std::vector<std::size_t>& output_indices) const;
+
+  Gaussian m_prob_measurement;
+  std::vector<std::size_t> m_input_indices;
+  std::vector<std::size_t> m_output_indices;
+  GMR m_gmr;
+};
 
 }  // namespace sia

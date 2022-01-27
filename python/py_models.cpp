@@ -287,8 +287,22 @@ void export_py_models(py::module& m_sup) {
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("f", &sia::GMRDynamics::f, py::arg("state"), py::arg("control"))
       .def("Q", &sia::GMRDynamics::Q, py::arg("state"), py::arg("control"))
-      .def("gmr", &sia::GMRDynamics::gmr,
-           py::return_value_policy::reference_internal)
       .def("negLogLik", &sia::GMRDynamics::negLogLik, py::arg("Xk"),
-           py::arg("Uk"), py::arg("Xkp1"));
+           py::arg("Uk"), py::arg("Xkp1"))
+      .def("gmr", &sia::GMRDynamics::gmr,
+           py::return_value_policy::reference_internal);
+
+  py::class_<sia::GMRMeasurement, sia::LinearizableMeasurement,
+             sia::MeasurementModel>(m, "GMRMeasurement")
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                    std::size_t>(),
+           py::arg("X"), py::arg("Y"), py::arg("K"))
+      .def("measurement", &sia::GMRMeasurement::measurement, py::arg("state"),
+           py::return_value_policy::reference_internal)
+      .def("h", &sia::GMRMeasurement::h, py::arg("state"))
+      .def("R", &sia::GMRMeasurement::R, py::arg("state"))
+      .def("negLogLik", &sia::GMRMeasurement::negLogLik, py::arg("X"),
+           py::arg("Y"))
+      .def("gmr", &sia::GMRMeasurement::gmr,
+           py::return_value_policy::reference_internal);
 }
