@@ -47,6 +47,13 @@ class GMRDynamics : public LinearizableDynamics {
                    const Eigen::MatrixXd& Xkp1);
 
  protected:
+  GMR createGMR(const Eigen::MatrixXd& Xk,
+                const Eigen::MatrixXd& Uk,
+                const Eigen::MatrixXd& Xkp1,
+                std::size_t K,
+                const std::vector<std::size_t>& input_indices,
+                const std::vector<std::size_t>& output_indices) const;
+
   Gaussian m_prob_dynamics;
   std::vector<std::size_t> m_input_indices;
   std::vector<std::size_t> m_output_indices;

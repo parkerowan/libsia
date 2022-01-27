@@ -14,9 +14,7 @@ GMRDynamics::GMRDynamics(const Eigen::MatrixXd& Xk,
       m_input_indices(indices(0, Xk.rows() + Uk.rows())),
       m_output_indices(
           indices(Xk.rows() + Uk.rows(), Xk.rows() + Uk.rows() + Xkp1.rows())),
-      m_gmr(GMM(stack(stack(Xk, Uk), Xkp1 - Xk), K),
-            m_input_indices,
-            m_output_indices) {}
+      m_gmr(createGMR(Xk, Uk, Xkp1, K, m_input_indices, m_output_indices)) {}
 
 Gaussian& GMRDynamics::dynamics(const Eigen::VectorXd& state,
                                 const Eigen::VectorXd& control) {
@@ -50,6 +48,20 @@ double GMRDynamics::negLogLik(const Eigen::MatrixXd& Xk,
   const Eigen::MatrixXd X = stack(Xk, Uk);
   const Eigen::MatrixXd Y = Xkp1 - Xk;
   return m_gmr.negLogLik(X, Y);
+}
+
+GMR GMRDynamics::createGMR(
+    const Eigen::MatrixXd& Xk,
+    const Eigen::MatrixXd& Uk,
+    const Eigen::MatrixXd& Xkp1,
+    std::size_t K,
+    const std::vector<std::size_t>& input_indices,
+    const std::vector<std::size_t>& output_indices) const {
+  const Eigen::MatrixXd X = stack(Xk, Uk);
+  const Eigen::MatrixXd Y = Xkp1 - Xk;
+  const Eigen::MatrixXd D = stack(X, Y);
+  GMM gmm(D, K);
+  return GMR(gmm, input_indices, output_indices);
 }
 
 }  // namespace sia
