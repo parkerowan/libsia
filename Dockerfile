@@ -6,6 +6,7 @@ FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
+    curl \
     ffmpeg \
     g++ \
     gcovr \
@@ -72,11 +73,12 @@ RUN cd /usr/src/gtest/ && \
 # -----------------------------------------------------------------------------
 RUN python -m pip install --upgrade pip
 
-# Node and npm for jupyter
+# Node, npm, pandoc for jupyter
 RUN apt-get update && \
     apt-get install -y \
     nodejs \
     npm \
+    pandoc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python programs

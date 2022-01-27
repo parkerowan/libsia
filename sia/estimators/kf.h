@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -20,8 +20,7 @@ class KF : public Estimator {
               LinearGaussianMeasurement& measurement,
               const Gaussian& state);
   virtual ~KF() = default;
-  void reset(const Gaussian& state);
-  const Gaussian& getBelief() const override;
+  const Gaussian& belief() const override;
 
   /// Performs the combined prediction and correction.
   const Gaussian& estimate(const Eigen::VectorXd& observation,

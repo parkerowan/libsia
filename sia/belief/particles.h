@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -9,9 +9,6 @@
 
 namespace sia {
 
-// Forward declaration
-class PF;
-
 /// Constant for tolerance around 1.0 to renormalize weights
 static const double RENORMALIZE_WEIGHTS_TOLERANCE = 1e-6;
 
@@ -20,8 +17,6 @@ static const double RENORMALIZE_WEIGHTS_TOLERANCE = 1e-6;
 /// specified, and normalized to one when set.  Weights are used to compute
 /// mean, mode, and covariance if weighted_stats is set.
 class Particles : public Distribution {
-  friend class PF;
-
  public:
   /// Creates zero-vector particles with uniform weights.
   explicit Particles(std::size_t dimension,

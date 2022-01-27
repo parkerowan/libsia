@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/estimators/pf.h"
@@ -20,12 +20,7 @@ PF::PF(DynamicsModel& dynamics,
       m_resample_threshold(resample_threshold),
       m_roughening_factor(roughening_factor) {}
 
-void PF::reset(const Particles& particles) {
-  m_belief = particles;
-  m_first_pass = true;
-}
-
-const Particles& PF::getBelief() const {
+const Particles& PF::belief() const {
   return m_belief;
 }
 
@@ -38,8 +33,8 @@ const Particles& PF::estimate(const Eigen::VectorXd& observation,
 
 // TODO: Can parallelize
 const Particles& PF::predict(const Eigen::VectorXd& control) {
-  Eigen::MatrixXd& xp = m_belief.m_values;
-  Eigen::VectorXd& wp = m_belief.m_weights;
+  Eigen::VectorXd wp = m_belief.weights();
+  Eigen::MatrixXd xp = m_belief.values();
 
   // These noise-inducing procedures are traditionally described in the
   // literature after the predict/correct steps, however we perform them before
@@ -53,6 +48,7 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
     if (neff < nt) {
       VLOG(1) << "Performing resampling, Neff=" << neff << " Nt=" << nt;
       systematicResampling(wp, xp);
+      m_belief.setWeights(wp);
     }
 
     // Roughening step: add some noise
@@ -65,23 +61,27 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
   for (std::size_t i = 0; i < m_belief.numParticles(); ++i) {
     xp.col(i) = m_dynamics.dynamics(xp.col(i), control).sample();
   }
+
+  m_belief.setValues(xp);
   return m_belief;
 }
 
 const Particles& PF::correct(const Eigen::VectorXd& observation) {
   Eigen::VectorXd lp = Eigen::VectorXd::Zero(m_belief.numParticles());
-  Eigen::MatrixXd& xp = m_belief.m_values;
-  Eigen::VectorXd& wp = m_belief.m_weights;
+  Eigen::VectorXd wp = m_belief.weights();
+  const Eigen::MatrixXd& xp = m_belief.values();
 
   // Compute the likelihood of each particle given the observation
   for (std::size_t i = 0; i < m_belief.numParticles(); ++i) {
     lp(i) = m_measurement.measurement(xp.col(i)).logProb(observation);
   }
 
-  // Correction step: update the weights usinfg Bayes' rule
+  // Correction step: update the weights using Bayes' rule
   wp = (wp.array().log() + lp.array()).exp();
   wp = wp.array() / wp.sum();
   VLOG(2) << "lp(0): " << lp(0) << " wp(0): " << wp(0);
+
+  m_belief.setWeights(wp);
   return m_belief;
 }
 

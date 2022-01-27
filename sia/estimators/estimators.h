@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -25,7 +25,7 @@ class Estimator {
  public:
   Estimator() = default;
   virtual ~Estimator() = default;
-  virtual const Distribution& getBelief() const = 0;
+  virtual const Distribution& belief() const = 0;
 
   /// Performs the combined prediction and correction.
   virtual const Distribution& estimate(const Eigen::VectorXd& observation,

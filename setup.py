@@ -40,7 +40,8 @@ ext_modules = [
             "python/py_estimators.cpp",
             "python/py_math.cpp",
             "python/py_models.cpp",
-            "python/py_runner.cpp",
+            "python/py_optimizers.cpp",
+            # "python/py_runner.cpp",
             "python/pysia.cpp",
         ],
         # Example: passing in the version to the compiled code

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <sia/sia.h>
@@ -18,7 +18,7 @@ double dt = 12 * 60;  // Time step in seconds (12 min)
 std::string datafile = "/libsia/data/navigator.csv";
 
 // Cost parameters
-double input_cost = 1e12;
+double input_cost = 5e14;
 std::string algorithm = "ilqr";
 
 // iLQR parameters
@@ -180,7 +180,7 @@ sia::QuadraticCost create_cost(double r) {
   Qf.block<2, 2>(6, 6) = I;
   Qf.block<2, 2>(4, 6) = -I;
   Qf.block<2, 2>(6, 4) = -I;
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(STATE_DIM, STATE_DIM);
+  Eigen::MatrixXd Q = Qf;
   Eigen::MatrixXd R = r * Eigen::MatrixXd::Identity(NUM_AXES, NUM_AXES);
   Eigen::VectorXd xd = Eigen::VectorXd::Zero(STATE_DIM);
   return sia::QuadraticCost(Qf, Q, R, xd);
@@ -205,10 +205,10 @@ sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
 
 Eigen::VectorXd init_state() {
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(STATE_DIM);
-  mu.segment<2>(0) << 384400000, 0;
-  mu.segment<2>(2) << -67000000, 0;  // 4500 km orbit, includes radius of earth
-  mu.segment<2>(4) << 0, 970;
-  mu.segment<2>(6) << 0, -10000;
+  mu.segment<2>(0) << 384472282, 0;  // Distance of moon to earth
+  mu.segment<2>(2) << -67780000, 0;  // 4000km orbit, includes rad of earth
+  mu.segment<2>(4) << 0, 1022;
+  mu.segment<2>(6) << 0, -4660;
   return mu;
 }
 

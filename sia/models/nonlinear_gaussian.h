@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -15,24 +15,24 @@ namespace sia {
 ///
 
 /// A nonlinear dynamics model with zero-mean additive Gaussian noise
-/// $x_k = f(x_k-1, u_k) + w_k, w_k \sim N(0, Q_k)$.
+/// $x_k+1 = f(x_k, u_k) + w_k, w_k \sim N(0, Q_k)$.
 /// Default Jacobians use central difference.
 class NonlinearGaussianDynamics : public LinearizableDynamics {
  public:
-  /// The dynamics equation is $x_k = f(x_k-1, u_k)$.
+  /// The dynamics equation is $x_k+1 = f(x_k, u_k)$.
   explicit NonlinearGaussianDynamics(DynamicsEquation dynamics,
                                      const Eigen::MatrixXd& Q);
   virtual ~NonlinearGaussianDynamics() = default;
 
-  /// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
+  /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   Gaussian& dynamics(const Eigen::VectorXd& state,
                      const Eigen::VectorXd& control) override;
 
-  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
   Eigen::VectorXd f(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 
-  /// Process noise covariance $V[x_k] = Q(x_k-1, u_k)$.
+  /// Process noise covariance $V[x_k+1] = Q(x_k, u_k)$.
   Eigen::MatrixXd Q(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 
@@ -97,11 +97,11 @@ class NonlinearGaussianDynamicsCT : public NonlinearGaussianDynamics {
                                        double dt);
   virtual ~NonlinearGaussianDynamicsCT() = default;
 
-  //// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
+  //// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   Gaussian& dynamics(const Eigen::VectorXd& state,
                      const Eigen::VectorXd& control) override;
 
-  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
   Eigen::VectorXd f(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
 

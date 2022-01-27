@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmm.h"
@@ -12,6 +12,7 @@ namespace sia {
 
 GMM::GMM(std::size_t K, std::size_t dimension)
     : Distribution(Generator::instance()),
+      m_belief(K),
       m_num_clusters(K),
       m_dimension(dimension) {
   for (std::size_t i = 0; i < K; ++i) {
@@ -23,6 +24,7 @@ GMM::GMM(std::size_t K, std::size_t dimension)
 GMM::GMM(const std::vector<Gaussian>& gaussians,
          const std::vector<double>& priors)
     : Distribution(Generator::instance()),
+      m_belief(gaussians.size()),
       m_gaussians(gaussians),
       m_priors(priors) {
   bool r1 = m_gaussians.size() == m_priors.size();
@@ -36,6 +38,7 @@ GMM::GMM(const std::vector<Gaussian>& gaussians,
 
 GMM::GMM(const Eigen::MatrixXd& samples, std::size_t K, double regularization)
     : Distribution(Generator::instance()),
+      m_belief(K),
       m_num_clusters(K),
       m_dimension(samples.rows()) {
   // Initialize via kmeans
@@ -145,17 +148,27 @@ bool GMM::devectorize(const Eigen::VectorXd& data) {
   return true;
 }
 
-std::size_t GMM::classify(const Eigen::VectorXd& x) const {
+const Categorical& GMM::predict(const Eigen::VectorXd& x) {
   // Compute the weighted log likelihood for each cluster
   Eigen::VectorXd lik = Eigen::VectorXd::Zero(m_priors.size());
   for (std::size_t i = 0; i < m_priors.size(); ++i) {
     lik(i) = m_priors[i] * exp(m_gaussians[i].logProb(x));
   }
+  lik /= lik.sum();
+  m_belief.setProbs(lik);
+  return m_belief;
+}
 
-  // Return index of highest likelihood
-  int r, c;
-  lik.maxCoeff(&r, &c);
-  return r;
+std::size_t GMM::inputDimension() const {
+  return dimension();
+}
+
+std::size_t GMM::outputDimension() const {
+  return numClusters();
+}
+
+std::size_t GMM::classify(const Eigen::VectorXd& x) {
+  return predict(x).classify();
 }
 
 std::size_t GMM::numClusters() const {

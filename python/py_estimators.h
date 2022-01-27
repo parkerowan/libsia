@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -22,8 +22,8 @@ class PyRecursiveBayesEstimator : public sia::Estimator {
   using sia::Estimator::Estimator;
 
   // Trampoline (need one for each virtual function)
-  const sia::Distribution& getBelief() const override {
-    PYBIND11_OVERRIDE_PURE(const sia::Distribution&, sia::Estimator, getBelief);
+  const sia::Distribution& belief() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::Distribution&, sia::Estimator, belief);
   }
 
   // Trampoline (need one for each virtual function)

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -11,7 +11,7 @@ namespace sia {
 
 /// The dynamics equation predicts the deterministic state propogation:
 /// - continuous time case $\dot{x} = f(x, u)$
-/// - discrete time case $x_k = f(x_k-1, u_k)$
+/// - discrete time case $x_k+1 = f(x_k, u_k)$
 /// where $x$ is state that evolves over time interval $k$, and $u$ is the
 /// control.
 using DynamicsEquation =
@@ -26,7 +26,7 @@ using MeasurementEquation =
 /// The dynamics Jacobian predicts the partial derivative of the dynamics
 /// equation wrt to the state:
 /// - continuous time case $J = df(x, u) / dx$
-/// - discrete time case $J = df(x_k-1, u_k) / dx$
+/// - discrete time case $J = df(x_k, u_k) / dx_k$
 /// where $x$ is state that evolves over time interval $k$, $f$ is the dynamics
 /// equation and $u$ is the control.
 using DynamicsJacobian =
@@ -40,7 +40,7 @@ using MeasurementJacobian =
     std::function<const Eigen::MatrixXd(const Eigen::VectorXd&)>;
 
 /// A Markov system that predicts the statistical discrete time state transition
-/// $p(x_k | x_k-1, u_k)$.
+/// $p(x_k+1 | x_k, u_k)$.
 /// - $x$ State that evolves over time step $k$.
 /// - $u$ Known control action applied to affect the state $x$.
 class DynamicsModel {
@@ -48,7 +48,7 @@ class DynamicsModel {
   DynamicsModel() = default;
   virtual ~DynamicsModel() = default;
 
-  /// Predicts the statistical state transition $p(x_k | x_k-1, u_k)$.
+  /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   virtual Distribution& dynamics(const Eigen::VectorXd& state,
                                  const Eigen::VectorXd& control) = 0;
 };
@@ -71,11 +71,11 @@ class LinearizableDynamics : public DynamicsModel {
   LinearizableDynamics() = default;
   virtual ~LinearizableDynamics() = default;
 
-  /// Expected discrete time dynamics $E[x_k] = f(x_k-1, u_k)$.
+  /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
   virtual Eigen::VectorXd f(const Eigen::VectorXd& state,
                             const Eigen::VectorXd& control) = 0;
 
-  /// Process noise covariance $V[x_k] = Q(x_k-1, u_k)$.
+  /// Process noise covariance $V[x_k+1] = Q(x_k, u_k)$.
   virtual Eigen::MatrixXd Q(const Eigen::VectorXd& state,
                             const Eigen::VectorXd& control) = 0;
 

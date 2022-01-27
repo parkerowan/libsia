@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -37,10 +37,17 @@ class LQR : public Controller {
   /// Performs a single step of the MPC $u = \pi(p(x))$.
   const Eigen::VectorXd& policy(const Distribution& state) override;
 
+  /// Returns the solution control trajectory $U$ over the horizon
+  const Trajectory<Eigen::VectorXd>& controls() const override;
+
+  /// Returns the expected solution state trajectory $X$ over the horizon
+  const Trajectory<Eigen::VectorXd>& states() const override;
+
  private:
   LinearGaussianDynamics& m_dynamics;
   QuadraticCost& m_cost;
-  Eigen::VectorXd m_control;
+  Trajectory<Eigen::VectorXd> m_controls;
+  Trajectory<Eigen::VectorXd> m_states;
   std::size_t m_horizon;
 };
 

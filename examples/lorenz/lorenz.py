@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2021, Parker Owan.  All rights reserved.
+Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 """
 
@@ -55,20 +55,12 @@ def create_measurement(r: float, dt: float) -> sia.NonlinearGaussianMeasurementC
     return sia.NonlinearGaussianMeasurementCT(h, R, dt)
 
 
-def create_estimators(dynamics: sia.NonlinearGaussianDynamicsCT,
-                      measurement: sia.NonlinearGaussianMeasurementCT,
-                      num_particles: int,
-                      resample_threshold: float,
-                      roughening_factor: float,
-                      buffer_size: int):
-    """Creates the estimators"""
-    # Initialize a gaussian belief
-    gaussian = sia.Gaussian(mean=np.array([0, 0, 20]),
-                            covariance=1e3 * np.identity(3))
-
-    # Initialize the extended kalman filter
-    ekf = sia.EKF(dynamics=dynamics, measurement=measurement, state=gaussian)
-
+def create_estimator(dynamics: sia.NonlinearGaussianDynamicsCT,
+                     measurement: sia.NonlinearGaussianMeasurementCT,
+                     num_particles: int,
+                     resample_threshold: float,
+                     roughening_factor: float):
+    """Creates the estimator"""
     # Initialize a particle belief
     particles = sia.Particles.uniform(lower=np.array([-30, -30, -10]),
                                       upper=np.array([30, 30, 50]),
@@ -87,16 +79,13 @@ def create_estimators(dynamics: sia.NonlinearGaussianDynamicsCT,
     state = sia.Gaussian(3)
     state.setMean(x)
 
-    # Initialize the runner
-    runner = sia.Runner({"ekf": ekf, "pf": pf}, buffer_size=buffer_size)
-
-    return (runner, state, ekf, pf)
+    return (state, pf)
 
 
-def create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi):
+def create_animate_3d_sim(dynamics, measurement, state, pf, num_steps, dpi):
     """Creates an animation function for the 3d sim plot"""
     # Set up the figure, the axis, and the plot element we want to animate
-    particles = pf.getBelief()
+    particles = pf.belief()
     xp = particles.values()
     wp = particles.weights()
     x = state.mean()
@@ -117,7 +106,6 @@ def create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_ste
                           s=25,
                           alpha=1,
                           linewidths=None)
-    line, = ax0.plot(x[0], x[1], x[2], '-w')
     point, = ax0.plot(x[0], x[1], x[2], '.w', ms=25)
 
     plt.tight_layout()
@@ -126,34 +114,34 @@ def create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_ste
     # Render the animation
     return animation.FuncAnimation(fig,
                                    step_animate_3d_sim,
-                                   fargs=(dynamics, measurement, runner, state, ekf, pf,
-                                          scatter, line, point, num_steps),
+                                   fargs=(dynamics, measurement, state, pf,
+                                          scatter, point),
                                    frames=num_steps,
                                    interval=20,
                                    blit=False)
 
 
-def step_animate_3d_sim(i, dynamics, measurement, runner, state, ekf, pf, scatter, line,
-                        point, num_steps):
+def step_animate_3d_sim(i, dynamics, measurement, state, pf, scatter,
+                        point):
     """Animation function for 3d sim. This is called sequentially."""
-    recorder = runner.recorder()
-    particles = pf.getBelief()
+    particles = pf.belief()
 
     if i > 0:
         # There is not forcing term to the system so we just assign zeros
         u = np.zeros(3)
         x = state.mean()
 
-        # This steps the system state, takes a measurement and steps each estimator
-        state.setMean(runner.stepAndEstimate(dynamics, measurement, x, u))
+        # Step the system states, takes a measurement
+        x = dynamics.dynamics(x, u).sample()
+        y = measurement.measurement(x).sample()
+        state.setMean(x)
 
-        # Update state trajectory plot
-        line.set_data(recorder.getStates()[:2, :])
-        line.set_3d_properties(recorder.getStates()[2, :])
+        # Step the estimator
+        particles = pf.estimate(y, x)
 
         # Update the state point
-        point.set_data(recorder.getStates()[:2, -1])
-        point.set_3d_properties(recorder.getStates()[2, -1])
+        point.set_data(x[:2])
+        point.set_3d_properties(x[2])
 
     # Update particle plot
     xp = particles.values()
@@ -162,46 +150,6 @@ def step_animate_3d_sim(i, dynamics, measurement, runner, state, ekf, pf, scatte
     cs = 100 * wp / max(wp)
     scatter._facecolor3d = cmap(cs.astype(int))
     scatter._edgecolor3d = cmap(cs.astype(int))
-
-
-def plot_estimates(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi):
-    """Plots estimates of the particle filter and ekf"""
-    # Set up the figure, the axis, and the plot element we want to animate
-    recorder = runner.recorder()
-    state = recorder.getStates()
-    pf_mean = recorder.getEstimateMeans("pf")
-    pf_mode = recorder.getEstimateModes("pf")
-    pf_var = recorder.getEstimateVariances("pf")
-    ekf_mean = recorder.getEstimateMeans("ekf")
-    ekf_var = recorder.getEstimateVariances("ekf")
-
-    fig = plt.figure(figsize=(1280 / dpi, 720 / dpi), dpi=dpi)
-    t = np.linspace(1, num_steps, num_steps)
-    ax = [0] * 3
-    for i in range(3):
-        ax[i] = fig.add_subplot(3, 1, (i + 1))
-        plt.sca(ax[i])
-        ax[i].fill_between(t,
-                           pf_mean[i, :] - 3 * np.sqrt(pf_var[i, :]),
-                           pf_mean[i, :] + 3 * np.sqrt(pf_var[i, :]),
-                           alpha=0.2,
-                           label="PF")
-        ax[i].plot(t, pf_mode[i, :], lw=1)
-        ax[i].fill_between(t,
-                           ekf_mean[i, :] - 3 * np.sqrt(ekf_var[i, :]),
-                           ekf_mean[i, :] + 3 * np.sqrt(ekf_var[i, :]),
-                           alpha=0.2,
-                           label="EKF")
-        ax[i].plot(t, ekf_mean[i, :], lw=1)
-        ax[i].plot(t, state[i, :], "-k", label="Truth")
-        if i == 2:
-            ax[i].legend(frameon=False, loc='lower center', ncol=3)
-        plt.ylabel("State " + str(i))
-        plt.axis("on")
-        plt.box(on=None)
-        ax[i].get_xaxis().set_visible(False)
-        ax[i].get_yaxis().set_visible(True)
-        ax[i].set_yticks([])
 
 
 def main(num_steps: int, dt: float, process_noise: float, measurement_noise: float,
@@ -215,13 +163,11 @@ def main(num_steps: int, dt: float, process_noise: float, measurement_noise: flo
     measurement = create_measurement(measurement_noise, dt)
 
     # Setup the estimators
-    runner, state, ekf, pf = create_estimators(dynamics, measurement, num_particles,
-                                               resample_threshold,
-                                               roughening_factor, num_steps)
+    state, pf = create_estimator(dynamics, measurement, num_particles, 
+                                 resample_threshold, roughening_factor)
 
     # Create the animation function
-    anim = create_animate_3d_sim(dynamics, measurement, runner, state, ekf, pf, num_steps,
-                                 dpi)
+    anim = create_animate_3d_sim(dynamics, measurement, state, pf, num_steps, dpi)
 
     # Render and save the animation
     Writer = animation.writers['ffmpeg']
@@ -232,9 +178,6 @@ def main(num_steps: int, dt: float, process_noise: float, measurement_noise: flo
                     extra_args=['-vcodec', 'libx264'])
 
     anim.save(video_name, writer=writer, dpi=dpi)
-
-    # Plot the estimates
-    plot_estimates(dynamics, measurement, runner, state, ekf, pf, num_steps, dpi)
 
     # Show the animation
     if show_plots:
