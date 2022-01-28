@@ -242,6 +242,10 @@ void export_py_belief(py::module& m_sup) {
       .def("predict", &sia::GMM::predict, py::arg("x"))
       .def("classify", &sia::GMM::classify, py::arg("x"))
       .def("negLogLik", &sia::GMM::negLogLik, py::arg("X"))
+      .def("train", &sia::GMM::train, py::arg("samples"),
+           py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
+           py::arg("init_method") = sia::GMM::WARM_START,
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("inputDimension", &sia::GMM::inputDimension)
       .def("outputDimension", &sia::GMM::outputDimension)
       .def("numClusters", &sia::GMM::numClusters)
@@ -275,8 +279,16 @@ void export_py_belief(py::module& m_sup) {
                     std::vector<std::size_t>, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
            py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::size_t,
+                    double>(),
+           py::arg("X"), py::arg("Y"), py::arg("K"),
+           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
       .def("predict", &sia::GMR::predict, py::arg("x"))
       .def("negLogLik", &sia::GMR::negLogLik, py::arg("X"), py::arg("Y"))
+      .def("train", &sia::GMR::train, py::arg("X"), py::arg("Y"),
+           py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
+           py::arg("init_method") = sia::GMM::WARM_START,
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("inputDimension", &sia::GMR::inputDimension)
       .def("outputDimension", &sia::GMR::outputDimension)
       .def("gmm", &sia::GMR::gmm, py::return_value_policy::reference_internal);

@@ -18,7 +18,7 @@ GMR::GMR(const std::vector<Gaussian>& gaussians,
          std::vector<std::size_t> output_indices,
          double regularization)
     : m_gmm(gaussians, priors),
-      m_belief(input_indices.size()),
+      m_belief(output_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
       m_regularization(regularization),
@@ -31,9 +31,22 @@ GMR::GMR(const GMM& gmm,
          std::vector<std::size_t> output_indices,
          double regularization)
     : m_gmm(gmm.gaussians(), gmm.priors()),
-      m_belief(input_indices.size()),
+      m_belief(output_indices.size()),
       m_input_indices(input_indices),
       m_output_indices(output_indices),
+      m_regularization(regularization),
+      m_cached_test_x(Eigen::VectorXd::Ones(inputDimension())) {
+  cacheRegressionModels();
+}
+
+GMR::GMR(const Eigen::MatrixXd& X,
+         const Eigen::MatrixXd& Y,
+         std::size_t K,
+         double regularization)
+    : m_gmm(stack(X, Y), K, regularization),
+      m_belief(Y.rows()),
+      m_input_indices(indices(0, X.rows())),
+      m_output_indices(indices(X.rows(), X.rows() + Y.rows())),
       m_regularization(regularization),
       m_cached_test_x(Eigen::VectorXd::Ones(inputDimension())) {
   cacheRegressionModels();
@@ -96,6 +109,15 @@ double GMR::negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
   return neg_log_lik;
 }
 
+void GMR::train(const Eigen::MatrixXd& X,
+                const Eigen::MatrixXd& Y,
+                GMM::FitMethod fit_method,
+                GMM::InitMethod init_method,
+                double regularization) {
+  const Eigen::MatrixXd D = stack(X, Y);
+  m_gmm.train(D, fit_method, init_method, regularization);
+}
+
 std::size_t GMR::inputDimension() const {
   return m_input_indices.size();
 }
@@ -149,8 +171,10 @@ GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,
     : m_mu_x(mu_x), m_mu_y(mu_y), m_gx(mu_x, sigma_xx) {
   // Compute inverse
   Eigen::MatrixXd sigma_xx_inv;
-  bool r = svdInverse(sigma_xx, sigma_xx_inv);
-  SIA_EXCEPTION(r, "Failed to compute SVD of sigma_xx");
+  if (not svdInverse(sigma_xx, sigma_xx_inv)) {
+    LOG(ERROR) << "Problematic sigma_xx: \n" << sigma_xx << "\n";
+    SIA_EXCEPTION(false, "Failed to compute SVD of sigma_xx");
+  }
 
   // Compute Gaussian conditioning
   m_sigma_yx_sigma_xx_inv = sigma_yx * sigma_xx_inv;

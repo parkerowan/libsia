@@ -281,12 +281,18 @@ void export_py_models(py::module& m_sup) {
   py::class_<sia::GMRDynamics, sia::LinearizableDynamics, sia::DynamicsModel>(
       m, "GMRDynamics")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-                    const Eigen::MatrixXd&, std::size_t>(),
-           py::arg("Xk"), py::arg("Uk"), py::arg("Xkp1"), py::arg("K"))
+                    const Eigen::MatrixXd&, std::size_t, double>(),
+           py::arg("Xk"), py::arg("Uk"), py::arg("Xkp1"), py::arg("K"),
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("dynamics", &sia::GMRDynamics::dynamics, py::arg("state"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("f", &sia::GMRDynamics::f, py::arg("state"), py::arg("control"))
       .def("Q", &sia::GMRDynamics::Q, py::arg("state"), py::arg("control"))
+      .def("train", &sia::GMRDynamics::train, py::arg("Xk"), py::arg("Uk"),
+           py::arg("Xkp1"),
+           py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
+           py::arg("init_method") = sia::GMM::WARM_START,
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("negLogLik", &sia::GMRDynamics::negLogLik, py::arg("Xk"),
            py::arg("Uk"), py::arg("Xkp1"))
       .def("gmr", &sia::GMRDynamics::gmr,
@@ -294,13 +300,18 @@ void export_py_models(py::module& m_sup) {
 
   py::class_<sia::GMRMeasurement, sia::LinearizableMeasurement,
              sia::MeasurementModel>(m, "GMRMeasurement")
-      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-                    std::size_t>(),
-           py::arg("X"), py::arg("Y"), py::arg("K"))
+      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::size_t,
+                    double>(),
+           py::arg("X"), py::arg("Y"), py::arg("K"),
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("measurement", &sia::GMRMeasurement::measurement, py::arg("state"),
            py::return_value_policy::reference_internal)
       .def("h", &sia::GMRMeasurement::h, py::arg("state"))
       .def("R", &sia::GMRMeasurement::R, py::arg("state"))
+      .def("train", &sia::GMRMeasurement::train, py::arg("X"), py::arg("Y"),
+           py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
+           py::arg("init_method") = sia::GMM::WARM_START,
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("negLogLik", &sia::GMRMeasurement::negLogLik, py::arg("X"),
            py::arg("Y"))
       .def("gmr", &sia::GMRMeasurement::gmr,

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 // constants
 const std::size_t STATE_DIM = 4;
@@ -12,6 +13,8 @@ const std::size_t INPUT_DIM = 1;
 
 // Simulation parameters
 unsigned seed = 0;
+std::size_t num_trials = 1;
+std::size_t num_bootstrap = 10;
 std::size_t num_steps = 200;
 std::size_t horizon = 100;
 double process_noise = 1e-4;
@@ -36,6 +39,52 @@ std::size_t num_samples = 100;
 double sigma = 10.0;
 double lambda = 1.0;
 
+// GMR parameters
+std::size_t num_clusters = 10;
+
+// Data structure to collect data for a single trial
+struct Trial {
+  explicit Trial(std::size_t num_steps)
+      : Xk(Eigen::MatrixXd::Zero(STATE_DIM, num_steps)),
+        Uk(Eigen::MatrixXd::Zero(INPUT_DIM, num_steps)),
+        Xkp1(Eigen::MatrixXd::Zero(STATE_DIM, num_steps)) {}
+  Eigen::MatrixXd Xk;
+  Eigen::MatrixXd Uk;
+  Eigen::MatrixXd Xkp1;
+};
+
+// Data structure to collect multiple trials
+struct Dataset {
+  explicit Dataset(std::size_t num_steps) : num_steps(num_steps) {}
+  void addTrial(const Trial& trial) { trials.emplace_back(trial); }
+  Eigen::MatrixXd Xk() const {
+    Eigen::MatrixXd Xk =
+        Eigen::MatrixXd::Zero(STATE_DIM, trials.size() * num_steps);
+    for (std::size_t i = 0; i < trials.size(); ++i) {
+      Xk.middleCols(i * num_steps, num_steps) = trials.at(i).Xk;
+    }
+    return Xk;
+  }
+  Eigen::MatrixXd Uk() const {
+    Eigen::MatrixXd Uk =
+        Eigen::MatrixXd::Zero(INPUT_DIM, trials.size() * num_steps);
+    for (std::size_t i = 0; i < trials.size(); ++i) {
+      Uk.middleCols(i * num_steps, num_steps) = trials.at(i).Uk;
+    }
+    return Uk;
+  }
+  Eigen::MatrixXd Xkp1() const {
+    Eigen::MatrixXd Xkp1 =
+        Eigen::MatrixXd::Zero(STATE_DIM, trials.size() * num_steps);
+    for (std::size_t i = 0; i < trials.size(); ++i) {
+      Xkp1.middleCols(i * num_steps, num_steps) = trials.at(i).Xkp1;
+    }
+    return Xkp1;
+  }
+  std::vector<Trial> trials;
+  std::size_t num_steps;
+};
+
 bool parse_args(int argc, char* argv[]) {
   // Use a clock to generate a seed
   typedef std::chrono::high_resolution_clock myclock;
@@ -45,7 +94,9 @@ bool parse_args(int argc, char* argv[]) {
   for (int i = 1; i < argc; i += 2) {
     if (std::string(argv[i]) == "--help") {
       std::cout << "  --seed <value> Random number generator\n";
-      std::cout << "  --num_steps <value> Number of simulation steps\n";
+      std::cout << "  --num_trials <value> Num of trials\n";
+      std::cout << "  --num_bootstrap <value> Num trials to boostrap data\n";
+      std::cout << "  --num_steps <value> Num simulation steps per trial\n";
       std::cout << "  --horizon <value> MPC optimization horizon\n";
       std::cout << "  --process_noise <value> Process noise variance\n";
       std::cout << "  --measurement_noise <value> Measurement noise variance\n";
@@ -62,10 +113,15 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --num_samples <value> [MPPI] Number of samples\n";
       std::cout << "  --sigma <value> [MPPI] Control sampling variance\n";
       std::cout << "  --lambda <value> [MPPI] Free energy temperature\n";
+      std::cout << "  --num_clusters <value> [GMR] Number of clusters\n";
       return false;
     } else if (std::string(argv[i]) == "--seed") {
       seed = std::atoi(argv[i + 1]);
       random_seed = false;
+    } else if (std::string(argv[i]) == "--num_trials") {
+      num_trials = std::atoi(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--num_bootstrap") {
+      num_bootstrap = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--num_steps") {
       num_steps = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--horizon") {
@@ -100,6 +156,8 @@ bool parse_args(int argc, char* argv[]) {
       sigma = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--lambda") {
       lambda = std::atof(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--num_clusters") {
+      num_clusters = std::atoi(argv[i + 1]);
     }
   }
 
@@ -178,7 +236,7 @@ const Eigen::VectorXd cartpole_dynamics(const Eigen::VectorXd& x,
   return xdot;
 }
 
-sia::NonlinearGaussianDynamicsCT create_dynamics(double q, double dt) {
+sia::NonlinearGaussianDynamicsCT create_exact_dynamics(double q, double dt) {
   // Suppose that noise is added to all channels
   Eigen::MatrixXd Qpsd = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
 
@@ -260,51 +318,79 @@ int main(int argc, char* argv[]) {
   write_header(ofs);
 
   // Create the system and cost function
-  auto dynamics = create_dynamics(process_noise, dt);
+  auto dynamics = create_exact_dynamics(process_noise, dt);
   auto measurement = create_measurement(measurement_noise, dt);
   auto cost = create_cost(input_cost);
 
-  // Create the controller
-  sia::Controller* controller{nullptr};
-  if (algorithm == "ilqr") {
-    controller = create_ilqr_controller(dynamics, cost, horizon, max_iter,
-                                        max_backsteps, epsilon, tau, min_z, mu);
-  } else if (algorithm == "mppi") {
-    controller = create_mppi_controller(dynamics, cost, horizon, num_samples,
-                                        sigma, lambda);
-  } else {
-    std::cout << "Unknown controller " << algorithm
-              << ", running with no control\n";
-  }
+  // Create the model
+  sia::LinearizableDynamics* model = &dynamics;
+  sia::GMRDynamics* gmr_dynamics{nullptr};
 
-  // Run the simulation with the controller in the loop
-  sia::Gaussian x(STATE_DIM);
-  x.setMean(init_state());
-  double t = 0;
-  for (std::size_t i = 0; i < num_steps; ++i) {
-    // Compute the control
-    Eigen::VectorXd u = Eigen::VectorXd::Zero(INPUT_DIM);
-    if (controller != nullptr) {
-      auto tic = steady_clock::now();
-      u = controller->policy(x);
-      auto toc = steady_clock::now();
-      std::cout << algorithm << " - i=" << i << "/" << num_steps
-                << ", elapsed=" << get_elapsed_us(tic, toc) << " us\n";
+  // Run trials
+  Dataset dataset(num_steps);
+  for (std::size_t i = 0; i < num_trials; ++i) {
+    // Create the controller
+    sia::Controller* controller{nullptr};
+    if (algorithm == "ilqr") {
+      controller =
+          create_ilqr_controller(*model, cost, horizon, max_iter, max_backsteps,
+                                 epsilon, tau, min_z, mu);
+    } else if (algorithm == "mppi") {
+      controller = create_mppi_controller(*model, cost, horizon, num_samples,
+                                          sigma, lambda);
+    } else {
+      std::cout << "Unknown controller " << algorithm
+                << ", running with no control\n";
     }
 
-    // Write data
-    Eigen::VectorXd y = measurement.measurement(x.mean()).sample();
-    write_data(ofs, t, y, u);
+    // Run the simulation with the controller in the loop
+    Trial trial(num_steps);
+    std::cout << "Trial " << i << " | Algorithm " << algorithm << "\n";
 
-    // Integrate forward
-    x.setMean(dynamics.dynamics(x.mean(), u).sample());
-    t += dt;
+    sia::Gaussian x(STATE_DIM);
+    x.setMean(init_state());
+    double t = 0;
+    for (std::size_t k = 0; k < num_steps; ++k) {
+      // Compute the control
+      Eigen::VectorXd u = Eigen::VectorXd::Zero(INPUT_DIM);
+      if (controller != nullptr) {
+        u = controller->policy(x);
+      }
+
+      // Write data
+      Eigen::VectorXd y = measurement.measurement(x.mean()).sample();
+      write_data(ofs, t, y, u);
+
+      // Integrate forward
+      trial.Xk.col(k) = x.mean();
+      trial.Uk.col(k) = u;
+      x.setMean(dynamics.dynamics(x.mean(), u).sample());
+      trial.Xkp1.col(k) = x.mean();
+      t += dt;
+    }
+
+    // Augment the data collection
+    dataset.addTrial(trial);
+
+    // If we are past bootstrapping, then learn the model and start using it
+    // TODO: adjust the model fit with new data rather than relearn from scratch
+    if (i == num_bootstrap) {
+      std::cout << "Trial " << i << " | Initializing GMR model\n";
+      gmr_dynamics = new sia::GMRDynamics(dataset.Xk(), dataset.Uk(),
+                                          dataset.Xkp1(), num_clusters);
+      model = gmr_dynamics;
+    } else if (i > num_bootstrap) {
+      std::cout << "Trial " << i << " | Updating GMR model\n";
+      gmr_dynamics->train(dataset.Xk(), dataset.Uk(), dataset.Xkp1());
+    }
+
+    delete controller;
   }
 
   // close data file
   std::cout << "Test complete\n";
   ofs.close();
 
-  delete controller;
+  // delete model;
   return 0;
 }

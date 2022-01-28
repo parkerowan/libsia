@@ -60,14 +60,14 @@ def plot_cartpole_trajectory(datafile: str, animate: bool, trace: bool,
     ax[0].set_ylim([-1, 1])
 
     # show traces
-    h[1], = ax[1].plot(t, p, label="p")
-    h[2], = ax[1].plot(t, a, label="a")
-    h[3], = ax[1].plot(t, v, label="v")
-    h[4], = ax[1].plot(t, w, label="w")
+    h[1], = ax[1].plot(t, p, ".", ms=2, label="p")
+    h[2], = ax[1].plot(t, a, ".", ms=2, label="a")
+    h[3], = ax[1].plot(t, v, ".", ms=2, label="v")
+    h[4], = ax[1].plot(t, w, ".", ms=2, label="w")
     ax[1].legend()
     ax[1].set_ylabel("States")
 
-    h[5], = ax[2].plot(t, u, "-k", label="u")
+    h[5], = ax[2].plot(t, u, ".k", ms=2, label="u")
     ax[2].legend()
     ax[2].set_ylabel("Control")
     ax[2].set_xlabel("Time (s)")

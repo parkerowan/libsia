@@ -4,6 +4,7 @@
 #pragma once
 
 #include "sia/belief/gaussian.h"
+#include "sia/belief/gmm.h"
 #include "sia/belief/gmr.h"
 #include "sia/models/models.h"
 
@@ -40,7 +41,8 @@ class GMRDynamics : public LinearizableDynamics {
   explicit GMRDynamics(const Eigen::MatrixXd& Xk,
                        const Eigen::MatrixXd& Uk,
                        const Eigen::MatrixXd& Xkp1,
-                       std::size_t K);
+                       std::size_t K,
+                       double regularization = GMM::DEFAULT_REGULARIZATION);
   virtual ~GMRDynamics() = default;
 
   /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
@@ -54,6 +56,14 @@ class GMRDynamics : public LinearizableDynamics {
   /// Process noise covariance $V[x_k+1] = Q(x_k, u_k)$.
   Eigen::MatrixXd Q(const Eigen::VectorXd& state,
                     const Eigen::VectorXd& control) override;
+
+  /// Retrain the GMR with new data
+  void train(const Eigen::MatrixXd& Xk,
+             const Eigen::MatrixXd& Uk,
+             const Eigen::MatrixXd& Xkp1,
+             GMM::FitMethod fit_method = GMM::GAUSSIAN_LIKELIHOOD,
+             GMM::InitMethod init_method = GMM::WARM_START,
+             double regularization = GMM::DEFAULT_REGULARIZATION);
 
   /// Computes the negative log likelihood loss on test data using the GMR
   /// negLogLik routine.  Colums are samples.
@@ -69,12 +79,9 @@ class GMRDynamics : public LinearizableDynamics {
                 const Eigen::MatrixXd& Uk,
                 const Eigen::MatrixXd& Xkp1,
                 std::size_t K,
-                const std::vector<std::size_t>& input_indices,
-                const std::vector<std::size_t>& output_indices) const;
+                double regularization) const;
 
   Gaussian m_prob_dynamics;
-  std::vector<std::size_t> m_input_indices;
-  std::vector<std::size_t> m_output_indices;
   GMR m_gmr;
 };
 
@@ -99,7 +106,8 @@ class GMRMeasurement : public LinearizableMeasurement {
   /// the model from initial data.  Cols are samples.
   explicit GMRMeasurement(const Eigen::MatrixXd& X,
                           const Eigen::MatrixXd& Y,
-                          std::size_t K);
+                          std::size_t K,
+                          double regularization = GMM::DEFAULT_REGULARIZATION);
   virtual ~GMRMeasurement() = default;
 
   /// Predicts the statistical observation $p(y | x)$.
@@ -110,6 +118,13 @@ class GMRMeasurement : public LinearizableMeasurement {
 
   /// Measurement noise covariance $V[y] = R(x)$.
   Eigen::MatrixXd R(const Eigen::VectorXd& state) override;
+
+  /// Retrain the GMR with new data
+  void train(const Eigen::MatrixXd& X,
+             const Eigen::MatrixXd& Y,
+             GMM::FitMethod fit_method = GMM::GAUSSIAN_LIKELIHOOD,
+             GMM::InitMethod init_method = GMM::WARM_START,
+             double regularization = GMM::DEFAULT_REGULARIZATION);
 
   /// Computes the negative log likelihood loss on test data using the GMR
   /// negLogLik routine.  Colums are samples.
@@ -122,12 +137,9 @@ class GMRMeasurement : public LinearizableMeasurement {
   GMR createGMR(const Eigen::MatrixXd& X,
                 const Eigen::MatrixXd& Y,
                 std::size_t K,
-                const std::vector<std::size_t>& input_indices,
-                const std::vector<std::size_t>& output_indices) const;
+                double regularization) const;
 
   Gaussian m_prob_measurement;
-  std::vector<std::size_t> m_input_indices;
-  std::vector<std::size_t> m_output_indices;
   GMR m_gmr;
 };
 

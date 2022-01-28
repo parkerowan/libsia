@@ -173,6 +173,14 @@ double GMM::negLogLik(const Eigen::MatrixXd& X) {
   return neg_log_lik;
 }
 
+void GMM::train(const Eigen::MatrixXd& samples,
+                FitMethod fit_method,
+                InitMethod init_method,
+                double regularization) {
+  GMM::fit(samples, m_gaussians, m_priors, numClusters(), fit_method,
+           init_method, regularization);
+}
+
 std::size_t GMM::inputDimension() const {
   return dimension();
 }

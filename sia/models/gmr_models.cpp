@@ -10,12 +10,10 @@ namespace sia {
 GMRDynamics::GMRDynamics(const Eigen::MatrixXd& Xk,
                          const Eigen::MatrixXd& Uk,
                          const Eigen::MatrixXd& Xkp1,
-                         std::size_t K)
+                         std::size_t K,
+                         double regularization)
     : m_prob_dynamics(Xkp1.rows()),
-      m_input_indices(indices(0, Xk.rows() + Uk.rows())),
-      m_output_indices(
-          indices(Xk.rows() + Uk.rows(), Xk.rows() + Uk.rows() + Xkp1.rows())),
-      m_gmr(createGMR(Xk, Uk, Xkp1, K, m_input_indices, m_output_indices)) {}
+      m_gmr(createGMR(Xk, Uk, Xkp1, K, regularization)) {}
 
 Gaussian& GMRDynamics::dynamics(const Eigen::VectorXd& state,
                                 const Eigen::VectorXd& control) {
@@ -39,6 +37,17 @@ Eigen::MatrixXd GMRDynamics::Q(const Eigen::VectorXd& state,
   return dynamics(state, control).covariance();
 }
 
+void GMRDynamics::train(const Eigen::MatrixXd& Xk,
+                        const Eigen::MatrixXd& Uk,
+                        const Eigen::MatrixXd& Xkp1,
+                        GMM::FitMethod fit_method,
+                        GMM::InitMethod init_method,
+                        double regularization) {
+  const Eigen::MatrixXd X = stack(Xk, Uk);
+  const Eigen::MatrixXd Y = Xkp1 - Xk;
+  m_gmr.train(X, Y, fit_method, init_method, regularization);
+}
+
 double GMRDynamics::negLogLik(const Eigen::MatrixXd& Xk,
                               const Eigen::MatrixXd& Uk,
                               const Eigen::MatrixXd& Xkp1) {
@@ -51,13 +60,11 @@ GMR& GMRDynamics::gmr() {
   return m_gmr;
 }
 
-GMR GMRDynamics::createGMR(
-    const Eigen::MatrixXd& Xk,
-    const Eigen::MatrixXd& Uk,
-    const Eigen::MatrixXd& Xkp1,
-    std::size_t K,
-    const std::vector<std::size_t>& input_indices,
-    const std::vector<std::size_t>& output_indices) const {
+GMR GMRDynamics::createGMR(const Eigen::MatrixXd& Xk,
+                           const Eigen::MatrixXd& Uk,
+                           const Eigen::MatrixXd& Xkp1,
+                           std::size_t K,
+                           double regularization) const {
   SIA_EXCEPTION(Xk.cols() == Uk.cols(),
                 "Training data Xk, Uk expected to have sample number of cols");
   SIA_EXCEPTION(
@@ -69,18 +76,14 @@ GMR GMRDynamics::createGMR(
 
   const Eigen::MatrixXd X = stack(Xk, Uk);
   const Eigen::MatrixXd Y = Xkp1 - Xk;
-  const Eigen::MatrixXd D = stack(X, Y);
-  GMM gmm(D, K);
-  return GMR(gmm, input_indices, output_indices);
+  return GMR(X, Y, K, regularization);
 }
 
 GMRMeasurement::GMRMeasurement(const Eigen::MatrixXd& X,
                                const Eigen::MatrixXd& Y,
-                               std::size_t K)
-    : m_prob_measurement(Y.rows()),
-      m_input_indices(indices(0, X.rows())),
-      m_output_indices(indices(X.rows(), X.rows() + Y.rows())),
-      m_gmr(createGMR(X, Y, K, m_input_indices, m_output_indices)) {}
+                               std::size_t K,
+                               double regularization)
+    : m_prob_measurement(Y.rows()), m_gmr(createGMR(X, Y, K, regularization)) {}
 
 Gaussian& GMRMeasurement::measurement(const Eigen::VectorXd& state) {
   m_prob_measurement = m_gmr.predict(state);
@@ -95,6 +98,14 @@ Eigen::MatrixXd GMRMeasurement::R(const Eigen::VectorXd& state) {
   return measurement(state).covariance();
 }
 
+void GMRMeasurement::train(const Eigen::MatrixXd& X,
+                           const Eigen::MatrixXd& Y,
+                           GMM::FitMethod fit_method,
+                           GMM::InitMethod init_method,
+                           double regularization) {
+  m_gmr.train(X, Y, fit_method, init_method, regularization);
+}
+
 double GMRMeasurement::negLogLik(const Eigen::MatrixXd& X,
                                  const Eigen::MatrixXd& Y) {
   return m_gmr.negLogLik(X, Y);
@@ -104,17 +115,13 @@ GMR& GMRMeasurement::gmr() {
   return m_gmr;
 }
 
-GMR GMRMeasurement::createGMR(
-    const Eigen::MatrixXd& X,
-    const Eigen::MatrixXd& Y,
-    std::size_t K,
-    const std::vector<std::size_t>& input_indices,
-    const std::vector<std::size_t>& output_indices) const {
+GMR GMRMeasurement::createGMR(const Eigen::MatrixXd& X,
+                              const Eigen::MatrixXd& Y,
+                              std::size_t K,
+                              double regularization) const {
   SIA_EXCEPTION(X.cols() == Y.cols(),
                 "Training data X, Y expected to have sample number of cols");
-  const Eigen::MatrixXd D = stack(X, Y);
-  GMM gmm(D, K);
-  return GMR(gmm, input_indices, output_indices);
+  return GMR(X, Y, K, regularization);
 }
 
 }  // namespace sia

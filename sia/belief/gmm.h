@@ -22,6 +22,18 @@ class GMM : public Distribution, public Inference {
   /// Regularization applied to covariance matrices during GMM fit.
   static constexpr double DEFAULT_REGULARIZATION = 1e-6;
 
+  /// Method used to fit the data
+  enum FitMethod {
+    KMEANS,               // Associates samples to clusters using L2 norm
+    GAUSSIAN_LIKELIHOOD,  // Associates samples to clusters using Gaussian MLE
+  };
+
+  /// Method used to initialize the data
+  enum InitMethod {
+    STANDARD_RANDOM,  // "Forgy" method randomly chooses means from samples
+    WARM_START,       // Uses values of gaussians and priors passed to function
+  };
+
   /// Initialize K equally weighted standard normal Gaussians for n-dim space.
   explicit GMM(std::size_t K, std::size_t dimension);
 
@@ -52,6 +64,12 @@ class GMM : public Distribution, public Inference {
   /// data.  Colums are samples.  The rows of X = number of inputs
   double negLogLik(const Eigen::MatrixXd& X);
 
+  /// Train the GMM on new samples using existing parameters as initialization
+  void train(const Eigen::MatrixXd& samples,
+             FitMethod fit_method = FitMethod::GAUSSIAN_LIKELIHOOD,
+             InitMethod init_method = InitMethod::WARM_START,
+             double regularization = DEFAULT_REGULARIZATION);
+
   /// Dimensions
   std::size_t inputDimension() const override;
   std::size_t outputDimension() const override;
@@ -61,18 +79,6 @@ class GMM : public Distribution, public Inference {
   const std::vector<double>& priors() const;
   const Gaussian& gaussian(std::size_t i) const;
   const std::vector<Gaussian>& gaussians() const;
-
-  /// Method used to fit the data
-  enum FitMethod {
-    KMEANS,               // Associates samples to clusters using L2 norm
-    GAUSSIAN_LIKELIHOOD,  // Associates samples to clusters using Gaussian MLE
-  };
-
-  /// Method used to initialize the data
-  enum InitMethod {
-    STANDARD_RANDOM,  // "Forgy" method randomly chooses means from samples
-    WARM_START,       // Uses values of gaussians and priors passed to function
-  };
 
   /// Fit a GMM of K clusters to the sample data (cols are samples)
   static std::size_t fit(const Eigen::MatrixXd& samples,
