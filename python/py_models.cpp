@@ -295,6 +295,8 @@ void export_py_models(py::module& m_sup) {
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("negLogLik", &sia::GMRDynamics::negLogLik, py::arg("Xk"),
            py::arg("Uk"), py::arg("Xkp1"))
+      .def("mse", &sia::GMRDynamics::mse, py::arg("Xk"), py::arg("Uk"),
+           py::arg("Xkp1"))
       .def("gmr", &sia::GMRDynamics::gmr,
            py::return_value_policy::reference_internal);
 
@@ -314,6 +316,7 @@ void export_py_models(py::module& m_sup) {
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("negLogLik", &sia::GMRMeasurement::negLogLik, py::arg("X"),
            py::arg("Y"))
+      .def("mse", &sia::GMRMeasurement::mse, py::arg("X"), py::arg("Y"))
       .def("gmr", &sia::GMRMeasurement::gmr,
            py::return_value_policy::reference_internal);
 }

@@ -109,6 +109,24 @@ double GMR::negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
   return neg_log_lik;
 }
 
+double GMR::mse(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
+  SIA_EXCEPTION(X.cols() == Y.cols(),
+                "Test data X, Y expected to have sample number of cols");
+  SIA_EXCEPTION(std::size_t(X.rows()) == inputDimension(),
+                "Test data X rows expected to be input dimension");
+  SIA_EXCEPTION(std::size_t(Y.rows()) == outputDimension(),
+                "Test data Y rows expected to be output dimension");
+  double mse = 0;
+  double N = X.cols();
+  for (int i = 0; i < X.cols(); ++i) {
+    const Gaussian g = predict(X.col(i));
+    const Eigen::VectorXd error = g.mean() - Y.col(i);
+    mse += error.dot(error);
+  }
+  mse /= N;
+  return mse;
+}
+
 void GMR::train(const Eigen::MatrixXd& X,
                 const Eigen::MatrixXd& Y,
                 GMM::FitMethod fit_method,

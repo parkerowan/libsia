@@ -224,6 +224,16 @@ void export_py_belief(py::module& m_sup) {
 
   py::class_<sia::GMM, sia::Distribution, sia::Inference> gmm(m, "GMM");
 
+  py::enum_<sia::GMM::FitMethod>(gmm, "FitMethod")
+      .value("KMEANS", sia::GMM::FitMethod::KMEANS)
+      .value("GAUSSIAN_LIKELIHOOD", sia::GMM::FitMethod::GAUSSIAN_LIKELIHOOD)
+      .export_values();
+
+  py::enum_<sia::GMM::InitMethod>(gmm, "InitMethod")
+      .value("STANDARD_RANDOM", sia::GMM::InitMethod::STANDARD_RANDOM)
+      .value("WARM_START", sia::GMM::InitMethod::WARM_START)
+      .export_values();
+
   gmm.def(py::init<std::size_t, std::size_t>(), py::arg("K"),
           py::arg("dimension"))
       .def(py::init<const std::vector<sia::Gaussian>&,
@@ -255,18 +265,9 @@ void export_py_belief(py::module& m_sup) {
       .def("gaussians", &sia::GMM::gaussians)
       .def_static("fit", &sia::GMM::fit, py::arg("samples"),
                   py::arg("gaussians"), py::arg("priors"), py::arg("K"),
-                  py::arg("fit_method"), py::arg("init_method"),
-                  py::arg("regularization"));
-
-  py::enum_<sia::GMM::FitMethod>(gmm, "FitMethod")
-      .value("KMEANS", sia::GMM::FitMethod::KMEANS)
-      .value("GAUSSIAN_LIKELIHOOD", sia::GMM::FitMethod::GAUSSIAN_LIKELIHOOD)
-      .export_values();
-
-  py::enum_<sia::GMM::InitMethod>(gmm, "InitMethod")
-      .value("STANDARD_RANDOM", sia::GMM::InitMethod::STANDARD_RANDOM)
-      .value("WARM_START", sia::GMM::InitMethod::WARM_START)
-      .export_values();
+                  py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
+                  py::arg("init_method") = sia::GMM::STANDARD_RANDOM,
+                  py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION);
 
   py::class_<sia::GMR, sia::Inference>(m, "GMR")
       .def(py::init<const std::vector<sia::Gaussian>&,
@@ -274,17 +275,18 @@ void export_py_belief(py::module& m_sup) {
                     std::vector<std::size_t>, double>(),
            py::arg("gaussians"), py::arg("weights"), py::arg("input_indices"),
            py::arg("output_indices"),
-           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def(py::init<const sia::GMM&, std::vector<std::size_t>,
                     std::vector<std::size_t>, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
-           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::size_t,
                     double>(),
            py::arg("X"), py::arg("Y"), py::arg("K"),
-           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("predict", &sia::GMR::predict, py::arg("x"))
       .def("negLogLik", &sia::GMR::negLogLik, py::arg("X"), py::arg("Y"))
+      .def("mse", &sia::GMR::mse, py::arg("X"), py::arg("Y"))
       .def("train", &sia::GMR::train, py::arg("X"), py::arg("Y"),
            py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
            py::arg("init_method") = sia::GMM::WARM_START,

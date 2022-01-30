@@ -71,6 +71,12 @@ class GMRDynamics : public LinearizableDynamics {
                    const Eigen::MatrixXd& Uk,
                    const Eigen::MatrixXd& Xkp1);
 
+  /// Computes the mean squared error loss on test data using the GMR mse
+  /// routine.  Colums are samples.
+  double mse(const Eigen::MatrixXd& Xk,
+             const Eigen::MatrixXd& Uk,
+             const Eigen::MatrixXd& Xkp1);
+
   /// Access the underlying GMR
   GMR& gmr();
 
@@ -129,6 +135,10 @@ class GMRMeasurement : public LinearizableMeasurement {
   /// Computes the negative log likelihood loss on test data using the GMR
   /// negLogLik routine.  Colums are samples.
   double negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
+
+  /// Computes the mean squared error loss on test data using the GMR mse
+  /// routine.  Colums are samples.
+  double mse(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
 
   /// Access the underlying GMR
   GMR& gmr();

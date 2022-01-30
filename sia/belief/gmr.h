@@ -46,7 +46,12 @@ class GMR : public Inference {
   /// samples.  The rows of X = number of inputs, rows of Y = num outputs
   double negLogLik(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
 
-  /// Train the GMR on new samples using existing parameters as initialization
+  /// Computes the mean squared error loss on test data.  Columns are samples.
+  /// The rows of X = number of inputs, rows of Y = num outputs
+  double mse(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y);
+
+  /// Train the GMR on new samples using existing parameters as
+  /// initialization
   void train(const Eigen::MatrixXd& X,
              const Eigen::MatrixXd& Y,
              GMM::FitMethod fit_method = GMM::GAUSSIAN_LIKELIHOOD,

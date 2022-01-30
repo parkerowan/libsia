@@ -56,6 +56,14 @@ double GMRDynamics::negLogLik(const Eigen::MatrixXd& Xk,
   return m_gmr.negLogLik(X, Y);
 }
 
+double GMRDynamics::mse(const Eigen::MatrixXd& Xk,
+                        const Eigen::MatrixXd& Uk,
+                        const Eigen::MatrixXd& Xkp1) {
+  const Eigen::MatrixXd X = stack(Xk, Uk);
+  const Eigen::MatrixXd Y = Xkp1 - Xk;
+  return m_gmr.mse(X, Y);
+}
+
 GMR& GMRDynamics::gmr() {
   return m_gmr;
 }
@@ -109,6 +117,10 @@ void GMRMeasurement::train(const Eigen::MatrixXd& X,
 double GMRMeasurement::negLogLik(const Eigen::MatrixXd& X,
                                  const Eigen::MatrixXd& Y) {
   return m_gmr.negLogLik(X, Y);
+}
+
+double GMRMeasurement::mse(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
+  return m_gmr.mse(X, Y);
 }
 
 GMR& GMRMeasurement::gmr() {
