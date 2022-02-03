@@ -11,6 +11,7 @@ std::size_t max_dim_power = 5;
 std::size_t num_steps = 20;
 std::size_t horizon = 20;
 std::string datafile = "/libsia/data/benchmarks.csv";
+std::string platform = "unknown";
 
 bool parse_args(int argc, char* argv[]) {
   for (int i = 1; i < argc; i += 2) {
@@ -19,6 +20,7 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --num_steps <value> Number of simulation steps\n";
       std::cout << "  --horizon <value> MPC optimization horizon\n";
       std::cout << "  --datafile <value> File path the csv data output\n";
+      std::cout << "  --platform <value> Name of the hardware platform\n";
       return false;
     } else if (std::string(argv[i]) == "--max_dim_power") {
       max_dim_power = std::atoi(argv[i + 1]);
@@ -28,6 +30,8 @@ bool parse_args(int argc, char* argv[]) {
       horizon = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--datafile") {
       datafile = std::string(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--platform") {
+      platform = std::string(argv[i + 1]);
     }
   }
   return true;
@@ -65,7 +69,7 @@ sia::QuadraticCost create_cost(std::size_t nstates, std::size_t ncontrols) {
 
 // write data header
 void write_header(std::ofstream& ofs) {
-  ofs << "Nstate,Ncontrol,Nmeas,Algorithm,Time (µs)\n";
+  ofs << "Platform,Nstate,Ncontrol,Nmeas,Algorithm,Time (µs)\n";
 }
 
 // write to file
@@ -83,26 +87,26 @@ void write_data(std::ofstream& ofs,
                 double pf_et_us_100,
                 double pf_et_us_500,
                 double pf_et_us_2000) {
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",LQR," << lqr_et_us
-      << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",iLQR," << ilqr_et_us
-      << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (100),"
-      << mppi_et_us_100 << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (500),"
-      << mppi_et_us_500 << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",MPPI (2000),"
-      << mppi_et_us_2000 << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",KF," << kf_et_us
-      << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",EKF," << ekf_et_us
-      << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (100),"
-      << pf_et_us_100 << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (500),"
-      << pf_et_us_500 << "\n";
-  ofs << nstates << "," << ncontrols << "," << nmeas << ",PF (2000),"
-      << pf_et_us_2000 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",LQR," << lqr_et_us << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",iLQR," << ilqr_et_us << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",MPPI (100)," << mppi_et_us_100 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",MPPI (500)," << mppi_et_us_500 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",MPPI (2000)," << mppi_et_us_2000 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",KF," << kf_et_us << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",EKF," << ekf_et_us << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",PF (100)," << pf_et_us_100 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",PF (500)," << pf_et_us_500 << "\n";
+  ofs << platform << "," << nstates << "," << ncontrols << "," << nmeas
+      << ",PF (2000)," << pf_et_us_2000 << "\n";
 }
 
 // To profile, run:
