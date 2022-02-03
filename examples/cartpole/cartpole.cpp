@@ -13,17 +13,18 @@ const std::size_t INPUT_DIM = 1;
 
 // Simulation parameters
 unsigned seed = 0;
+std::string init_case = "fine";
 std::size_t num_trials = 1;
 std::size_t num_bootstrap = 10;
 std::size_t num_steps = 200;
 std::size_t horizon = 100;
-double process_noise = 1e-4;
-double measurement_noise = 1e-6;
+double process_noise = 1e-12;
+double measurement_noise = 1e-12;
 double dt = 2e-2;  // Time step in seconds (20 ms)
 std::string datafile = "/libsia/data/cartpole.csv";
 
 // Cost parameters
-double input_cost = 1e-2;
+double input_cost = 1e-3;
 std::string algorithm = "ilqr";
 
 // iLQR parameters
@@ -40,7 +41,8 @@ double sigma = 10.0;
 double lambda = 1.0;
 
 // GMR parameters
-std::size_t num_clusters = 10;
+std::size_t num_clusters = 20;
+double regularization = 1e-2;  // This is super important!
 
 // Data structure to collect data for a single trial
 struct Trial {
@@ -94,8 +96,9 @@ bool parse_args(int argc, char* argv[]) {
   for (int i = 1; i < argc; i += 2) {
     if (std::string(argv[i]) == "--help") {
       std::cout << "  --seed <value> Random number generator\n";
+      std::cout << "  --init_case <value> Options 'coarse' or 'fine'\n";
       std::cout << "  --num_trials <value> Num of trials\n";
-      std::cout << "  --num_bootstrap <value> Num trials to boostrap data\n";
+      std::cout << "  --num_bootstrap <value> Num trials using an oracle\n";
       std::cout << "  --num_steps <value> Num simulation steps per trial\n";
       std::cout << "  --horizon <value> MPC optimization horizon\n";
       std::cout << "  --process_noise <value> Process noise variance\n";
@@ -114,10 +117,13 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --sigma <value> [MPPI] Control sampling variance\n";
       std::cout << "  --lambda <value> [MPPI] Free energy temperature\n";
       std::cout << "  --num_clusters <value> [GMR] Number of clusters\n";
+      std::cout << "  --regularization <value> [GMR] Covariance regularizer\n";
       return false;
     } else if (std::string(argv[i]) == "--seed") {
       seed = std::atoi(argv[i + 1]);
       random_seed = false;
+    } else if (std::string(argv[i]) == "--init_case") {
+      init_case = std::string(argv[i + 1]);
     } else if (std::string(argv[i]) == "--num_trials") {
       num_trials = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--num_bootstrap") {
@@ -158,6 +164,8 @@ bool parse_args(int argc, char* argv[]) {
       lambda = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--num_clusters") {
       num_clusters = std::atoi(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--regularization") {
+      regularization = std::atof(argv[i + 1]);
     }
   }
 
@@ -298,8 +306,16 @@ sia::Controller* create_mppi_controller(sia::LinearizableDynamics& dynamics,
 
 Eigen::VectorXd init_state() {
   Eigen::VectorXd lower(STATE_DIM), upper(STATE_DIM);
-  lower << -0.5, M_PI - 2, -2, -1;
-  upper << +0.5, M_PI + 2, +2, +1;
+  if (init_case == "coarse") {
+    lower << -0.5, M_PI - 2, -2, -1;
+    upper << +0.5, M_PI + 2, +2, +1;
+  } else if (init_case == "fine") {
+    lower << -0.1, M_PI / 2 - .1, -.1, -.1;
+    upper << +0.1, M_PI / 2 + .1, +.1, +.1;
+  } else {
+    std::cerr << "Unknown init_case " << init_case << "\n";
+  }
+
   sia::Uniform state(lower, upper);
   return state.sample();
 }
@@ -374,14 +390,19 @@ int main(int argc, char* argv[]) {
 
     // If we are past bootstrapping, then learn the model and start using it
     // TODO: adjust the model fit with new data rather than relearn from scratch
-    if (i == num_bootstrap) {
-      std::cout << "Trial " << i << " | Initializing GMR model\n";
-      gmr_dynamics = new sia::GMRDynamics(dataset.Xk(), dataset.Uk(),
-                                          dataset.Xkp1(), num_clusters);
+    if (i == num_bootstrap - 1) {
+      gmr_dynamics =
+          new sia::GMRDynamics(dataset.Xk(), dataset.Uk(), dataset.Xkp1(),
+                               num_clusters, regularization);
       model = gmr_dynamics;
-    } else if (i > num_bootstrap) {
-      std::cout << "Trial " << i << " | Updating GMR model\n";
+      std::cout << "Trial " << i << " | Initializing GMR model, MSE "
+                << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(), dataset.Xkp1())
+                << "\n";
+    } else if (i >= num_bootstrap) {
       gmr_dynamics->train(dataset.Xk(), dataset.Uk(), dataset.Xkp1());
+      std::cout << "Trial " << i << " | Updating GMR model, MSE "
+                << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(), dataset.Xkp1())
+                << "\n";
     }
 
     delete controller;

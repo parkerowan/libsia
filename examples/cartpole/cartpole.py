@@ -58,6 +58,7 @@ def plot_cartpole_trajectory(datafile: str, animate: bool, trace: bool,
     ax[0].axis('equal')
     ax[0].axis('off')
     ax[0].set_ylim([-1, 1])
+    ax[0].set_xlim([-6, 6])
 
     # show traces
     h[1], = ax[1].plot(t, p, ".", ms=2, label="p")
