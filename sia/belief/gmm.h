@@ -85,6 +85,7 @@ class GMM : public Distribution, public Inference {
                          std::vector<Gaussian>& gaussians,
                          std::vector<double>& priors,
                          std::size_t K,
+                         const Eigen::VectorXd& weights = Eigen::VectorXd(),
                          FitMethod fit_method = FitMethod::GAUSSIAN_LIKELIHOOD,
                          InitMethod init_method = InitMethod::STANDARD_RANDOM,
                          double regularization = DEFAULT_REGULARIZATION);

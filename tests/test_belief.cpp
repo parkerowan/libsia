@@ -452,26 +452,29 @@ TEST(Belief, GMM) {
       sia::Gaussian(Eigen::Vector2d{6, 6}, Eigen::Matrix2d::Identity()),
       sia::Gaussian(Eigen::Vector2d{9, 9}, Eigen::Matrix2d::Identity())};
   priors = std::vector<double>{0.3, 0.3, 0.4};
-  EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::KMEANS, sia::GMM::WARM_START),
-            1);
-  EXPECT_EQ(gaussians.size(), 3);
-  EXPECT_EQ(priors.size(), 3);
-
-  EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::WARM_START),
-            1);
-  EXPECT_EQ(gaussians.size(), 3);
-  EXPECT_EQ(priors.size(), 3);
-
-  EXPECT_LE(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::KMEANS, sia::GMM::STANDARD_RANDOM),
-            2);
+  EXPECT_EQ(
+      sia::GMM::fit(S, gaussians, priors, gaussians.size(), Eigen::VectorXd(),
+                    sia::GMM::KMEANS, sia::GMM::WARM_START),
+      1);
   EXPECT_EQ(gaussians.size(), 3);
   EXPECT_EQ(priors.size(), 3);
 
   EXPECT_EQ(
-      sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+      sia::GMM::fit(S, gaussians, priors, gaussians.size(), Eigen::VectorXd(),
+                    sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::WARM_START),
+      1);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  EXPECT_LE(
+      sia::GMM::fit(S, gaussians, priors, gaussians.size(), Eigen::VectorXd(),
+                    sia::GMM::KMEANS, sia::GMM::STANDARD_RANDOM),
+      2);
+  EXPECT_EQ(gaussians.size(), 3);
+  EXPECT_EQ(priors.size(), 3);
+
+  EXPECT_EQ(
+      sia::GMM::fit(S, gaussians, priors, gaussians.size(), Eigen::VectorXd(),
                     sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::STANDARD_RANDOM),
       1);
   EXPECT_EQ(gaussians.size(), 3);

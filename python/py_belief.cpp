@@ -265,6 +265,7 @@ void export_py_belief(py::module& m_sup) {
       .def("gaussians", &sia::GMM::gaussians)
       .def_static("fit", &sia::GMM::fit, py::arg("samples"),
                   py::arg("gaussians"), py::arg("priors"), py::arg("K"),
+                  py::arg("weights") = Eigen::VectorXd(),
                   py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
                   py::arg("init_method") = sia::GMM::STANDARD_RANDOM,
                   py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION);

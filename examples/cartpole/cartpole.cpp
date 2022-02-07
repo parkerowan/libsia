@@ -41,8 +41,8 @@ double sigma = 10.0;
 double lambda = 1.0;
 
 // GMR parameters
-std::size_t num_clusters = 20;
-double regularization = 1e-2;  // This is super important!
+std::size_t num_clusters = 30;
+double regularization = 1e-3;  // This is super important!
 
 // Data structure to collect data for a single trial
 struct Trial {

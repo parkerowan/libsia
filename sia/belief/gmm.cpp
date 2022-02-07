@@ -42,12 +42,12 @@ GMM::GMM(const Eigen::MatrixXd& samples, std::size_t K, double regularization)
       m_num_clusters(K),
       m_dimension(samples.rows()) {
   // Initialize via kmeans
-  fit(samples, m_gaussians, m_priors, K, GMM::KMEANS, GMM::STANDARD_RANDOM,
-      regularization);
+  fit(samples, m_gaussians, m_priors, K, Eigen::VectorXd(), GMM::KMEANS,
+      GMM::STANDARD_RANDOM, regularization);
 
   // Perform EM to learn full covariance
-  fit(samples, m_gaussians, m_priors, K, GMM::GAUSSIAN_LIKELIHOOD,
-      GMM::WARM_START, regularization);
+  fit(samples, m_gaussians, m_priors, K, Eigen::VectorXd(),
+      GMM::GAUSSIAN_LIKELIHOOD, GMM::WARM_START, regularization);
 }
 
 std::size_t GMM::dimension() const {
@@ -177,8 +177,8 @@ void GMM::train(const Eigen::MatrixXd& samples,
                 FitMethod fit_method,
                 InitMethod init_method,
                 double regularization) {
-  GMM::fit(samples, m_gaussians, m_priors, numClusters(), fit_method,
-           init_method, regularization);
+  GMM::fit(samples, m_gaussians, m_priors, numClusters(), Eigen::VectorXd(),
+           fit_method, init_method, regularization);
 }
 
 std::size_t GMM::inputDimension() const {
@@ -255,12 +255,16 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
                      std::vector<Gaussian>& gaussians,
                      std::vector<double>& priors,
                      std::size_t K,
+                     const Eigen::VectorXd& weights,
                      GMM::FitMethod fit_method,
                      GMM::InitMethod init_method,
                      double regularization) {
   std::size_t n = samples.cols();
   std::size_t d = samples.rows();
-  assert(n >= K);  // # clusters less than samples doesn't make any sense
+  SIA_EXCEPTION(n >= K, "GMM expects a more data points than clusters");
+
+  // TODO: Incorporate the weights via Section II-III of
+  // https://arxiv.org/pdf/1509.01509.pdf
 
   // Initialization
   if (init_method == GMM::WARM_START) {
@@ -293,24 +297,25 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       regularization * Eigen::MatrixXd::Identity(d, d);
 
   // Create K x n matrix of one-hot class associations (cols sum to 1)
-  Eigen::MatrixXd weights = Eigen::MatrixXd::Ones(K, n) / K;
+  Eigen::MatrixXd W = Eigen::MatrixXd::Ones(K, n) / K;
 
   // Run E-M
   bool done = false;
   std::vector<std::size_t> classes, prev_classes;
   classes.resize(n);
-  getAssociations(weights, prev_classes);
+  getAssociations(W, prev_classes);
   std::size_t iter = 0;
   while (not done) {
-    // Association
+    // E-Step: Association
     for (std::size_t k = 0; k < K; ++k) {
       for (std::size_t i = 0; i < n; ++i) {
         if (fit_method == GMM::KMEANS) {
-          weights(k, i) =
+          W(k, i) =
               1.0 /
               ((gaussians[k].mean() - samples.col(i)).squaredNorm() + 1e-6);
         } else if (fit_method == GMM::GAUSSIAN_LIKELIHOOD) {
-          weights(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
+          // TODO: Incorporate sample weight here
+          W(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
         } else {
           LOG(ERROR) << "Unsupported fit method " << fit_method;
           return 0;
@@ -318,19 +323,20 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       }
     }
 
-    const Eigen::VectorXd wsum = weights.colwise().sum();
+    const Eigen::VectorXd wsum = W.colwise().sum();
     for (std::size_t i = 0; i < n; ++i) {
-      weights.col(i) /= wsum(i);
+      W.col(i) /= wsum(i);
     }
-    getAssociations(weights, classes);
+    getAssociations(W, classes);
 
-    // Compute mean, covariance, and prior for each cluster (MLE fit)
+    // M-Step: Compute mean, covariance, and prior for each cluster (MLE fit)
     for (std::size_t k = 0; k < K; ++k) {
       const Eigen::MatrixXd samples_k =
           extractClusteredSamples(samples, classes, k);
       if (samples_k.cols() == 0) {
         LOG(WARNING) << "No samples found for cluster " << k;
       } else {
+        // TODO: Incorporate sample weight here
         double nk = double(samples_k.cols());
         const Eigen::VectorXd mu = samples_k.rowwise().sum() / nk;
         const Eigen::MatrixXd e =
