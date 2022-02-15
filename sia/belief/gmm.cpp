@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmm.h"
+#include "sia/belief/particles.h"
 #include "sia/common/exception.h"
 #include "sia/math/math.h"
 
@@ -9,6 +10,8 @@
 #include <algorithm>
 
 namespace sia {
+
+const double REALMIN = std::numeric_limits<double>::min();
 
 GMM::GMM(std::size_t K, std::size_t dimension)
     : Distribution(Generator::instance()),
@@ -174,11 +177,12 @@ double GMM::negLogLik(const Eigen::MatrixXd& X) {
 }
 
 void GMM::train(const Eigen::MatrixXd& samples,
+                const Eigen::VectorXd& weights,
                 FitMethod fit_method,
                 InitMethod init_method,
                 double regularization) {
-  GMM::fit(samples, m_gaussians, m_priors, numClusters(), Eigen::VectorXd(),
-           fit_method, init_method, regularization);
+  GMM::fit(samples, m_gaussians, m_priors, numClusters(), weights, fit_method,
+           init_method, regularization);
 }
 
 std::size_t GMM::inputDimension() const {
@@ -229,6 +233,26 @@ const Eigen::MatrixXd extractClusteredSamples(
   return y;
 }
 
+/// Returns a sub vector of weights where k is in clusters
+const Eigen::VectorXd extractClusteredWeights(
+    const Eigen::VectorXd& weights,
+    const std::vector<std::size_t>& clusters,
+    std::size_t k) {
+  std::size_t n = weights.size();
+  assert(n == clusters.size());
+  std::vector<std::size_t> indices;
+  for (std::size_t i = 0; i < n; ++i) {
+    if (clusters[i] == k) {
+      indices.emplace_back(i);
+    }
+  }
+  Eigen::VectorXd y = Eigen::VectorXd::Zero(indices.size());
+  for (std::size_t i = 0; i < indices.size(); ++i) {
+    y(i) = weights(indices[i]);
+  }
+  return y;
+}
+
 /// Returns if all cluster assignments are equivalent
 bool assignmentsEqual(const std::vector<std::size_t>& a,
                       const std::vector<std::size_t>& b) {
@@ -262,6 +286,15 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
   std::size_t n = samples.cols();
   std::size_t d = samples.rows();
   SIA_EXCEPTION(n >= K, "GMM expects a more data points than clusters");
+
+  // Define the weights
+  Eigen::VectorXd _weights = Eigen::VectorXd::Ones(n);
+  if (weights.size() > 0) {
+    SIA_EXCEPTION(
+        int(n) == weights.size(),
+        "GMM expects number of cols in samples to be size of weights");
+    _weights = weights;
+  }
 
   // TODO: Incorporate the weights via Section II-III of
   // https://arxiv.org/pdf/1509.01509.pdf
@@ -314,8 +347,8 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
               1.0 /
               ((gaussians[k].mean() - samples.col(i)).squaredNorm() + 1e-6);
         } else if (fit_method == GMM::GAUSSIAN_LIKELIHOOD) {
-          // TODO: Incorporate sample weight here
-          W(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
+          W(k, i) = priors[k] * exp(gaussians[k].logProbScaled(
+                                    samples.col(i), 1 / _weights(i)));
         } else {
           LOG(ERROR) << "Unsupported fit method " << fit_method;
           return 0;
@@ -325,7 +358,7 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
 
     const Eigen::VectorXd wsum = W.colwise().sum();
     for (std::size_t i = 0; i < n; ++i) {
-      W.col(i) /= wsum(i);
+      W.col(i) /= (wsum(i) + REALMIN);
     }
     getAssociations(W, classes);
 
@@ -333,15 +366,17 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
     for (std::size_t k = 0; k < K; ++k) {
       const Eigen::MatrixXd samples_k =
           extractClusteredSamples(samples, classes, k);
+      const Eigen::VectorXd weights_k =
+          extractClusteredWeights(_weights, classes, k);
       if (samples_k.cols() == 0) {
         LOG(WARNING) << "No samples found for cluster " << k;
       } else {
-        // TODO: Incorporate sample weight here
         double nk = double(samples_k.cols());
-        const Eigen::VectorXd mu = samples_k.rowwise().sum() / nk;
+        const Eigen::VectorXd mu = samples_k * weights_k / weights_k.sum();
         const Eigen::MatrixXd e =
             (samples_k.array().colwise() - mu.array()).matrix();
-        const Eigen::MatrixXd cov = e * e.transpose() / nk + lambda;
+        const Eigen::MatrixXd cov =
+            e * weights_k.asDiagonal() * e.transpose() / nk + lambda;
         priors[k] = nk / double(n);
         gaussians[k] = Gaussian(mu, cov);
       }

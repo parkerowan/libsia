@@ -11,7 +11,7 @@
 
 namespace sia {
 
-/// Gaussian mixture model (GMM) defined by a weighted combinations of
+/// Gaussian mixture model (GMM) defined by a weighted combinations of K
 /// Gaussians.  GMMs are locally linear and used to perform classification or
 /// regression (see sia::GMR).
 ///
@@ -66,6 +66,7 @@ class GMM : public Distribution, public Inference {
 
   /// Train the GMM on new samples using existing parameters as initialization
   void train(const Eigen::MatrixXd& samples,
+             const Eigen::VectorXd& weights = Eigen::VectorXd(),
              FitMethod fit_method = FitMethod::GAUSSIAN_LIKELIHOOD,
              InitMethod init_method = InitMethod::WARM_START,
              double regularization = DEFAULT_REGULARIZATION);

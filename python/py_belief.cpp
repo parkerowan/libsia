@@ -60,7 +60,10 @@ void export_py_belief(py::module& m_sup) {
            py::arg("covariance"))
       .def("setMeanAndCov", &sia::Gaussian::setMeanAndCov, py::arg("mean"),
            py::arg("covariance"))
-      .def("mahalanobis", &sia::Gaussian::mahalanobis, py::arg("x"));
+      .def("logProbScaled", &sia::Gaussian::logProbScaled, py::arg("x"),
+           py::arg("alpha"))
+      .def("mahalanobis", &sia::Gaussian::mahalanobis, py::arg("x"))
+      .def("maxLogProb", &sia::Gaussian::maxLogProb, py::arg("alpha") = 1.0);
 
   py::class_<sia::Uniform, sia::Distribution>(m, "Uniform")
       .def(py::init<std::size_t>(), py::arg("dimension"))
@@ -253,6 +256,7 @@ void export_py_belief(py::module& m_sup) {
       .def("classify", &sia::GMM::classify, py::arg("x"))
       .def("negLogLik", &sia::GMM::negLogLik, py::arg("X"))
       .def("train", &sia::GMM::train, py::arg("samples"),
+           py::arg("weights") = Eigen::VectorXd(),
            py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
            py::arg("init_method") = sia::GMM::WARM_START,
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
@@ -271,12 +275,6 @@ void export_py_belief(py::module& m_sup) {
                   py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION);
 
   py::class_<sia::GMR, sia::Inference>(m, "GMR")
-      .def(py::init<const std::vector<sia::Gaussian>&,
-                    const std::vector<double>&, std::vector<std::size_t>,
-                    std::vector<std::size_t>, double>(),
-           py::arg("gaussians"), py::arg("weights"), py::arg("input_indices"),
-           py::arg("output_indices"),
-           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def(py::init<const sia::GMM&, std::vector<std::size_t>,
                     std::vector<std::size_t>, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
@@ -289,6 +287,7 @@ void export_py_belief(py::module& m_sup) {
       .def("negLogLik", &sia::GMR::negLogLik, py::arg("X"), py::arg("Y"))
       .def("mse", &sia::GMR::mse, py::arg("X"), py::arg("Y"))
       .def("train", &sia::GMR::train, py::arg("X"), py::arg("Y"),
+           py::arg("weights") = Eigen::VectorXd(),
            py::arg("fit_method") = sia::GMM::GAUSSIAN_LIKELIHOOD,
            py::arg("init_method") = sia::GMM::WARM_START,
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)

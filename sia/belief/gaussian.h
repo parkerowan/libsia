@@ -40,11 +40,15 @@ class Gaussian : public Distribution {
   void setMeanAndCov(const Eigen::VectorXd& mean,
                      const Eigen::MatrixXd& covariance);
 
+  // Log probability with scaled covariance matrix, i.e. $\alpha \Sigma$.
+  double logProbScaled(const Eigen::VectorXd& x, double alpha) const;
+
   /// Computes the distance $\sqrt{(x-\mu)^\top \Sigma^{-1} (x-\mu)}$.
   double mahalanobis(const Eigen::VectorXd& x) const;
 
-  /// Returns the log probability when $x = \mu$.
-  double maxLogProb() const;
+  /// Returns the log probability when $x = \mu$.  alpha is scaling on the
+  /// covariance, i.e. $\alpha \Sigma$
+  double maxLogProb(double alpha = 1.0) const;
 
  protected:
   /// Computes the Cholesky (LLT) decomposition of the covariance matrix and

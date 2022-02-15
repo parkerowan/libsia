@@ -51,7 +51,11 @@ const Eigen::VectorXd Gaussian::sample() {
 
 double Gaussian::logProb(const Eigen::VectorXd& x) const {
   // -0.5 * (rank * log_2_pi + log_det + pow(mahalanobis(x), 2));
-  return maxLogProb() - 0.5 * pow(mahalanobis(x), 2);
+  return logProbScaled(x, 1.0);
+}
+
+double Gaussian::logProbScaled(const Eigen::VectorXd& x, double alpha) const {
+  return maxLogProb(alpha) - 0.5 * pow(mahalanobis(x), 2) / alpha;
 }
 
 const Eigen::VectorXd Gaussian::mean() const {
@@ -111,10 +115,11 @@ double Gaussian::mahalanobis(const Eigen::VectorXd& x) const {
   return sqrt(y.dot(y));
 }
 
-double Gaussian::maxLogProb() const {
+double Gaussian::maxLogProb(double alpha) const {
   double rank = static_cast<double>(dimension());
   double log_2_pi = log(2 * M_PI);
-  double log_det = 2 * m_cached_sigma_L.diagonal().array().log().sum();
+  double log_det =
+      2 * (m_cached_sigma_L * sqrt(alpha)).diagonal().array().log().sum();
   return -0.5 * (rank * log_2_pi + log_det);
 }
 
