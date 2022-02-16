@@ -23,12 +23,6 @@ class GMR : public Inference {
   /// the state vector is an output $y$ for the regression $y = gmr(x)$.  The
   /// regularization term on the output covariance $cov += (scalar >= 0) I$ is
   /// to improve positive definiteness.
-  explicit GMR(const std::vector<Gaussian>& gaussians,
-               const std::vector<double>& weights,
-               std::vector<std::size_t> input_indices,
-               std::vector<std::size_t> output_indices,
-               double regularization = GMM::DEFAULT_REGULARIZATION);
-
   explicit GMR(const GMM& gmm,
                std::vector<std::size_t> input_indices,
                std::vector<std::size_t> output_indices,
@@ -54,6 +48,7 @@ class GMR : public Inference {
   /// initialization
   void train(const Eigen::MatrixXd& X,
              const Eigen::MatrixXd& Y,
+             const Eigen::VectorXd& weights = Eigen::VectorXd(),
              GMM::FitMethod fit_method = GMM::GAUSSIAN_LIKELIHOOD,
              GMM::InitMethod init_method = GMM::WARM_START,
              double regularization = GMM::DEFAULT_REGULARIZATION);

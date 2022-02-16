@@ -10,22 +10,10 @@
 
 namespace sia {
 
+const double REALMIN = std::numeric_limits<double>::min();
+
 // Note: the initial cached x is set to 1 here so that it differs from the first
 // evaluation and the GMR is reset.
-GMR::GMR(const std::vector<Gaussian>& gaussians,
-         const std::vector<double>& priors,
-         std::vector<std::size_t> input_indices,
-         std::vector<std::size_t> output_indices,
-         double regularization)
-    : m_gmm(gaussians, priors),
-      m_belief(output_indices.size()),
-      m_input_indices(input_indices),
-      m_output_indices(output_indices),
-      m_regularization(regularization),
-      m_cached_test_x(Eigen::VectorXd::Ones(inputDimension())) {
-  cacheRegressionModels();
-}
-
 GMR::GMR(const GMM& gmm,
          std::vector<std::size_t> input_indices,
          std::vector<std::size_t> output_indices,
@@ -64,7 +52,7 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   Eigen::MatrixXd sig = Eigen::MatrixXd::Zero(d, d);
 
   // Initialize cumulative priors to smallest double to avoid divide by zero
-  double cweight = std::numeric_limits<double>::epsilon();
+  double cweight = REALMIN;
 
   // For each Gaussian dist
   const auto& priors = m_gmm.priors();
@@ -129,11 +117,12 @@ double GMR::mse(const Eigen::MatrixXd& X, const Eigen::MatrixXd& Y) {
 
 void GMR::train(const Eigen::MatrixXd& X,
                 const Eigen::MatrixXd& Y,
+                const Eigen::VectorXd& weights,
                 GMM::FitMethod fit_method,
                 GMM::InitMethod init_method,
                 double regularization) {
   const Eigen::MatrixXd D = stack(X, Y);
-  m_gmm.train(D, fit_method, init_method, regularization);
+  m_gmm.train(D, weights, fit_method, init_method, regularization);
 }
 
 std::size_t GMR::inputDimension() const {
@@ -198,7 +187,7 @@ GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,
   m_sigma_yx_sigma_xx_inv = sigma_yx * sigma_xx_inv;
 
   // Enforce symmetry of local covariance
-  m_sigma = sigma_yy - sigma_yx * sigma_xx_inv * sigma_xy;
+  m_sigma = sigma_yy - m_sigma_yx_sigma_xx_inv * sigma_xy;
   m_sigma = (m_sigma + m_sigma.transpose()) / 2.0;
 }
 
