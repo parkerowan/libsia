@@ -24,14 +24,16 @@ class GMR : public Inference {
   /// regularization term on the output covariance $cov += (scalar >= 0) I$ is
   /// to improve positive definiteness.
   explicit GMR(const GMM& gmm,
-               std::vector<std::size_t> input_indices,
-               std::vector<std::size_t> output_indices,
+               const std::vector<std::size_t>& input_indices,
+               const std::vector<std::size_t>& output_indices,
                double regularization = GMM::DEFAULT_REGULARIZATION);
 
   explicit GMR(const Eigen::MatrixXd& X,
                const Eigen::MatrixXd& Y,
                std::size_t K,
                double regularization = GMM::DEFAULT_REGULARIZATION);
+
+  virtual ~GMR() = default;
 
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;

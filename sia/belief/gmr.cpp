@@ -15,8 +15,8 @@ const double REALMIN = std::numeric_limits<double>::min();
 // Note: the initial cached x is set to 1 here so that it differs from the first
 // evaluation and the GMR is reset.
 GMR::GMR(const GMM& gmm,
-         std::vector<std::size_t> input_indices,
-         std::vector<std::size_t> output_indices,
+         const std::vector<std::size_t>& input_indices,
+         const std::vector<std::size_t>& output_indices,
          double regularization)
     : m_gmm(gmm.gaussians(), gmm.priors()),
       m_belief(output_indices.size()),

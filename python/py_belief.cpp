@@ -275,8 +275,8 @@ void export_py_belief(py::module& m_sup) {
                   py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION);
 
   py::class_<sia::GMR, sia::Inference>(m, "GMR")
-      .def(py::init<const sia::GMM&, std::vector<std::size_t>,
-                    std::vector<std::size_t>, double>(),
+      .def(py::init<const sia::GMM&, const std::vector<std::size_t>&,
+                    const std::vector<std::size_t>&, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, std::size_t,

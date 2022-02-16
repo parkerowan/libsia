@@ -45,7 +45,8 @@ void GMRDynamics::train(const Eigen::MatrixXd& Xk,
                         double regularization) {
   const Eigen::MatrixXd X = stack(Xk, Uk);
   const Eigen::MatrixXd Y = Xkp1 - Xk;
-  m_gmr.train(X, Y, fit_method, init_method, regularization);
+  const Eigen::VectorXd w = Eigen::VectorXd();
+  m_gmr.train(X, Y, w, fit_method, init_method, regularization);
 }
 
 double GMRDynamics::negLogLik(const Eigen::MatrixXd& Xk,
@@ -111,7 +112,7 @@ void GMRMeasurement::train(const Eigen::MatrixXd& X,
                            GMM::FitMethod fit_method,
                            GMM::InitMethod init_method,
                            double regularization) {
-  m_gmr.train(X, Y, fit_method, init_method, regularization);
+  m_gmr.train(X, Y, Eigen::VectorXd(), fit_method, init_method, regularization);
 }
 
 double GMRMeasurement::negLogLik(const Eigen::MatrixXd& X,
