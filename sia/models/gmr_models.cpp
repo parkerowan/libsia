@@ -13,7 +13,10 @@ GMRDynamics::GMRDynamics(const Eigen::MatrixXd& Xk,
                          std::size_t K,
                          double regularization)
     : m_prob_dynamics(Xkp1.rows()),
-      m_gmr(createGMR(Xk, Uk, Xkp1, K, regularization)) {}
+      m_gmr(createGMR(Xk, Uk, Xkp1, K, regularization)) {
+  // train(Xk, Uk, Xkp1, GMM::GAUSSIAN_LIKELIHOOD, GMM::WARM_START,
+  //       regularization);
+}
 
 Gaussian& GMRDynamics::dynamics(const Eigen::VectorXd& state,
                                 const Eigen::VectorXd& control) {

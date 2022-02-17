@@ -36,13 +36,13 @@ double min_z = 1e-1;
 double mu = 0;
 
 // MPPI parameters
-std::size_t num_samples = 100;
-double sigma = 10.0;
+std::size_t num_samples = 20;
+double sigma = 2.0;
 double lambda = 1.0;
 
 // GMR parameters
-std::size_t num_clusters = 30;
-double regularization = 1e-3;  // This is super important!
+std::size_t num_clusters = 10;
+double regularization = 1e-1;  // This is super important!
 
 // Data structure to collect data for a single trial
 struct Trial {
@@ -310,8 +310,8 @@ Eigen::VectorXd init_state() {
     lower << -0.5, M_PI - 2, -2, -1;
     upper << +0.5, M_PI + 2, +2, +1;
   } else if (init_case == "fine") {
-    lower << -0.1, M_PI / 2 - .1, -.1, -.1;
-    upper << +0.1, M_PI / 2 + .1, +.1, +.1;
+    lower << -0.2, M_PI / 2 - .2, -.2, -.2;
+    upper << +0.2, M_PI / 2 + .2, +.2, +.2;
   } else {
     std::cerr << "Unknown init_case " << init_case << "\n";
   }
@@ -398,11 +398,12 @@ int main(int argc, char* argv[]) {
       std::cout << "Trial " << i << " | Initializing GMR model, MSE "
                 << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(), dataset.Xkp1())
                 << "\n";
-    } else if (i >= num_bootstrap) {
-      gmr_dynamics->train(dataset.Xk(), dataset.Uk(), dataset.Xkp1());
-      std::cout << "Trial " << i << " | Updating GMR model, MSE "
-                << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(), dataset.Xkp1())
-                << "\n";
+      // } else if (i >= num_bootstrap) {
+      // gmr_dynamics->train(dataset.Xk(), dataset.Uk(), dataset.Xkp1());
+      // std::cout << "Trial " << i << " | Updating GMR model, MSE "
+      //           << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(),
+      //           dataset.Xkp1())
+      //           << "\n";
     }
 
     delete controller;
