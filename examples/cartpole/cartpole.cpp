@@ -263,7 +263,7 @@ sia::NonlinearGaussianMeasurementCT create_measurement(double r, double dt) {
   return sia::NonlinearGaussianMeasurementCT(h, Rpsd, dt);
 }
 
-sia::QuadraticCost create_cost(double r = 1e-2) {
+sia::QuadraticCost create_cost(double r) {
   Eigen::DiagonalMatrix<double, STATE_DIM> Q;
   Q.diagonal() << 1.25, 6.0, 12.0, 0.25;
   Eigen::MatrixXd R(INPUT_DIM, INPUT_DIM);
@@ -310,8 +310,8 @@ Eigen::VectorXd init_state() {
     lower << -0.5, M_PI - 2, -2, -1;
     upper << +0.5, M_PI + 2, +2, +1;
   } else if (init_case == "fine") {
-    lower << -0.2, M_PI / 2 - .2, -.2, -.2;
-    upper << +0.2, M_PI / 2 + .2, +.2, +.2;
+    lower << -0.3, M_PI / 2 - .3, -.3, -.3;
+    upper << +0.3, M_PI / 2 + .3, +.3, +.3;
   } else {
     std::cerr << "Unknown init_case " << init_case << "\n";
   }

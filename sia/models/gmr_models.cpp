@@ -27,6 +27,7 @@ Gaussian& GMRDynamics::dynamics(const Eigen::VectorXd& state,
   xu.tail(n) = control;
   m_prob_dynamics = m_gmr.predict(xu);
   m_prob_dynamics.setMean(m_prob_dynamics.mean() + state);
+  // TODO Set the covariance
   return m_prob_dynamics;
 }
 
