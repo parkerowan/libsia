@@ -5,6 +5,7 @@ build/
 _build/
 lib/
 dist/
+public/
 *.egg-info
 
 *.csv

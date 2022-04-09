@@ -41,7 +41,6 @@ ext_modules = [
             "python/py_math.cpp",
             "python/py_models.cpp",
             "python/py_optimizers.cpp",
-            # "python/py_runner.cpp",
             "python/pysia.cpp",
         ],
         # Example: passing in the version to the compiled code
@@ -58,8 +57,8 @@ setup(
     version=__version__,
     author="Parker Owan",
     author_email="mrpowan10@gmail.com",
-    url="https://gitlab.com/parkerowan/librtx",
-    description="C++/Python Statistical estimation, fusion and inference",
+    url="https://gitlab.com/parkerowan/libsia",
+    description="C++/Python Statistical estimation and optimal control",
     long_description="",
     ext_modules=ext_modules,
     extras_require={"test": "pytest"},
