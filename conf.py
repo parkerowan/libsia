@@ -22,7 +22,7 @@ copyright = '2018-2022, Parker Owan'
 author = 'Parker Owan'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.0'
+release = '0.3.1'
 
 # -- General configuration ---------------------------------------------------
 

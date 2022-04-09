@@ -3,6 +3,7 @@ image: owan/libsia:latest
 stages:
   - build
   - test
+  - deploy
 
 build:
   stage: build
@@ -39,3 +40,14 @@ test:
     - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
   dependencies:
     - build
+
+pages:
+  stage: deploy
+  script:
+    - pip install -U sphinx
+    - sphinx-build -b html . public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH

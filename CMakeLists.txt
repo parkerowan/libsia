@@ -135,7 +135,7 @@ endif()
 # ------------------------------------------------------------------------------
 if(SPHINX_DOCS)
   add_custom_target(docs
-    COMMAND make html
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/docs"
+    COMMAND sphinx-build -b html . public
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
   )
 endif()
