@@ -15,6 +15,21 @@
 # sys.path.insert(0, os.path.abspath('..'))
 # from recommonmark.transform import AutoStructify
 
+import re
+
+# Get the project version
+def get_version() -> str:
+    with open("version.txt") as f:
+        content = f.readlines()
+    vdict = {}
+    for x in content:
+        pattern = "(\S*) (\d[0-9]*)"
+        match = re.search(pattern, x.strip())
+        vdict[match.group(1)] = match.group(2)
+    ver = "{}.{}.{}".format(vdict["VERSION_MAJOR"], vdict["VERSION_MINOR"],
+                            vdict["VERSION_PATCH"])
+    return ver
+
 # -- Project information -----------------------------------------------------
 
 project = 'libSIA'
@@ -22,7 +37,7 @@ copyright = '2018-2022, Parker Owan'
 author = 'Parker Owan'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.1'
+release = get_version()
 
 # -- General configuration ---------------------------------------------------
 

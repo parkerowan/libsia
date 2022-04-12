@@ -13,7 +13,7 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(pysia, m) {
-  m.doc() = "Model-based Reinforcement Learning";
+  m.doc() = "Model-based Stochastic Estimation and Control";
 
   export_py_belief(m);
   export_py_controllers(m);
