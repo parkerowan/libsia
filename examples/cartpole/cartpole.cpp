@@ -394,6 +394,8 @@ int main(int argc, char* argv[]) {
       gmr_dynamics =
           new sia::GMRDynamics(dataset.Xk(), dataset.Uk(), dataset.Xkp1(),
                                num_clusters, regularization);
+      // gmr_policy =
+      //     new sia::GMRMeasurement()
       model = gmr_dynamics;
       std::cout << "Trial " << i << " | Initializing GMR model, MSE "
                 << gmr_dynamics->mse(dataset.Xk(), dataset.Uk(), dataset.Xkp1())
