@@ -1,11 +1,11 @@
-# libSIA - Model-based Reinforcement Learning
+# libSIA - Model-based Stochastic Estimation and Control
 
 [![pipeline status](https://gitlab.com/parkerowan/libsia/badges/master/pipeline.svg)](https://gitlab.com/parkerowan/libsia/commits/master)
 [![codecov](https://codecov.io/gl/parkerowan/libsia/branch/master/graph/badge.svg?token=H5P0UCFFR1)](https://codecov.io/gl/parkerowan/libsia)
 
 [Documentation and tutorials](https://parkerowan.gitlab.io/libsia)
 
-Sia is a C++/Python library for model-based Reinforcement Learning (or stochastic estimation and optimal control if you prefer). The current scope is on unconstrained continuous state and action vector spaces. Due to the focus on stochastic models, belief and dynamical systems are first-class representations. Algorithms included with the library are general purpose and can be applied to many different applications.
+Sia is a C++/Python library for model-based stochastic estimation and optimal control. The current scope is on unconstrained continuous state and action vector spaces. Due to the focus on stochastic models, belief and dynamical systems are first-class representations. Algorithms included with the library are general purpose and can be applied to many different applications.
 
 ## Features
 - Finite horizon model predictive control (MPC) including LQR, iLQR, and model predictive path integrals (MPPI).

@@ -75,14 +75,6 @@ endif()
 find_package(Eigen3 3.3.4 REQUIRED)
 find_package(Glog 0.4.0 REQUIRED)
 find_package(GTest REQUIRED)
-find_package(PythonInterp 3 REQUIRED)
-find_package(PythonLibs 3 REQUIRED)
-find_package(pybind11 2.6.1 REQUIRED)
-
-message(STATUS "EIGEN3_INCLUDE_DIR = ${EIGEN3_INCLUDE_DIR}")
-message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
-message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
-message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 
 # Dependency include directories
 include_directories(
@@ -99,6 +91,9 @@ add_subdirectory(sia)
 # Add the python bindings
 # ------------------------------------------------------------------------------
 if(PYTHON_BINDINGS)
+  find_package(PythonInterp 3 REQUIRED)
+  find_package(PythonLibs 3 REQUIRED)
+  find_package(pybind11 2.6.1 REQUIRED)
   add_subdirectory(python)
 endif()
 

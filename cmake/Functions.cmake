@@ -34,20 +34,47 @@ function(FUNCTIONS_CREATE_CPP_SHARED_LIB)
     ${Functions_LIBRARIES}
   )
 
+  target_include_directories(${Functions_TARGET} PUBLIC 
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/sia>
+  )
+
   set_target_properties(${Functions_TARGET} PROPERTIES
     LINKER_LANGUAGE CXX
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
   )
 
   install(TARGETS ${Functions_TARGET}
     EXPORT "${Functions_TARGET}Targets"
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT lib
-    COMPONENT dev
+    LIBRARY DESTINATION ${INSTALL_LIB_DIR}
+    ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
+  )
+
+  install(EXPORT "${Functions_TARGET}Targets"
+    FILE "${Functions_TARGET}Targets.cmake"
+    DESTINATION ${INSTALL_LIB_DIR}/cmake/${Functions_TARGET}
+  )
+
+  install(FILES
+    "${PROJECT_SOURCE_DIR}/cmake/${Functions_TARGET}Config.cmake"
+    DESTINATION ${INSTALL_LIB_DIR}/cmake/${Functions_TARGET}
+  )
+
+  include(CMakePackageConfigHelpers)
+
+  write_basic_package_version_file(
+    "${PROJECT_SOURCE_DIR}/lib/cmake/${Functions_TARGET}ConfigVersion.cmake"
+    VERSION ${PROJ_VERSION}
+    COMPATIBILITY SameMajorVersion
+  )
+
+  install(FILES
+    "${PROJECT_SOURCE_DIR}/lib/cmake/${Functions_TARGET}ConfigVersion.cmake"
+    DESTINATION ${INSTALL_LIB_DIR}/cmake/${Functions_TARGET}
   )
 
   foreach(file ${Functions_HEADERS})
