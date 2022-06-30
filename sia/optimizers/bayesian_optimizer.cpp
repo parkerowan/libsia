@@ -5,6 +5,7 @@
 #include "sia/common/exception.h"
 
 #include <cmath>
+#include <glog/logging.h>
 
 namespace sia {
 

@@ -7,7 +7,7 @@
 set(lib_target "sia")
 
 set(lib_libs
-  glog
+  ${GLOG_LIBRARIES}
 )
 
 set(lib_header

@@ -15,9 +15,6 @@ option(BUILD_EXAMPLES "Builds the examples" ON)
 option(PYTHON_BINDINGS "Make the python bindings" OFF)
 option(SPHINX_DOCS "Make the sphinx documentation" ON)
 
-# CTest
-enable_testing()
-
 # Get the project version info
 file(READ "version.txt" ver)
 string(REGEX MATCH "VERSION_MAJOR ([0-9]*)" _ ${ver})
@@ -31,16 +28,15 @@ set(VERSION_PATCH ${CMAKE_MATCH_1})
 set(PROJ_NAME sia)
 set(PROJ_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
-# Offer the user the choice of overriding the installation directories
-set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
-set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
-set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
-
 # Create the project
 project(${PROJ_NAME} 
   LANGUAGES C CXX
   VERSION ${PROJ_VERSION}
 )
+
+# CTest
+enable_testing()
+include(CTest)
 
 # Add compiler flags
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
@@ -58,6 +54,10 @@ endif()
 
 message(STATUS "Build type set to ${CMAKE_BUILD_TYPE}")
 
+# Include custom Functions
+include(CMakePackageConfigHelpers)  # To build cmake configs
+include(GNUInstallDirs)  # For find_package(sia) to work
+
 # ------------------------------------------------------------------------------
 # CMake modules
 # ------------------------------------------------------------------------------
@@ -73,13 +73,14 @@ endif()
 # Find depdendencies
 # ------------------------------------------------------------------------------
 find_package(Eigen3 3.3.4 REQUIRED)
-find_package(Glog 0.4.0 REQUIRED)
+find_package(Glog 0.3.5 REQUIRED)
 find_package(GTest REQUIRED)
 
 # Dependency include directories
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${EIGEN3_INCLUDE_DIR}
+  ${GLOG_INCLUDE_DIR}
 )
 
 # ------------------------------------------------------------------------------

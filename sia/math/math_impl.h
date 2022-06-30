@@ -3,8 +3,6 @@
 
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
-
 namespace sia {
 
 template <typename... Args>
