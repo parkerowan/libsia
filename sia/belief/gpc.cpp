@@ -113,7 +113,7 @@ void GPC::cacheRegressionModel() {
 
   // Create multivariate GPR for each log concentration, eqn. 6
   m_gpr = std::make_shared<GPR>(m_input_samples, yi, m_kernel_type,
-                                GPR::HETEROSKEDASTIC_NOISE);
+                                GPR::NoiseType::HETEROSKEDASTIC_NOISE);
   m_gpr->setHeteroskedasticNoise(s2i);
 }
 

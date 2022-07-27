@@ -58,13 +58,13 @@ class GMM : public Distribution, public Inference {
   const std::vector<Gaussian>& gaussians() const;
 
   /// Method used to fit the data
-  enum FitMethod {
+  enum class FitMethod {
     KMEANS,               // Associates samples to clusters using L2 norm
     GAUSSIAN_LIKELIHOOD,  // Associates samples to clusters using Gaussian MLE
   };
 
   /// Method used to initialize the data
-  enum InitMethod {
+  enum class InitMethod {
     STANDARD_RANDOM,  // "Forgy" method randomly chooses means from samples
     WARM_START,       // Uses values of gaussians and priors passed to function
   };

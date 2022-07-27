@@ -163,14 +163,15 @@ void export_py_belief(py::module& m_sup) {
       m, "KernelDensity");
 
   py::enum_<sia::KernelDensity::BandwidthMode>(kernel_density, "BandwidthMode")
-      .value("SCOTT_RULE", sia::KernelDensity::SCOTT_RULE)
-      .value("USER_SPECIFIED", sia::KernelDensity::USER_SPECIFIED)
+      .value("SCOTT_RULE", sia::KernelDensity::BandwidthMode::SCOTT_RULE)
+      .value("USER_SPECIFIED",
+             sia::KernelDensity::BandwidthMode::USER_SPECIFIED)
       .export_values();
 
   py::enum_<sia::KernelDensity::KernelType>(kernel_density, "KernelType")
-      .value("UNIFORM", sia::KernelDensity::UNIFORM)
-      .value("GAUSSIAN", sia::KernelDensity::GAUSSIAN)
-      .value("EPANECHNIKOV", sia::KernelDensity::EPANECHNIKOV)
+      .value("UNIFORM", sia::KernelDensity::KernelType::UNIFORM)
+      .value("GAUSSIAN", sia::KernelDensity::KernelType::GAUSSIAN)
+      .value("EPANECHNIKOV", sia::KernelDensity::KernelType::EPANECHNIKOV)
       .export_values();
 
   kernel_density
@@ -178,14 +179,14 @@ void export_py_belief(py::module& m_sup) {
                     sia::KernelDensity::KernelType,
                     sia::KernelDensity::BandwidthMode, double>(),
            py::arg("values"), py::arg("weights"),
-           py::arg("type") = sia::KernelDensity::EPANECHNIKOV,
-           py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
+           py::arg("type") = sia::KernelDensity::KernelType::EPANECHNIKOV,
+           py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
       .def(py::init<const sia::Particles&, sia::KernelDensity::KernelType,
                     sia::KernelDensity::BandwidthMode, double>(),
            py::arg("particles"),
-           py::arg("type") = sia::KernelDensity::EPANECHNIKOV,
-           py::arg("mode") = sia::KernelDensity::SCOTT_RULE,
+           py::arg("type") = sia::KernelDensity::KernelType::EPANECHNIKOV,
+           py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
            py::arg("bandwidth_scaling") = 1.0)
       .def("probability", &sia::KernelDensity::probability, py::arg("x"))
       .def("dimension", &sia::KernelDensity::dimension)
@@ -269,11 +270,11 @@ void export_py_belief(py::module& m_sup) {
                     std::vector<std::size_t>, double>(),
            py::arg("gaussians"), py::arg("weights"), py::arg("input_indices"),
            py::arg("output_indices"),
-           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def(py::init<const sia::GMM&, std::vector<std::size_t>,
                     std::vector<std::size_t>, double>(),
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
-           py::arg("regularization") = sia::GMM ::DEFAULT_REGULARIZATION)
+           py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("predict", &sia::GMR::predict, py::arg("x"))
       .def("inputDimension", &sia::GMR::inputDimension)
       .def("outputDimension", &sia::GMR::outputDimension)
@@ -295,13 +296,13 @@ void export_py_belief(py::module& m_sup) {
   gpr.def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                    sia::GPR::KernelType, sia::GPR::NoiseType>(),
           py::arg("input_samples"), py::arg("output_samples"),
-          py::arg("kernel_type") = sia::GPR::SE_KERNEL,
-          py::arg("noise_type") = sia::GPR::SCALAR_NOISE)
+          py::arg("kernel_type") = sia::GPR::KernelType::SE_KERNEL,
+          py::arg("noise_type") = sia::GPR::NoiseType::SCALAR_NOISE)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     const Eigen::VectorXd&, double, sia::GPR::KernelType>(),
            py::arg("input_samples"), py::arg("output_samples"),
            py::arg("hyperparameters"), py::arg("noise_variance"),
-           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
+           py::arg("kernel_type") = sia::GPR::KernelType::SE_KERNEL)
       .def("setData", &sia::GPR::setData, py::arg("input_samples"),
            py::arg("output_samples"))
       .def("predict", &sia::GPR::predict, py::arg("x"))
@@ -325,12 +326,12 @@ void export_py_belief(py::module& m_sup) {
                     sia::GPR::KernelType>(),
            py::arg("input_samples"), py::arg("output_samples"),
            py::arg("alpha") = 0.01,
-           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
+           py::arg("kernel_type") = sia::GPR::KernelType::SE_KERNEL)
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&,
                     const Eigen::VectorXd&, double, sia::GPR::KernelType>(),
            py::arg("input_samples"), py::arg("output_samples"),
            py::arg("hyperparameters"), py::arg("alpha") = 0.01,
-           py::arg("kernel_type") = sia::GPR::SE_KERNEL)
+           py::arg("kernel_type") = sia::GPR::KernelType::SE_KERNEL)
       .def("predict", &sia::GPC::predict, py::arg("x"))
       .def("negLogMarginalLik", &sia::GPC::negLogMarginalLik)
       .def("negLogMarginalLikGrad", &sia::GPC::negLogMarginalLikGrad)

@@ -40,23 +40,24 @@ namespace sia {
 class BayesianOptimizer {
  public:
   /// Type of objective model
-  enum ObjectiveType {
+  enum class ObjectiveType {
     GPR_OBJECTIVE,
   };
 
   /// Type of acquisition model
-  enum AcquisitionType {
+  enum class AcquisitionType {
     PROBABILITY_IMPROVEMENT,
     EXPECTED_IMPROVEMENT,
     UPPER_CONFIDENCE_BOUND,
   };
 
   /// Initialize the optimizer with lower and upper bounds on the parameters
-  BayesianOptimizer(const Eigen::VectorXd& lower,
-                    const Eigen::VectorXd& upper,
-                    ObjectiveType objective = GPR_OBJECTIVE,
-                    AcquisitionType acquisition = EXPECTED_IMPROVEMENT,
-                    std::size_t n_starts = 10);
+  BayesianOptimizer(
+      const Eigen::VectorXd& lower,
+      const Eigen::VectorXd& upper,
+      ObjectiveType objective = ObjectiveType::GPR_OBJECTIVE,
+      AcquisitionType acquisition = AcquisitionType::EXPECTED_IMPROVEMENT,
+      std::size_t n_starts = 10);
   virtual ~BayesianOptimizer() = default;
 
   Eigen::VectorXd selectNextSample();

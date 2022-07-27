@@ -48,24 +48,27 @@ void export_py_optimizers(py::module& m_sup) {
   auto bo = py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer");
 
   py::enum_<sia::BayesianOptimizer::ObjectiveType>(bo, "ObjectiveType")
-      .value("GPR_OBJECTIVE", sia::BayesianOptimizer::GPR_OBJECTIVE)
+      .value("GPR_OBJECTIVE",
+             sia::BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE)
       .export_values();
 
   py::enum_<sia::BayesianOptimizer::AcquisitionType>(bo, "AcquisitionType")
       .value("PROBABILITY_IMPROVEMENT",
-             sia::BayesianOptimizer::PROBABILITY_IMPROVEMENT)
+             sia::BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT)
       .value("EXPECTED_IMPROVEMENT",
-             sia::BayesianOptimizer::EXPECTED_IMPROVEMENT)
+             sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT)
       .value("UPPER_CONFIDENCE_BOUND",
-             sia::BayesianOptimizer::UPPER_CONFIDENCE_BOUND)
+             sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
   bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
                   sia::BayesianOptimizer::ObjectiveType,
                   sia::BayesianOptimizer::AcquisitionType, std::size_t>(),
          py::arg("lower"), py::arg("upper"),
-         py::arg("objective") = sia::BayesianOptimizer::GPR_OBJECTIVE,
-         py::arg("acquisition") = sia::BayesianOptimizer::EXPECTED_IMPROVEMENT,
+         py::arg("objective") =
+             sia::BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE,
+         py::arg("acquisition") =
+             sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT,
          py::arg("nstarts") = 10)
       .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),

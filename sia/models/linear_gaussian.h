@@ -107,7 +107,7 @@ class LinearGaussianMeasurement : public LinearizableMeasurement {
 class LinearGaussianDynamicsCT : public LinearGaussianDynamics {
  public:
   /// The discretization type used for the dynamics transformation.
-  enum Type {
+  enum class Type {
     FORWARD_EULER,
     BACKWARD_EULER,
   };
@@ -116,7 +116,7 @@ class LinearGaussianDynamicsCT : public LinearGaussianDynamics {
                                     const Eigen::MatrixXd& B,
                                     const Eigen::MatrixXd& Qpsd,
                                     double dt,
-                                    Type type = BACKWARD_EULER);
+                                    Type type = Type::BACKWARD_EULER);
   virtual ~LinearGaussianDynamicsCT() = default;
 
   const Eigen::MatrixXd& A() const;
