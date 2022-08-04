@@ -200,13 +200,13 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
   Eigen::MatrixXd& G = m_input_matrix;
   const Eigen::MatrixXd I = Eigen::MatrixXd::Identity(A.rows(), A.cols());
   switch (m_type) {
-    case BACKWARD_EULER: {
+    case Type::BACKWARD_EULER: {
       bool r = svdInverse(I - m_dt * A, F);
       SIA_EXCEPTION(r, "Failed to solve Backward euler discretization");
       G = m_dt * F * B;
       break;
     }
-    case FORWARD_EULER: {
+    case Type::FORWARD_EULER: {
       F = I + m_dt * A;
       G = m_dt * B;
       break;
@@ -215,7 +215,7 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
       LOG(ERROR)
           << "LinearGaussianDynamicsCT::discretizeDynamics not implemented "
              "for discretization type "
-          << m_type;
+          << static_cast<int>(m_type);
   }
 }
 

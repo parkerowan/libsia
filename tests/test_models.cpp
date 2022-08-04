@@ -76,7 +76,7 @@ TEST(Models, LinearGaussianDynamicsCT) {
   EXPECT_TRUE(a.A().isApprox(A));
   EXPECT_TRUE(a.B().isApprox(B));
   EXPECT_TRUE(a.Q().isApprox(Qpsd * dt));
-  EXPECT_EQ(a.getType(), sia::LinearGaussianDynamicsCT::BACKWARD_EULER);
+  EXPECT_EQ(a.getType(), sia::LinearGaussianDynamicsCT::Type::BACKWARD_EULER);
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 
   A << -0.2;
@@ -86,12 +86,12 @@ TEST(Models, LinearGaussianDynamicsCT) {
   a.setA(A);
   a.setB(B);
   a.setQpsd(Qpsd);
-  a.setType(sia::LinearGaussianDynamicsCT::FORWARD_EULER);
+  a.setType(sia::LinearGaussianDynamicsCT::Type::FORWARD_EULER);
   a.setTimeStep(dt);
   EXPECT_TRUE(a.A().isApprox(A));
   EXPECT_TRUE(a.B().isApprox(B));
   EXPECT_TRUE(a.Q().isApprox(Qpsd * dt));
-  EXPECT_EQ(a.getType(), sia::LinearGaussianDynamicsCT::FORWARD_EULER);
+  EXPECT_EQ(a.getType(), sia::LinearGaussianDynamicsCT::Type::FORWARD_EULER);
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 
   Eigen::Matrix<double, 1, 1> x, u;

@@ -4,6 +4,7 @@
 #include "sia/optimizers/bayesian_optimizer.h"
 #include "sia/common/exception.h"
 
+#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
@@ -159,7 +160,7 @@ std::shared_ptr<BayesianOptimizer::SurrogateModel>
 BayesianOptimizer::SurrogateModel::create(
     BayesianOptimizer::ObjectiveType type) {
   switch (type) {
-    case BayesianOptimizer::GPR_OBJECTIVE:
+    case BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE:
       return std::make_shared<GPRSurrogateModel>();
     default:
       SIA_EXCEPTION(false,
@@ -221,12 +222,12 @@ double GPRSurrogateModel::acquisition(const Eigen::VectorXd& x,
   double std = sqrt(p.covariance()(0, 0));
 
   switch (type) {
-    case BayesianOptimizer::PROBABILITY_IMPROVEMENT:
+    case BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT:
       return cdf((mu - target) / std);
-    case BayesianOptimizer::EXPECTED_IMPROVEMENT:
+    case BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT:
       return (mu - target) * cdf((mu - target) / std) +
              std * pdf((mu - target) / std);
-    case BayesianOptimizer::UPPER_CONFIDENCE_BOUND:
+    case BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND:
       return mu + m_beta * std;
   }
 

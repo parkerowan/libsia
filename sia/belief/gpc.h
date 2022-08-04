@@ -36,12 +36,12 @@ class GPC : public Inference {
   explicit GPC(const Eigen::MatrixXd& input_samples,
                const Eigen::VectorXi& output_samples,
                double alpha = 0.01,
-               GPR::KernelType kernel_type = GPR::SE_KERNEL);
+               GPR::KernelType kernel_type = GPR::KernelType::SE_KERNEL);
   explicit GPC(const Eigen::MatrixXd& input_samples,
                const Eigen::VectorXi& output_samples,
                const Eigen::VectorXd& hyperparameters,
                double alpha = 0.01,
-               GPR::KernelType kernel_type = GPR::SE_KERNEL);
+               GPR::KernelType kernel_type = GPR::KernelType::SE_KERNEL);
   virtual ~GPC() = default;
 
   /// Performs the inference $p(y|x)$

@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 set(test_target "test-sia")
 set(test_deps "sia")
-set(test_libs "")
+set(test_libs ${GLOG_LIBRARIES})
 set(test_source
   helpers.h
   helpers.cpp

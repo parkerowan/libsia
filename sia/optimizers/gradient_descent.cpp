@@ -5,6 +5,8 @@
 #include "sia/common/exception.h"
 #include "sia/math/math.h"
 
+#include <glog/logging.h>
+
 namespace sia {
 
 GradientDescent::GradientDescent(const Eigen::VectorXd& lower,

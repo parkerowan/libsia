@@ -23,12 +23,12 @@ namespace sia {
 class GPR : public Inference {
  public:
   /// Kernel function used for the GP covariance
-  enum KernelType {
+  enum class KernelType {
     SE_KERNEL  // Squared exponential kernel
   };
 
   /// Function used for the GP measurement noise
-  enum NoiseType {
+  enum class NoiseType {
     SCALAR_NOISE,          // Single variance for all channels
     VECTOR_NOISE,          // Single variance for each channel
     HETEROSKEDASTIC_NOISE  // Unique variance for each channel and sample
@@ -38,13 +38,13 @@ class GPR : public Inference {
   /// training samples is a sample.
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
-               KernelType kernel_type = SE_KERNEL,
-               NoiseType noise_type = SCALAR_NOISE);
+               KernelType kernel_type = KernelType::SE_KERNEL,
+               NoiseType noise_type = NoiseType::SCALAR_NOISE);
   explicit GPR(const Eigen::MatrixXd& input_samples,
                const Eigen::MatrixXd& output_samples,
                const Eigen::VectorXd& hyperparameters,
                double noise_variance,
-               KernelType kernel_type = SE_KERNEL);
+               KernelType kernel_type = KernelType::SE_KERNEL);
   virtual ~GPR() = default;
 
   /// Recompute with new data but same hyperparameters

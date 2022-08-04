@@ -208,7 +208,7 @@ void GPR::setData(const Eigen::MatrixXd& input_samples,
                 "GPR new data is expected to have the same input dimensions");
   SIA_EXCEPTION(std::size_t(output_samples.rows()) == outputDimension(),
                 "GPR new data is expected to have the same input dimensions");
-  SIA_EXCEPTION(m_noise->type() != HETEROSKEDASTIC_NOISE,
+  SIA_EXCEPTION(m_noise->type() != NoiseType::HETEROSKEDASTIC_NOISE,
                 "GPR Use of setData is currently unsupported for "
                 "HETEROSKEDASTIC_NOISE models");
   m_input_samples = input_samples;
@@ -397,7 +397,7 @@ std::size_t GPR::KernelFunction::numHyperparameters() const {
 std::shared_ptr<GPR::KernelFunction> GPR::KernelFunction::create(
     GPR::KernelType kernel_type) {
   switch (kernel_type) {
-    case GPR::SE_KERNEL:
+    case GPR::KernelType::SE_KERNEL:
       return std::make_shared<SquaredExponential>();
     default:
       SIA_EXCEPTION(
@@ -449,11 +449,11 @@ std::shared_ptr<GPR::NoiseFunction> GPR::NoiseFunction::create(
     std::size_t num_samples,
     std::size_t num_outputs) {
   switch (noise_type) {
-    case GPR::SCALAR_NOISE:
+    case GPR::NoiseType::SCALAR_NOISE:
       return std::make_shared<ScalarNoiseFunction>(num_samples, num_outputs);
-    case GPR::VECTOR_NOISE:
+    case GPR::NoiseType::VECTOR_NOISE:
       return std::make_shared<VectorNoiseFunction>(num_samples, num_outputs);
-    case GPR::HETEROSKEDASTIC_NOISE:
+    case GPR::NoiseType::HETEROSKEDASTIC_NOISE:
       return std::make_shared<HeteroskedasticNoiseFunction>(num_samples,
                                                             num_outputs);
     default:
@@ -475,7 +475,7 @@ Eigen::VectorXd ScalarNoiseFunction::variance(std::size_t channel) const {
 }
 
 GPR::NoiseType ScalarNoiseFunction::type() const {
-  return GPR::SCALAR_NOISE;
+  return GPR::NoiseType::SCALAR_NOISE;
 }
 
 void ScalarNoiseFunction::setNumSamples(std::size_t num_samples) {
@@ -500,7 +500,7 @@ Eigen::VectorXd VectorNoiseFunction::variance(std::size_t channel) const {
 }
 
 GPR::NoiseType VectorNoiseFunction::type() const {
-  return GPR::VECTOR_NOISE;
+  return GPR::NoiseType::VECTOR_NOISE;
 }
 
 void VectorNoiseFunction::setNumSamples(std::size_t num_samples) {
@@ -532,7 +532,7 @@ Eigen::VectorXd HeteroskedasticNoiseFunction::variance(
 }
 
 GPR::NoiseType HeteroskedasticNoiseFunction::type() const {
-  return GPR::HETEROSKEDASTIC_NOISE;
+  return GPR::NoiseType::HETEROSKEDASTIC_NOISE;
 }
 
 void HeteroskedasticNoiseFunction::setNumSamples(std::size_t num_samples) {

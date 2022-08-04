@@ -42,12 +42,12 @@ GMM::GMM(const Eigen::MatrixXd& samples, std::size_t K, double regularization)
       m_num_clusters(K),
       m_dimension(samples.rows()) {
   // Initialize via kmeans
-  fit(samples, m_gaussians, m_priors, K, GMM::KMEANS, GMM::STANDARD_RANDOM,
-      regularization);
+  fit(samples, m_gaussians, m_priors, K, GMM::FitMethod::KMEANS,
+      GMM::InitMethod::STANDARD_RANDOM, regularization);
 
   // Perform EM to learn full covariance
-  fit(samples, m_gaussians, m_priors, K, GMM::GAUSSIAN_LIKELIHOOD,
-      GMM::WARM_START, regularization);
+  fit(samples, m_gaussians, m_priors, K, GMM::FitMethod::GAUSSIAN_LIKELIHOOD,
+      GMM::InitMethod::WARM_START, regularization);
 }
 
 std::size_t GMM::dimension() const {
@@ -245,10 +245,10 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
   assert(n >= K);  // # clusters less than samples doesn't make any sense
 
   // Initialization
-  if (init_method == GMM::WARM_START) {
+  if (init_method == GMM::InitMethod::WARM_START) {
     assert(priors.size() == K);
     assert(gaussians.size() == K);
-  } else if (init_method == GMM::STANDARD_RANDOM) {
+  } else if (init_method == GMM::InitMethod::STANDARD_RANDOM) {
     priors.clear();
     gaussians.clear();
 
@@ -266,7 +266,8 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       priors.emplace_back(1.0 / double(K));
     }
   } else {
-    LOG(ERROR) << "Unsupported initialization method " << init_method;
+    LOG(ERROR) << "Unsupported initialization method "
+               << static_cast<int>(init_method);
     return 0;
   }
 
@@ -287,14 +288,15 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
     // Association
     for (std::size_t k = 0; k < K; ++k) {
       for (std::size_t i = 0; i < n; ++i) {
-        if (fit_method == GMM::KMEANS) {
+        if (fit_method == GMM::FitMethod::KMEANS) {
           weights(k, i) =
               1.0 /
               ((gaussians[k].mean() - samples.col(i)).squaredNorm() + 1e-6);
-        } else if (fit_method == GMM::GAUSSIAN_LIKELIHOOD) {
+        } else if (fit_method == GMM::FitMethod::GAUSSIAN_LIKELIHOOD) {
           weights(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
         } else {
-          LOG(ERROR) << "Unsupported fit method " << fit_method;
+          LOG(ERROR) << "Unsupported fit method "
+                     << static_cast<int>(fit_method);
           return 0;
         }
       }

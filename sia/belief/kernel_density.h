@@ -20,10 +20,10 @@ namespace sia {
 class KernelDensity : public Particles {
  public:
   /// Determines how the bandwidth is computed
-  enum BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
+  enum class BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
 
   /// Smoothing kernel function
-  enum KernelType {
+  enum class KernelType {
     UNIFORM,
     GAUSSIAN,
     EPANECHNIKOV,
@@ -32,13 +32,13 @@ class KernelDensity : public Particles {
   /// Each column of values is a sample.
   explicit KernelDensity(const Eigen::MatrixXd& values,
                          const Eigen::VectorXd& weights,
-                         KernelType type = EPANECHNIKOV,
-                         BandwidthMode mode = SCOTT_RULE,
+                         KernelType type = KernelType::EPANECHNIKOV,
+                         BandwidthMode mode = BandwidthMode::SCOTT_RULE,
                          double bandwidth_scaling = 1.0);
 
   explicit KernelDensity(const Particles& particles,
-                         KernelType type = EPANECHNIKOV,
-                         BandwidthMode mode = SCOTT_RULE,
+                         KernelType type = KernelType::EPANECHNIKOV,
+                         BandwidthMode mode = BandwidthMode::SCOTT_RULE,
                          double bandwidth_scaling = 1.0);
 
   virtual ~KernelDensity() = default;

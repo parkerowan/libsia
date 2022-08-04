@@ -5,15 +5,12 @@
 
 #include <stdexcept>
 
-#include <glog/logging.h>
-
 namespace sia {
 
 /// Throws an exception with the provided message if evaluation is false
 #define SIA_EXCEPTION(evaluation, msg)                     \
   if (!(evaluation)) {                                     \
     std::string what = std::string("SIA Runtime: ") + msg; \
-    LOG(ERROR) << what;                                    \
     throw std::runtime_error(what);                        \
   }
 

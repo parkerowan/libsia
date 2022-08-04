@@ -334,7 +334,7 @@ TEST(Belief, KernelDensity) {
                                          Eigen::Vector2d(3, 4), 100);
 
   sia::KernelDensity a(samples.values(), samples.weights());
-  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::EPANECHNIKOV);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::KernelType::EPANECHNIKOV);
   EXPECT_GT(a.probability(samples.value(0)), 0);
   ASSERT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -346,7 +346,8 @@ TEST(Belief, KernelDensity) {
 
   const auto h = a.bandwidth();
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
-  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(),
+            sia::KernelDensity::BandwidthMode::SCOTT_RULE);
   a.setValues(a.values());
   EXPECT_TRUE(a.bandwidth().isApprox(h));
 
@@ -356,22 +357,25 @@ TEST(Belief, KernelDensity) {
 
   a.setBandwidth(1.0);
   EXPECT_TRUE(a.bandwidth().isApprox(Eigen::Matrix2d::Identity()));
-  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
+  EXPECT_EQ(a.getBandwidthMode(),
+            sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
 
-  a.setKernelType(sia::KernelDensity::UNIFORM);
-  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::UNIFORM);
+  a.setKernelType(sia::KernelDensity::KernelType::UNIFORM);
+  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::KernelType::UNIFORM);
   EXPECT_GT(a.probability(samples.value(0)), 0);
 
-  a.setBandwidthMode(sia::KernelDensity::SCOTT_RULE);
-  EXPECT_EQ(a.getBandwidthMode(), sia::KernelDensity::SCOTT_RULE);
+  a.setBandwidthMode(sia::KernelDensity::BandwidthMode::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(),
+            sia::KernelDensity::BandwidthMode::SCOTT_RULE);
 
   // Expect if user specified that silverman is used as initialize bandwidth
-  sia::KernelDensity c(samples, sia::KernelDensity::GAUSSIAN,
-                       sia::KernelDensity::USER_SPECIFIED);
-  EXPECT_EQ(c.getKernelType(), sia::KernelDensity::GAUSSIAN);
+  sia::KernelDensity c(samples, sia::KernelDensity::KernelType::GAUSSIAN,
+                       sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
+  EXPECT_EQ(c.getKernelType(), sia::KernelDensity::KernelType::GAUSSIAN);
   EXPECT_GT(c.probability(samples.value(0)), 0);
-  EXPECT_EQ(c.getBandwidthMode(), sia::KernelDensity::USER_SPECIFIED);
+  EXPECT_EQ(c.getBandwidthMode(),
+            sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
   EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);
 
@@ -453,27 +457,30 @@ TEST(Belief, GMM) {
       sia::Gaussian(Eigen::Vector2d{9, 9}, Eigen::Matrix2d::Identity())};
   priors = std::vector<double>{0.3, 0.3, 0.4};
   EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::KMEANS, sia::GMM::WARM_START),
+                          sia::GMM::FitMethod::KMEANS,
+                          sia::GMM::InitMethod::WARM_START),
             1);
   EXPECT_EQ(gaussians.size(), 3);
   EXPECT_EQ(priors.size(), 3);
 
   EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::WARM_START),
+                          sia::GMM::FitMethod::GAUSSIAN_LIKELIHOOD,
+                          sia::GMM::InitMethod::WARM_START),
             1);
   EXPECT_EQ(gaussians.size(), 3);
   EXPECT_EQ(priors.size(), 3);
 
   EXPECT_LE(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                          sia::GMM::KMEANS, sia::GMM::STANDARD_RANDOM),
+                          sia::GMM::FitMethod::KMEANS,
+                          sia::GMM::InitMethod::STANDARD_RANDOM),
             2);
   EXPECT_EQ(gaussians.size(), 3);
   EXPECT_EQ(priors.size(), 3);
 
-  EXPECT_EQ(
-      sia::GMM::fit(S, gaussians, priors, gaussians.size(),
-                    sia::GMM::GAUSSIAN_LIKELIHOOD, sia::GMM::STANDARD_RANDOM),
-      1);
+  EXPECT_EQ(sia::GMM::fit(S, gaussians, priors, gaussians.size(),
+                          sia::GMM::FitMethod::GAUSSIAN_LIKELIHOOD,
+                          sia::GMM::InitMethod::STANDARD_RANDOM),
+            1);
   EXPECT_EQ(gaussians.size(), 3);
   EXPECT_EQ(priors.size(), 3);
 
@@ -519,12 +526,14 @@ TEST(Belief, GPR) {
 
   // Check the different noise models
   double log_marg_loss = gpr.negLogMarginalLik();
-  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::VECTOR_NOISE);
+  gpr = sia::GPR(X, Y, sia::GPR::KernelType::SE_KERNEL,
+                 sia::GPR::NoiseType::VECTOR_NOISE);
   EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
   gpr.setVectorNoise(1.0 * Eigen::VectorXd::Ones(2));
   EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
 
-  gpr = sia::GPR(X, Y, sia::GPR::SE_KERNEL, sia::GPR::HETEROSKEDASTIC_NOISE);
+  gpr = sia::GPR(X, Y, sia::GPR::KernelType::SE_KERNEL,
+                 sia::GPR::NoiseType::HETEROSKEDASTIC_NOISE);
   EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
   gpr.setHeteroskedasticNoise(1.0 * Eigen::MatrixXd::Ones(2, 10));
   EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);

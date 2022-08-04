@@ -195,16 +195,19 @@ void export_py_models(py::module& m_sup) {
       lgdct(m, "LinearGaussianDynamicsCT");
 
   py::enum_<sia::LinearGaussianDynamicsCT::Type>(lgdct, "Type")
-      .value("FORWARD_EULER", sia::LinearGaussianDynamicsCT::FORWARD_EULER)
-      .value("BACKWARD_EULER", sia::LinearGaussianDynamicsCT::BACKWARD_EULER)
+      .value("FORWARD_EULER",
+             sia::LinearGaussianDynamicsCT::Type::FORWARD_EULER)
+      .value("BACKWARD_EULER",
+             sia::LinearGaussianDynamicsCT::Type::BACKWARD_EULER)
       .export_values();
 
   lgdct
-      .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-                    const Eigen::MatrixXd&, double,
-                    sia::LinearGaussianDynamicsCT::Type>(),
-           py::arg("A"), py::arg("B"), py::arg("Qpsd"), py::arg("dt"),
-           py::arg("type") = sia::LinearGaussianDynamicsCT::BACKWARD_EULER)
+      .def(
+          py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
+                   const Eigen::MatrixXd&, double,
+                   sia::LinearGaussianDynamicsCT::Type>(),
+          py::arg("A"), py::arg("B"), py::arg("Qpsd"), py::arg("dt"),
+          py::arg("type") = sia::LinearGaussianDynamicsCT::Type::BACKWARD_EULER)
       .def("dynamics", &sia::LinearGaussianDynamicsCT::dynamics,
            py::arg("state"), py::arg("control"),
            py::return_value_policy::reference_internal)

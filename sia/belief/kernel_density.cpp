@@ -74,7 +74,7 @@ struct EpanechnikovKernel : public KernelDensity::SmoothingKernel {
 KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
                              const Eigen::VectorXd& weights,
                              KernelDensity::KernelType type,
-                             BandwidthMode mode,
+                             KernelDensity::BandwidthMode mode,
                              double bandwidth_scaling)
     : Particles(values, weights),
       m_mode(mode),
@@ -82,8 +82,8 @@ KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
   m_kernel = SmoothingKernel::create(type, values.rows());
 
   // If user specified, set the initial bandwidth using Scott's rule
-  if (mode == USER_SPECIFIED) {
-    m_mode = SCOTT_RULE;
+  if (mode == BandwidthMode::USER_SPECIFIED) {
+    m_mode = BandwidthMode::SCOTT_RULE;
   }
 
   autoUpdateBandwidth();
@@ -195,7 +195,7 @@ void KernelDensity::setBandwidth(const Eigen::VectorXd& h) {
   m_bandwidth_inv = h.array().inverse().matrix().asDiagonal();
   m_bandwidth_det = h.prod();
   m_bandwidth_scaling = 1.0;
-  m_mode = USER_SPECIFIED;
+  m_mode = BandwidthMode::USER_SPECIFIED;
 }
 
 const Eigen::MatrixXd& KernelDensity::bandwidth() const {
@@ -237,9 +237,9 @@ void KernelDensity::setBandwidthMatrix(const Eigen::MatrixXd& H) {
 
 void KernelDensity::autoUpdateBandwidth() {
   switch (m_mode) {
-    case USER_SPECIFIED:
+    case BandwidthMode::USER_SPECIFIED:
       break;
-    case SCOTT_RULE:
+    case BandwidthMode::SCOTT_RULE:
       const Eigen::MatrixXd Sigma = Particles::covariance();
       bandwidthScottRule(Sigma);
       break;
@@ -264,14 +264,14 @@ std::shared_ptr<KernelDensity::SmoothingKernel>
 KernelDensity::SmoothingKernel::create(KernelDensity::KernelType type,
                                        std::size_t dimension) {
   switch (type) {
-    case KernelDensity::UNIFORM:
+    case KernelDensity::KernelType::UNIFORM:
       return std::make_shared<UniformKernel>(dimension);
-    case KernelDensity::GAUSSIAN:
+    case KernelDensity::KernelType::GAUSSIAN:
       return std::make_shared<GaussianKernel>(dimension);
-    case KernelDensity::EPANECHNIKOV:
+    case KernelDensity::KernelType::EPANECHNIKOV:
       return std::make_shared<EpanechnikovKernel>(dimension);
     default:
-      LOG(WARNING) << "KernelType " << type
+      LOG(WARNING) << "KernelType " << static_cast<int>(type)
                    << ", unsupported.  Creating EpanechnikovKernel instead";
       return std::make_shared<EpanechnikovKernel>(dimension);
   }
@@ -287,7 +287,7 @@ double UniformKernel::evaluate(const Eigen::VectorXd& x) const {
 }
 
 KernelDensity::KernelType UniformKernel::type() const {
-  return KernelDensity::UNIFORM;
+  return KernelDensity::KernelType::UNIFORM;
 }
 
 GaussianKernel::GaussianKernel(std::size_t dimension) {
@@ -300,7 +300,7 @@ double GaussianKernel::evaluate(const Eigen::VectorXd& x) const {
 }
 
 KernelDensity::KernelType GaussianKernel::type() const {
-  return KernelDensity::GAUSSIAN;
+  return KernelDensity::KernelType::GAUSSIAN;
 }
 
 EpanechnikovKernel::EpanechnikovKernel(std::size_t dimension) {
@@ -315,7 +315,7 @@ double EpanechnikovKernel::evaluate(const Eigen::VectorXd& x) const {
 }
 
 KernelDensity::KernelType EpanechnikovKernel::type() const {
-  return KernelDensity::EPANECHNIKOV;
+  return KernelDensity::KernelType::EPANECHNIKOV;
 }
 
 }  // namespace sia
