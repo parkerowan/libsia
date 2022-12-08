@@ -25,6 +25,9 @@ void export_py_math(py::module& m_sup) {
             const std::vector<std::size_t>&)>(&sia::slice),
         py::arg("X"), py::arg("rows"), py::arg("cols"));
 
+  m.def("replace", &sia::replace, py::arg("x"), py::arg("u"),
+        py::arg("indices"));
+
   m.def("rk4", &sia::rk4, py::arg("dynamical_system"), py::arg("x"),
         py::arg("u"), py::arg("dt"));
 }

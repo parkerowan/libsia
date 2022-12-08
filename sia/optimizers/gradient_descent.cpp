@@ -86,7 +86,7 @@ Eigen::VectorXd GradientDescent::minimize(
   }
 
   return x;
-}  // namespace sia
+}
 
 Eigen::VectorXd GradientDescent::minimize(GradientDescent::Cost f,
                                           GradientDescent::Jacobian jacobian) {

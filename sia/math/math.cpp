@@ -2,6 +2,7 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/math/math.h"
+#include "sia/common/exception.h"
 
 #include <glog/logging.h>
 #include <Eigen/SVD>
@@ -27,6 +28,20 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
     }
   }
   return Y;
+}
+
+Eigen::VectorXd replace(const Eigen::VectorXd& x,
+                        const Eigen::VectorXd& u,
+                        const std::vector<std::size_t>& indices) {
+  SIA_EXCEPTION(indices.empty() || (u.size() == int(indices.size())),
+                "Input vector u and indices not consistent");
+  Eigen::VectorXd y = x;
+  for (std::size_t i = 0; i < indices.size(); ++i) {
+    SIA_EXCEPTION(int(indices.at(i)) < x.size(),
+                  "Index value exceeds size of input vector x");
+    y(indices.at(i)) = u(i);
+  }
+  return y;
 }
 
 bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L) {

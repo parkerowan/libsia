@@ -47,11 +47,6 @@ void export_py_optimizers(py::module& m_sup) {
 
   auto bo = py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer");
 
-  py::enum_<sia::BayesianOptimizer::ObjectiveType>(bo, "ObjectiveType")
-      .value("GPR_OBJECTIVE",
-             sia::BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE)
-      .export_values();
-
   py::enum_<sia::BayesianOptimizer::AcquisitionType>(bo, "AcquisitionType")
       .value("PROBABILITY_IMPROVEMENT",
              sia::BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT)
@@ -61,24 +56,38 @@ void export_py_optimizers(py::module& m_sup) {
              sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
-  bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
-                  sia::BayesianOptimizer::ObjectiveType,
-                  sia::BayesianOptimizer::AcquisitionType, std::size_t>(),
-         py::arg("lower"), py::arg("upper"),
-         py::arg("objective") =
-             sia::BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE,
+  bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&, sia::Kernel&,
+                  std::size_t, sia::BayesianOptimizer::AcquisitionType, double,
+                  const sia::GradientDescent::Options&>(),
+         py::arg("lower"), py::arg("upper"), py::arg("kernel"),
+         py::arg("cond_inputs_dim") = 0,
          py::arg("acquisition") =
              sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT,
-         py::arg("nstarts") = 10)
-      .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample)
+         py::arg("beta") = 1,
+         py::arg("options") = sia::GradientDescent::Options())
+      .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample,
+           py::arg("u") = Eigen::VectorXd{})
       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),
-           py::arg("y"))
+           py::arg("y"), py::arg("u") = Eigen::VectorXd{})
       .def("updateModel", &sia::BayesianOptimizer::updateModel,
-           py::arg("train") = true)
-      .def("getSolution", &sia::BayesianOptimizer::getSolution)
+           py::arg("train") = false)
+      .def("getSolution", &sia::BayesianOptimizer::getSolution,
+           py::arg("u") = Eigen::VectorXd{})
       .def("optimizer", &sia::BayesianOptimizer::optimizer,
            py::return_value_policy::reference_internal)
       .def("objective", &sia::BayesianOptimizer::objective, py::arg("x"),
-           py::return_value_policy::reference_internal)
-      .def("acquisition", &sia::BayesianOptimizer::acquisition, py::arg("x"));
+           py::arg("u") = Eigen::VectorXd{})
+      .def("acquisition",
+           static_cast<double (sia::BayesianOptimizer::*)(
+               const Eigen::VectorXd&, const Eigen::VectorXd&)>(
+               &sia::BayesianOptimizer::acquisition),
+           py::arg("x"), py::arg("u") = Eigen::VectorXd{})
+      .def(
+          "acquisition",
+          static_cast<double (sia::BayesianOptimizer::*)(
+              const Eigen::VectorXd&, double,
+              sia::BayesianOptimizer::AcquisitionType, const Eigen::VectorXd&)>(
+              &sia::BayesianOptimizer::acquisition),
+          py::arg("x"), py::arg("target"), py::arg("type"),
+          py::arg("u") = Eigen::VectorXd{});
 }

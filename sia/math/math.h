@@ -23,6 +23,13 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
                             const std::vector<std::size_t>& rows,
                             const std::vector<std::size_t>& cols);
 
+/// Replaces the input vector x by elements of u at given indices.  Note that
+/// the max element in indices cannot exceed the size of x.  The size of u and
+/// indices must be the same.
+Eigen::VectorXd replace(const Eigen::VectorXd& x,
+                        const Eigen::VectorXd& u,
+                        const std::vector<std::size_t>& indices);
+
 /// Computes the LLT decomposition of positive definite matrix A, returns true
 /// on success.
 bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L);

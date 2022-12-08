@@ -25,7 +25,7 @@ class GradientDescent {
   /// 1 > delta > 0 descent of backtracking line search
   struct Options {
     explicit Options() {}  // Needed due to clang compiler issue
-    std::size_t n_starts = 1;
+    std::size_t n_starts = 10;
     std::size_t max_iter = 500;
     double tol = 1e-6;
     double eta = 0.5;

@@ -333,8 +333,8 @@ TEST(Belief, KernelDensity) {
   auto samples = sia::Particles::uniform(Eigen::Vector2d(-1, -2),
                                          Eigen::Vector2d(3, 4), 100);
 
-  sia::KernelDensity a(samples.values(), samples.weights());
-  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::KernelType::EPANECHNIKOV);
+  sia::EpanechnikovKernel epan_kernel(2);
+  sia::KernelDensity a(samples.values(), samples.weights(), epan_kernel);
   EXPECT_GT(a.probability(samples.value(0)), 0);
   ASSERT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -360,9 +360,6 @@ TEST(Belief, KernelDensity) {
   EXPECT_EQ(a.getBandwidthMode(),
             sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
-
-  a.setKernelType(sia::KernelDensity::KernelType::UNIFORM);
-  EXPECT_EQ(a.getKernelType(), sia::KernelDensity::KernelType::UNIFORM);
   EXPECT_GT(a.probability(samples.value(0)), 0);
 
   a.setBandwidthMode(sia::KernelDensity::BandwidthMode::SCOTT_RULE);
@@ -370,9 +367,9 @@ TEST(Belief, KernelDensity) {
             sia::KernelDensity::BandwidthMode::SCOTT_RULE);
 
   // Expect if user specified that silverman is used as initialize bandwidth
-  sia::KernelDensity c(samples, sia::KernelDensity::KernelType::GAUSSIAN,
+  sia::GaussianKernel gaussian_kernel(2);
+  sia::KernelDensity c(samples, gaussian_kernel,
                        sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
-  EXPECT_EQ(c.getKernelType(), sia::KernelDensity::KernelType::GAUSSIAN);
   EXPECT_GT(c.probability(samples.value(0)), 0);
   EXPECT_EQ(c.getBandwidthMode(),
             sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
@@ -518,29 +515,23 @@ TEST(Belief, GMR) {
 TEST(Belief, GPR) {
   Eigen::MatrixXd X = Eigen::MatrixXd::Random(3, 10);
   Eigen::MatrixXd Y = Eigen::MatrixXd::Random(2, 10);
-  sia::GPR gpr(X, Y);
+  sia::NoiseKernel noise_kernel = sia::NoiseKernel();
+  EXPECT_EQ(noise_kernel.numHyperparameters(), 1);
+
+  sia::SEKernel se_kernel = sia::SEKernel();
+  EXPECT_EQ(se_kernel.numHyperparameters(), 2);
+
+  sia::CompositeKernel kernel = se_kernel + noise_kernel;
+  EXPECT_EQ(kernel.numHyperparameters(), 3);
+
+  sia::GPR gpr(X, Y, kernel);
 
   EXPECT_EQ(gpr.numSamples(), 10);
   EXPECT_EQ(gpr.inputDimension(), 3);
   EXPECT_EQ(gpr.outputDimension(), 2);
 
-  // Check the different noise models
-  double log_marg_loss = gpr.negLogMarginalLik();
-  gpr = sia::GPR(X, Y, sia::GPR::KernelType::SE_KERNEL,
-                 sia::GPR::NoiseType::VECTOR_NOISE);
-  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
-  gpr.setVectorNoise(1.0 * Eigen::VectorXd::Ones(2));
-  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
-
-  gpr = sia::GPR(X, Y, sia::GPR::KernelType::SE_KERNEL,
-                 sia::GPR::NoiseType::HETEROSKEDASTIC_NOISE);
-  EXPECT_DOUBLE_EQ(gpr.negLogMarginalLik(), log_marg_loss);
-  gpr.setHeteroskedasticNoise(1.0 * Eigen::MatrixXd::Ones(2, 10));
-  EXPECT_NE(gpr.negLogMarginalLik(), log_marg_loss);
-
   // Check the hyperparameters are written
-  gpr.setScalarNoise(0.1);
-  Eigen::VectorXd p = Eigen::Vector2d{0.2, 1.0};
+  Eigen::VectorXd p = Eigen::Vector3d{0.1, 1.0, 0.1};
   gpr.setHyperparameters(p);
   const auto& pn = gpr.hyperparameters();
   EXPECT_TRUE(pn.isApprox(p));
@@ -557,7 +548,7 @@ TEST(Belief, GPR) {
   EXPECT_NEAR(sqrt(e.dot(e)), 0, GRAD_TOLERANCE);
 
   // Is there a theoretical bound on the error given the hyperparameters?
-  const double EVAL_TOLERANCE = 2e-1;
+  const double EVAL_TOLERANCE = 1e-1;
   for (std::size_t i = 0; i < 10; ++i) {
     const auto& x = X.col(i);
     const auto& y = Y.col(i);
@@ -567,10 +558,78 @@ TEST(Belief, GPR) {
     EXPECT_NEAR(g.mean()(1), y(1), EVAL_TOLERANCE);
   }
 
-  // Expect after training that the log marginal likelihood has been reduced
-  log_marg_loss = gpr.negLogMarginalLik();
+  // Expect after training that the log marginal likelihood has been reduced and
+  // that the gradient is small
+  grad = gpr.negLogMarginalLikGrad();
+  double log_marg_loss = gpr.negLogMarginalLik();
   gpr.train();
   EXPECT_LT(gpr.negLogMarginalLik(), log_marg_loss);
+  EXPECT_LT(gpr.negLogMarginalLikGrad().norm(), grad.norm());
+
+  // Reset hyperparameters and only train a subset
+  gpr.setHyperparameters(p);
+  std::vector<std::size_t> hp_indices{0, 1};
+  gpr.train(hp_indices);
+  EXPECT_NE(gpr.hyperparameters()(0), p(0));
+  EXPECT_NE(gpr.hyperparameters()(1), p(1));
+  EXPECT_DOUBLE_EQ(gpr.hyperparameters()(2), p(2));
+
+  // Test that GPR computes for a variety of hyperameters
+  Eigen::MatrixXd Xt_offense{};
+  Eigen::MatrixXd Yt_offense{};
+  Eigen::VectorXd x_offense{};
+  Eigen::VectorXd hp_offense{};
+  std::size_t n_x = 1;
+  std::size_t n_y = 1;
+  std::size_t n_hparams = 100;
+  auto n_train = std::vector<std::size_t>{0, 1, 5, 100};
+  sia::Uniform log_domain(Eigen::Vector3d{-6, -6, -6},
+                          Eigen::Vector3d{6, 6, 6});
+  Eigen::MatrixXd Xt = Eigen::MatrixXd::Random(n_x, 100);
+  Eigen::MatrixXd Yt = Eigen::MatrixXd::Random(n_y, 100);
+  Eigen::VectorXd x = Eigen::VectorXd::Random(n_x);
+  for (std::size_t i = 0; i < n_hparams; ++i) {
+    for (std::size_t j = 0; j < n_train.size(); ++j) {
+      Eigen::VectorXd hp = log_domain.sample();
+      double length = pow(10.0, hp(0));
+      double signal_var = pow(10.0, hp(1));
+      double noise_var = pow(10.0, hp(2));
+
+      noise_kernel = sia::NoiseKernel(noise_var);
+      se_kernel = sia::SEKernel(length, signal_var);
+      auto kernel2 = noise_kernel + se_kernel;
+      sia::GPR gpr3(n_x, n_y, kernel2);
+
+      // Test that GPR will compute with j data points
+      if (n_train.at(j) > 0) {
+        gpr3.setData(Xt.leftCols(n_train.at(j)), Yt.leftCols(n_train.at(j)));
+      }
+      EXPECT_NO_THROW(gpr3.predict(x));
+      for (int j = 0; j < Xt.cols(); ++j) {
+        EXPECT_NO_THROW(gpr3.predict(Xt.col(j)));
+      }
+    }
+  }
+
+  // Test other kernels
+  auto var_function = [](const Eigen::VectorXd& x) {
+    Eigen::VectorXd y(1);
+    y << x.dot(x);
+    return y;
+  };
+  sia::VariableNoiseKernel kernel_1(var_function);
+  Eigen::Vector2d a, b;
+  a << 1, 0;
+  b << 1, 0;
+  EXPECT_DOUBLE_EQ(kernel_1.eval(a, 0), 1.0);
+  EXPECT_DOUBLE_EQ(kernel_1.eval(a, b, 0), 0.0);
+  b << 2, 0;
+  EXPECT_DOUBLE_EQ(kernel_1.eval(a, b, 0), 0.0);
+  EXPECT_EQ(kernel_1.grad(a, b, 0).size(), 0);
+  EXPECT_EQ(kernel_1.hyperparameters().size(), 0);
+  EXPECT_NO_THROW(kernel_1.setHyperparameters(Eigen::VectorXd(0)));
+  EXPECT_THROW(kernel_1.setHyperparameters(Eigen::VectorXd(1)),
+               std::runtime_error);
 }
 
 TEST(Belief, GPC) {
@@ -580,8 +639,12 @@ TEST(Belief, GPC) {
   for (std::size_t i = 0; i < 10; i += 2) {
     Y(i) = 1;
   }
-  sia::GPC gpc(X, Y, alpha);
+  auto kernel = sia::SEKernel();
+  sia::GPC gpc(X, Y, kernel, alpha);
+  EXPECT_DOUBLE_EQ(gpc.alpha(), alpha);
+
   gpc.setAlpha(0.001);
+  EXPECT_DOUBLE_EQ(gpc.alpha(), 0.001);
 
   EXPECT_EQ(gpc.numSamples(), 10);
   EXPECT_EQ(gpc.inputDimension(), 3);

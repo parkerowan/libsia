@@ -94,5 +94,55 @@ class PyInference : public sia::Inference {
   }
 };
 
+/// SmoothingKernel trampoline class
+class PySmoothingKernel : public sia::SmoothingKernel {
+ public:
+  // Inherit the constructors
+  using sia::SmoothingKernel::SmoothingKernel;
+
+  // Trampoline (need one for each virtual function)
+  double evaluate(const Eigen::VectorXd& x) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::SmoothingKernel, evaluate, x);
+  }
+};
+
+/// Kernel trampoline class
+class PyKernel : public sia::Kernel {
+ public:
+  // Inherit the constructors
+  using sia::Kernel::Kernel;
+
+  // Trampoline (need one for each virtual function)
+  double eval(const Eigen::VectorXd& x,
+              std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::Kernel, eval, x, output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  double eval(const Eigen::VectorXd& x,
+              const Eigen::VectorXd& y,
+              std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::Kernel, eval, x, y, output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  Eigen::VectorXd grad(const Eigen::VectorXd& a,
+                       const Eigen::VectorXd& b,
+                       std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, sia::Kernel, grad, a, b,
+                           output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  Eigen::VectorXd hyperparameters() const override {
+    PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, sia::Kernel, hyperparameters);
+  }
+
+  // Trampoline (need one for each virtual function)
+  void setHyperparameters(const Eigen::VectorXd& p) override {
+    PYBIND11_OVERRIDE_PURE(void, sia::Kernel, setHyperparameters, p);
+  }
+};
+
 // Define module
 void export_py_belief(py::module& m_sup);

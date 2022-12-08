@@ -33,6 +33,25 @@ TEST(Math, SliceMatrix) {
   EXPECT_DOUBLE_EQ(Y(1, 1), 8);
 }
 
+TEST(Math, ReplaceVector) {
+  std::vector<std::size_t> indices{0, 2};
+  Eigen::Vector3d x(0, 1, 2);
+  Eigen::Vector2d u(4, 5);
+
+  Eigen::VectorXd y1 = sia::replace(x, u, indices);
+  EXPECT_EQ(y1.size(), 3);
+  EXPECT_DOUBLE_EQ(y1(0), 4);
+  EXPECT_DOUBLE_EQ(y1(1), 1);
+  EXPECT_DOUBLE_EQ(y1(2), 5);
+
+  // No change when indices are empty
+  Eigen::VectorXd y2 = sia::replace(x, u, {});
+  EXPECT_EQ(y2.size(), 3);
+  EXPECT_DOUBLE_EQ(y2(0), 0);
+  EXPECT_DOUBLE_EQ(y2(1), 1);
+  EXPECT_DOUBLE_EQ(y2(2), 2);
+}
+
 TEST(Math, Svd) {
   Eigen::MatrixXd A(2, 2);
   A << 0, 1, 2, 3;

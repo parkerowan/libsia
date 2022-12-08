@@ -6,6 +6,7 @@
 #include "sia/math/math.h"
 
 #include <glog/logging.h>
+#include <cmath>
 
 namespace sia {
 
@@ -116,6 +117,14 @@ double Gaussian::maxLogProb() const {
   double log_2_pi = log(2 * M_PI);
   double log_det = 2 * m_cached_sigma_L.diagonal().array().log().sum();
   return -0.5 * (rank * log_2_pi + log_det);
+}
+
+double Gaussian::pdf(double x) {
+  return 1 / sqrt(2 * M_PI) * exp(-pow(x, 2) / 2);
+}
+
+double Gaussian::cdf(double x) {
+  return (1 + erf(x / sqrt(2))) / 2;
 }
 
 void Gaussian::checkDimensions(const Eigen::VectorXd& mu,
