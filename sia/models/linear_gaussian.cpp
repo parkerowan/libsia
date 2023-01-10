@@ -12,18 +12,32 @@ namespace sia {
 LinearGaussianDynamics::LinearGaussianDynamics(const Eigen::MatrixXd& F,
                                                const Eigen::MatrixXd& G,
                                                const Eigen::MatrixXd& Q)
-    : m_dynamics_matrix(F),
+    : LinearizableDynamics(F.cols(), G.cols()),
+      m_dynamics_matrix(F),
       m_input_matrix(G),
       m_process_covariance(Q),
       m_prob_dynamics(Q.rows()) {
+  SIA_EXCEPTION(F.rows() == F.cols(),
+                "Linear Gaussian F matrix is expected to be square");
+  SIA_EXCEPTION(F.rows() == G.rows(),
+                "Linear Gaussian F and G rows should be consistent");
+  SIA_EXCEPTION(Q.rows() == Q.cols(),
+                "Linear Gaussian Q matrix is expected to be square");
+  SIA_EXCEPTION(F.rows() == Q.rows(),
+                "Linear Gaussian F and Q rows should be consistent");
   cacheStateCovariance();
 }
 
-LinearGaussianDynamics::LinearGaussianDynamics(const Eigen::MatrixXd& Q)
-    : m_process_covariance(Q), m_prob_dynamics(Q.rows()) {}
+LinearGaussianDynamics::LinearGaussianDynamics(std::size_t state_dim,
+                                               std::size_t control_dim,
+                                               const Eigen::MatrixXd& Q)
+    : LinearizableDynamics(state_dim, control_dim),
+      m_process_covariance(Q),
+      m_prob_dynamics(Q.rows()) {}
 
 Gaussian& LinearGaussianDynamics::dynamics(const Eigen::VectorXd& state,
                                            const Eigen::VectorXd& control) {
+  checkDimensions(state, control);
   m_prob_dynamics.setMean(f(state, control));
   // For efficiency, the covariance is set only when Q is updated
   return m_prob_dynamics;
@@ -31,6 +45,7 @@ Gaussian& LinearGaussianDynamics::dynamics(const Eigen::VectorXd& state,
 
 Eigen::VectorXd LinearGaussianDynamics::f(const Eigen::VectorXd& state,
                                           const Eigen::VectorXd& control) {
+  checkDimensions(state, control);
   return F() * state + G() * control;
 }
 
@@ -86,19 +101,24 @@ void LinearGaussianDynamics::cacheStateCovariance() {
 
 LinearGaussianMeasurement::LinearGaussianMeasurement(const Eigen::MatrixXd& H,
                                                      const Eigen::MatrixXd& R)
-    : m_measurement_matrix(H),
+    : LinearizableMeasurement(H.cols(), H.rows()),
+      m_measurement_matrix(H),
       m_measurement_covariance(R),
       m_prob_measurement(R.rows()) {
+  SIA_EXCEPTION(H.rows() == R.rows(),
+                "Linear Gaussian H and R rows should be consistent");
   cacheMeasurementCovariance();
 }
 
 Gaussian& LinearGaussianMeasurement::measurement(const Eigen::VectorXd& state) {
+  checkDimensions(state);
   m_prob_measurement.setMean(h(state));
   // For efficiency, the covariance is set only when R matrix is updated
   return m_prob_measurement;
 }
 
 Eigen::VectorXd LinearGaussianMeasurement::h(const Eigen::VectorXd& state) {
+  checkDimensions(state);
   return H() * state;
 }
 
@@ -139,11 +159,19 @@ LinearGaussianDynamicsCT::LinearGaussianDynamicsCT(
     const Eigen::MatrixXd& Qpsd,
     double dt,
     LinearGaussianDynamicsCT::Type type)
-    : LinearGaussianDynamics(toQ(Qpsd, dt)),
+    : LinearGaussianDynamics(A.cols(), B.cols(), toQ(Qpsd, dt)),
       m_dynamics_matrix_ct(A),
       m_input_matrix_ct(B),
       m_dt(dt),
       m_type(type) {
+  SIA_EXCEPTION(A.rows() == A.cols(),
+                "Linear Gaussian A matrix is expected to be square");
+  SIA_EXCEPTION(A.rows() == B.rows(),
+                "Linear Gaussian A and B rows should be consistent");
+  SIA_EXCEPTION(Qpsd.rows() == Qpsd.cols(),
+                "Linear Gaussian Qpsd matrix is expected to be square");
+  SIA_EXCEPTION(A.rows() == Qpsd.rows(),
+                "Linear Gaussian A and Qpsd rows should be consistent");
   discretizeDynamics();
   cacheStateCovariance();
 }

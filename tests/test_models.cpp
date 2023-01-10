@@ -150,7 +150,7 @@ TEST(Models, NonlinearGaussianDynamics) {
     return F * x + G * u;
   };
 
-  sia::NonlinearGaussianDynamics a(dynamics, Q);
+  sia::NonlinearGaussianDynamics a(dynamics, Q, 1, 1);
   EXPECT_TRUE(a.Q().isApprox(Q));
 
   Q << 0.5;
@@ -178,7 +178,7 @@ TEST(Models, NonlinearGaussianMeasurement) {
   // Try out the linear case
   auto measurement = [H](const Eigen::VectorXd& x) { return H * x; };
 
-  sia::NonlinearGaussianMeasurement a(measurement, R);
+  sia::NonlinearGaussianMeasurement a(measurement, R, 1, 1);
   EXPECT_TRUE(a.R().isApprox(R));
 
   R << 0.2;
@@ -208,7 +208,7 @@ TEST(Models, NonlinearGaussianDynamicsCT) {
   };
 
   double dt = 0.1;
-  sia::NonlinearGaussianDynamicsCT a(dynamics, Qpsd, dt);
+  sia::NonlinearGaussianDynamicsCT a(dynamics, Qpsd, dt, 1, 1);
   EXPECT_TRUE(a.Q().isApprox(Qpsd * dt));
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 
@@ -245,7 +245,7 @@ TEST(Models, NonlinearGaussianMeasurementCT) {
   auto measurement = [H](const Eigen::VectorXd& x) { return H * x; };
 
   double dt = 0.1;
-  sia::NonlinearGaussianMeasurementCT a(measurement, Rpsd, dt);
+  sia::NonlinearGaussianMeasurementCT a(measurement, Rpsd, dt, 1, 1);
   EXPECT_TRUE(a.R().isApprox(Rpsd / dt));
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 

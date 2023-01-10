@@ -7,8 +7,8 @@
 #include <iostream>
 
 // constants
-const std::size_t NUM_AXES = 2;
 const std::size_t STATE_DIM = 8;
+const std::size_t INPUT_DIM = 2;
 
 // Simulation parameters
 std::size_t num_steps = 2000;
@@ -166,7 +166,8 @@ sia::NonlinearGaussianDynamicsCT create_dynamics(double q, double dt) {
   Eigen::MatrixXd Qpsd = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
 
   // Create the system
-  return sia::NonlinearGaussianDynamicsCT(celestial_dynamics, Qpsd, dt);
+  return sia::NonlinearGaussianDynamicsCT(celestial_dynamics, Qpsd, dt,
+                                          STATE_DIM, INPUT_DIM);
 }
 
 sia::QuadraticCost create_cost(double r) {
@@ -181,7 +182,7 @@ sia::QuadraticCost create_cost(double r) {
   Qf.block<2, 2>(4, 6) = -I;
   Qf.block<2, 2>(6, 4) = -I;
   Eigen::MatrixXd Q = Qf;
-  Eigen::MatrixXd R = r * Eigen::MatrixXd::Identity(NUM_AXES, NUM_AXES);
+  Eigen::MatrixXd R = r * Eigen::MatrixXd::Identity(INPUT_DIM, INPUT_DIM);
   Eigen::VectorXd xd = Eigen::VectorXd::Zero(STATE_DIM);
   return sia::QuadraticCost(Qf, Q, R, xd);
 }
@@ -197,7 +198,7 @@ sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
                                         double mu) {
   std::vector<Eigen::VectorXd> u0;
   for (std::size_t i = 0; i < horizon; ++i) {
-    u0.emplace_back(Eigen::VectorXd::Zero(NUM_AXES));
+    u0.emplace_back(Eigen::VectorXd::Zero(INPUT_DIM));
   }
   return new sia::iLQR(dynamics, cost, u0, max_iter, max_backsteps, epsilon,
                        tau, min_z, mu);

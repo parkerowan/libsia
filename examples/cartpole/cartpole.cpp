@@ -9,6 +9,7 @@
 // constants
 const std::size_t STATE_DIM = 4;
 const std::size_t INPUT_DIM = 1;
+const std::size_t MEAS_DIM = 4;
 
 // Simulation parameters
 unsigned seed = 0;
@@ -183,7 +184,8 @@ sia::NonlinearGaussianDynamicsCT create_dynamics(double q, double dt) {
   Eigen::MatrixXd Qpsd = q * Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
 
   // Create the system
-  return sia::NonlinearGaussianDynamicsCT(cartpole_dynamics, Qpsd, dt);
+  return sia::NonlinearGaussianDynamicsCT(cartpole_dynamics, Qpsd, dt,
+                                          STATE_DIM, INPUT_DIM);
 }
 
 sia::NonlinearGaussianMeasurementCT create_measurement(double r, double dt) {
@@ -194,7 +196,7 @@ sia::NonlinearGaussianMeasurementCT create_measurement(double r, double dt) {
   auto h = [](Eigen::VectorXd x) { return x; };
 
   // Create the system
-  return sia::NonlinearGaussianMeasurementCT(h, Rpsd, dt);
+  return sia::NonlinearGaussianMeasurementCT(h, Rpsd, dt, STATE_DIM, MEAS_DIM);
 }
 
 sia::QuadraticCost create_cost(double r = 1e-2) {

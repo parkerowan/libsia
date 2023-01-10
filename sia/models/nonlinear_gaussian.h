@@ -21,7 +21,9 @@ class NonlinearGaussianDynamics : public LinearizableDynamics {
  public:
   /// The dynamics equation is $x_k+1 = f(x_k, u_k)$.
   explicit NonlinearGaussianDynamics(DynamicsEquation dynamics,
-                                     const Eigen::MatrixXd& Q);
+                                     const Eigen::MatrixXd& Q,
+                                     std::size_t state_dim,
+                                     std::size_t control_dim);
   virtual ~NonlinearGaussianDynamics() = default;
 
   /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
@@ -54,7 +56,9 @@ class NonlinearGaussianMeasurement : public LinearizableMeasurement {
  public:
   /// The measurement equation is $y = h(x)$.
   explicit NonlinearGaussianMeasurement(MeasurementEquation measurement,
-                                        const Eigen::MatrixXd& R);
+                                        const Eigen::MatrixXd& R,
+                                        std::size_t state_dim,
+                                        std::size_t measurement_dim);
   virtual ~NonlinearGaussianMeasurement() = default;
 
   /// Predicts the statistical observation $p(y | x)$.
@@ -94,7 +98,9 @@ class NonlinearGaussianDynamicsCT : public NonlinearGaussianDynamics {
   /// The dynamics equation is $\dot{x} = a(x, u)$.
   explicit NonlinearGaussianDynamicsCT(DynamicsEquation dynamics,
                                        const Eigen::MatrixXd& Qpsd,
-                                       double dt);
+                                       double dt,
+                                       std::size_t state_dim,
+                                       std::size_t control_dim);
   virtual ~NonlinearGaussianDynamicsCT() = default;
 
   //// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
@@ -133,7 +139,9 @@ class NonlinearGaussianMeasurementCT : public NonlinearGaussianMeasurement {
  public:
   explicit NonlinearGaussianMeasurementCT(MeasurementEquation measurement,
                                           const Eigen::MatrixXd& Rpsd,
-                                          double dt);
+                                          double dt,
+                                          std::size_t state_dim,
+                                          std::size_t measurement_dim);
   virtual ~NonlinearGaussianMeasurementCT() = default;
 
   /// Sets the measurement noise power spectral density

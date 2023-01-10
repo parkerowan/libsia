@@ -51,7 +51,9 @@ class LinearGaussianDynamics : public LinearizableDynamics {
   void setG(const Eigen::MatrixXd& G);
 
  protected:
-  LinearGaussianDynamics(const Eigen::MatrixXd& Q);
+  LinearGaussianDynamics(std::size_t state_dim,
+                         std::size_t control_dim,
+                         const Eigen::MatrixXd& Q);
   void cacheStateCovariance();
 
   Eigen::MatrixXd m_dynamics_matrix;
