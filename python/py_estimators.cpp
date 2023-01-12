@@ -8,6 +8,7 @@ void export_py_estimators(py::module& m_sup) {
   py::module m = m_sup;
 
   py::class_<sia::Estimator, PyRecursiveBayesEstimator>(m, "Estimator")
+      .def(py::init<>())
       .def("belief", &sia::Estimator::belief)
       .def("estimate", &sia::Estimator::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)

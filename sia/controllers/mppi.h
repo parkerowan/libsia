@@ -28,9 +28,9 @@ namespace sia {
 /// algorithms or do not implement control cost in custom cost functions.
 ///
 /// More information on parameters is available in [1].
-/// - num_samples: The number of sample trajectories to rollout
-/// - sigma: The covariance matrix from which to sample control perturbations
-/// - lambda: The temperature which penalizes the perturbation magnitude
+/// - num_samples: (>0) Number of sample trajectories to rollout.
+/// - sample_covariance: (>0) Covariance matrix to sample control perturbations.
+/// - temperature: (>0) Penalizes the perturbation magnitude.
 ///
 /// References:
 /// [1]
@@ -41,8 +41,8 @@ class MPPI : public Controller {
                 CostFunction& cost,
                 const std::vector<Eigen::VectorXd>& u0,
                 std::size_t num_samples,
-                const Eigen::MatrixXd& sigma,
-                double lam = 1.0);
+                const Eigen::MatrixXd& sample_covariance,
+                double temperature = 1.0);
   virtual ~MPPI() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
@@ -74,6 +74,7 @@ class MPPI : public Controller {
   Trajectory<Eigen::VectorXd> m_states;
   std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;
   Eigen::VectorXd m_rollout_weights;
+  bool m_first_pass{true};
 };
 
 }  // namespace sia

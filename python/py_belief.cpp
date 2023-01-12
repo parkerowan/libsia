@@ -14,6 +14,7 @@ void export_py_belief(py::module& m_sup) {
       .def("seed", &sia::Generator::seed, py::arg("seed") = sia::DEFAULT_SEED);
 
   py::class_<sia::Distribution, PyDistribution>(m, "Distribution")
+      .def(py::init<sia::Generator&>(), py::arg("generator"))
       .def("dimension", &sia::Distribution::dimension)
       .def("sample",
            static_cast<const Eigen::VectorXd (sia::Distribution::*)()>(
@@ -30,6 +31,7 @@ void export_py_belief(py::module& m_sup) {
       .def("samples", &sia::Distribution::samples, py::arg("num_samples"));
 
   py::class_<sia::Inference, PyInference>(m, "Inference")
+      .def(py::init<>())
       .def("predict", &sia::Inference::predict, py::arg("x"))
       .def("inputDimension", &sia::Inference::inputDimension)
       .def("outputDimension", &sia::Inference::outputDimension);
@@ -163,6 +165,7 @@ void export_py_belief(py::module& m_sup) {
       .def("weight", &sia::Particles::weight, py::arg("i"));
 
   py::class_<sia::SmoothingKernel, PySmoothingKernel>(m, "SmoothingKernel")
+      .def(py::init<>())
       .def("evaluate", &sia::SmoothingKernel::evaluate, py::arg("x"));
 
   py::class_<sia::UniformKernel, sia::SmoothingKernel>(m, "UniformKernel")
@@ -292,6 +295,7 @@ void export_py_belief(py::module& m_sup) {
       .def("gmm", &sia::GMR::gmm, py::return_value_policy::reference_internal);
 
   py::class_<sia::Kernel, PyKernel>(m, "Kernel")
+      .def(py::init<>())
       .def("eval",
            static_cast<double (sia::Kernel::*)(
                const Eigen::VectorXd&, std::size_t) const>(&sia::Kernel::eval),

@@ -6,12 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.x] - YYYY-MM-DD
 ### Added
+- Access to control gain terms for LQR/iLQR
+- Regularization schedule to iLQR for robust Hessian computation
+- Explicit dimensions to dynamics and measurement models
 - GPR kernel classes for more transparency into hyperparameters
 - KDE smoothing kernel classes for more transparency into bandwidths
 - GPR support for evaluating prior
 - BayesianOptimizer support for conditioning on input vectors
 - GPR edge case test coverage
 ### Changed
+- Refactored iLQR code for readability
+- Changed iLQR and MPPI parameter names to be readable
+- Improved numerical stability of iLQR algorithm
+- Fixed several bugs in LQR related to tracking formulation
 - Fixed a bug in GPR that resulted in singular covariances when evaluating at training points
 - Improved GPR/GPC hyperparameter training time and control over search space
 - Removed all uses of dynamic memory allocation

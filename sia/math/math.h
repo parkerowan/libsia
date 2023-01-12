@@ -57,6 +57,12 @@ bool svdInverse(const Eigen::MatrixXd& A,
                 Eigen::MatrixXd& Ainv,
                 double tolerance = DEFAULT_SINGULAR_TOLERANCE);
 
+/// Returns if the matrix is symmetric (self-adjoint)
+bool symmetric(const Eigen::MatrixXd& A);
+
+/// Returns if the square matrix A is positive definite (using LDLT)
+bool positiveDefinite(const Eigen::MatrixXd& A);
+
 /// 4th order Runge-Kutta integrator where the prototype dynamical system has
 /// the form \dot{x} = f(x, u)
 const Eigen::VectorXd rk4(

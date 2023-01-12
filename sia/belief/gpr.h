@@ -17,6 +17,7 @@ namespace sia {
 /// hyperarameters.  For details on how to choose kernels, see The Kernel
 /// Cookbook https://www.cs.toronto.edu/~duvenaud/cookbook/
 struct Kernel {
+  Kernel() = default;
   virtual ~Kernel() = default;
   virtual double eval(const Eigen::VectorXd& x,
                       std::size_t output_index) const = 0;

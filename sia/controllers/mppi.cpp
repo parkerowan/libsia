@@ -11,14 +11,15 @@ MPPI::MPPI(DynamicsModel& dynamics,
            CostFunction& cost,
            const std::vector<Eigen::VectorXd>& u0,
            std::size_t num_samples,
-           const Eigen::MatrixXd& sigma,
-           double lam)
+           const Eigen::MatrixXd& sample_covariance,
+           double temperature)
     : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
       m_num_samples(num_samples),
-      m_sigma(Gaussian(Eigen::VectorXd::Zero(sigma.rows()), sigma)),
-      m_lambda(lam),
+      m_sigma(Gaussian(Eigen::VectorXd::Zero(sample_covariance.rows()),
+                       sample_covariance)),
+      m_lambda(temperature),
       m_controls(u0),
       m_rollout_weights(Eigen::VectorXd::Zero(num_samples)) {
   cacheSigmaInv();
@@ -29,10 +30,12 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
   auto N = m_num_samples;
   auto x = state.mean();
 
-  // Shift the control through the buffer so that we use the previously computed
-  // cost to initialize the trajectory.
-  m_controls.erase(m_controls.begin());        // remove the first element
-  m_controls.emplace_back(m_controls.back());  // copy the last element
+  // Initialize from the previous trajectory
+  if (!m_first_pass) {
+    m_controls.erase(m_controls.begin());        // remove the first element
+    m_controls.emplace_back(m_controls.back());  // copy the last element
+  }
+  m_first_pass = false;
 
   // Reset the rollout history
   m_rollout_states.clear();

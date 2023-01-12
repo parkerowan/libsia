@@ -22,13 +22,8 @@ double input_cost = 5e14;
 std::string algorithm = "ilqr";
 
 // iLQR parameters
-// FIXME: Increasing the number of iterations causes Quu to not be pos def.
-std::size_t max_iter = 3;
-std::size_t max_backsteps = 1;
-double epsilon = 1e-1;
-double tau = 0.5;
-double min_z = 1e-1;
-double mu = 0;
+std::size_t max_lqr_iter = 3;
+double cost_tol = 1e-1;
 
 bool parse_args(int argc, char* argv[]) {
   for (int i = 1; i < argc; i += 2) {
@@ -40,12 +35,8 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --datafile <value> File path the csv data output\n";
       std::cout << "  --input_cost <value> Input cost coefficient\n";
       std::cout << "  --algorithm <value> Options 'ilqr'\n";
-      std::cout << "  --max_iter <value> [iLQR] iterations\n";
-      std::cout << "  --max_backsteps <value> [iLQR] backsteps per iteration\n";
-      std::cout << "  --epsilon <value> [iLQR] dJ convergence threshold\n";
-      std::cout << "  --tau <value> [iLQR] backstep rate\n";
-      std::cout << "  --min_z <value> [iLQR] backstep convergence threshold\n";
-      std::cout << "  --mu <value> [iLQR] state update regularization\n";
+      std::cout << "  --max_lqr_iter <value> [iLQR] iterations\n";
+      std::cout << "  --cost_tol <value> [iLQR] dJ convergence threshold\n";
       return false;
     } else if (std::string(argv[i]) == "--num_steps") {
       num_steps = std::atoi(argv[i + 1]);
@@ -61,18 +52,10 @@ bool parse_args(int argc, char* argv[]) {
       input_cost = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--algorithm") {
       algorithm = std::string(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--max_iter") {
-      max_iter = std::atoi(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--max_backsteps") {
-      max_backsteps = std::atoi(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--epsilon") {
-      epsilon = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--tau") {
-      tau = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--min_z") {
-      min_z = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--mu") {
-      mu = std::atof(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--max_lqr_iter") {
+      max_lqr_iter = std::atoi(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--cost_tol") {
+      cost_tol = std::atof(argv[i + 1]);
     }
   }
   return true;
@@ -84,17 +67,6 @@ static unsigned get_elapsed_us(steady_clock::time_point tic,
   return std::chrono::duration_cast<std::chrono::microseconds>(toc - tic)
       .count();
 };
-
-void print_metrics(const sia::iLQR::Metrics& metrics) {
-  std::cout << "iLQR Metrics\n";
-  std::cout << "iterations: " << metrics.iter << "\n";
-  std::cout << "dJ:         " << metrics.dJ << "\n";
-  std::cout << "J:          " << metrics.J << "\n";
-  std::cout << "z:          " << metrics.z << "\n";
-  std::cout << "elapsed_us: " << metrics.elapsed_us << "\n";
-  std::cout << "backsteps:  " << metrics.backstep_iter << "\n";
-  std::cout << "alpha:      " << metrics.alpha << "\n";
-}
 
 // write data header
 void write_header(std::ofstream& ofs) {
@@ -190,18 +162,13 @@ sia::QuadraticCost create_cost(double r) {
 sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
                                         sia::QuadraticCost& cost,
                                         std::size_t horizon,
-                                        std::size_t max_iter,
-                                        std::size_t max_backsteps,
-                                        double epsilon,
-                                        double tau,
-                                        double min_z,
-                                        double mu) {
+                                        std::size_t max_lqr_iter,
+                                        double cost_tol) {
   std::vector<Eigen::VectorXd> u0;
   for (std::size_t i = 0; i < horizon; ++i) {
     u0.emplace_back(Eigen::VectorXd::Zero(INPUT_DIM));
   }
-  return new sia::iLQR(dynamics, cost, u0, max_iter, max_backsteps, epsilon,
-                       tau, min_z, mu);
+  return new sia::iLQR(dynamics, cost, u0, max_lqr_iter, cost_tol);
 }
 
 Eigen::VectorXd init_state() {
@@ -233,8 +200,8 @@ int main(int argc, char* argv[]) {
   // Create the controller
   sia::Controller* controller{nullptr};
   if (algorithm == "ilqr") {
-    controller = create_ilqr_controller(dynamics, cost, horizon, max_iter,
-                                        max_backsteps, epsilon, tau, min_z, mu);
+    controller =
+        create_ilqr_controller(dynamics, cost, horizon, max_lqr_iter, cost_tol);
   } else {
     std::cout << "Unknown controller " << algorithm
               << ", running with no control\n";

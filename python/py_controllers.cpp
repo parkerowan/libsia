@@ -10,20 +10,23 @@
 void export_py_controllers(py::module& m_sup) {
   py::module m = m_sup;
 
-  py::class_<sia::CostFunction, PyCostFunction>(m, "CostFunction")
-      .def("c", &sia::CostFunction::c, py::arg("x"), py::arg("u"), py::arg("i"))
-      .def("cf", &sia::CostFunction::cf, py::arg("x"))
-      .def("eval", &sia::CostFunction::eval, py::arg("x"), py::arg("u"));
-
   py::class_<sia::Controller, PyController>(m, "Controller")
+      .def(py::init<>())
       .def("policy", &sia::Controller::policy, py::arg("state"))
       .def("controls", &sia::Controller::controls,
            py::return_value_policy::reference_internal)
       .def("states", &sia::Controller::states,
            py::return_value_policy::reference_internal);
 
+  py::class_<sia::CostFunction, PyCostFunction>(m, "CostFunction")
+      .def(py::init<>())
+      .def("c", &sia::CostFunction::c, py::arg("x"), py::arg("u"), py::arg("i"))
+      .def("cf", &sia::CostFunction::cf, py::arg("x"))
+      .def("eval", &sia::CostFunction::eval, py::arg("x"), py::arg("u"));
+
   py::class_<sia::DifferentiableCost, sia::CostFunction, PyDifferentiableCost>(
       m, "DifferentiableCost")
+      .def(py::init<>())
       .def("c", &sia::DifferentiableCost::c, py::arg("x"), py::arg("u"),
            py::arg("i"))
       .def("cf", &sia::DifferentiableCost::cf, py::arg("x"))
@@ -104,41 +107,57 @@ void export_py_controllers(py::module& m_sup) {
       .def("controls", &sia::LQR::controls,
            py::return_value_policy::reference_internal)
       .def("states", &sia::LQR::states,
+           py::return_value_policy::reference_internal)
+      .def("feedforward", &sia::LQR::feedforward,
+           py::return_value_policy::reference_internal)
+      .def("feedback", &sia::LQR::feedback,
            py::return_value_policy::reference_internal);
 
   auto ilqr =
       py::class_<sia::iLQR, sia::Controller>(m, "iLQR")
           .def(py::init<sia::LinearizableDynamics&, sia::DifferentiableCost&,
                         const std::vector<Eigen::VectorXd>&, std::size_t,
-                        std::size_t, double, double, double, double>(),
+                        double, std::size_t, double, double, double,
+                        std::size_t, double, double, double>(),
                py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
-               py::arg("max_iter") = 1, py::arg("max_backsteps") = 1,
-               py::arg("epsilon") = 1e-1, py::arg("tau") = 0.5,
-               py::arg("min_z") = 1e-2, py::arg("mu") = 0)
+               py::arg("max_lqr_iter") = 50, py::arg("cost_tol") = 1e-4,
+               py::arg("max_regularization_iter") = 10,
+               py::arg("regularization_init") = 0,
+               py::arg("regularization_min") = 1e-4,
+               py::arg("regularization_rate") = 1.6,
+               py::arg("max_linesearch_iter") = 10,
+               py::arg("linesearch_rate") = 0.5,
+               py::arg("linesearch_tol_lb") = 1e-8,
+               py::arg("linesearch_tol_ub") = 10)
           .def("policy", &sia::iLQR::policy, py::arg("state"))
           .def("controls", &sia::iLQR::controls,
                py::return_value_policy::reference_internal)
           .def("states", &sia::iLQR::states,
+               py::return_value_policy::reference_internal)
+          .def("feedforward", &sia::iLQR::feedforward,
+               py::return_value_policy::reference_internal)
+          .def("feedback", &sia::iLQR::feedback,
                py::return_value_policy::reference_internal)
           .def("metrics", &sia::iLQR::metrics,
                py::return_value_policy::reference_internal);
 
   py::class_<sia::iLQR::Metrics>(ilqr, "Metrics")
       .def(py::init<>())
-      .def_readwrite("iter", &sia::iLQR::Metrics::iter)
-      .def_readwrite("dJ", &sia::iLQR::Metrics::dJ)
-      .def_readwrite("J", &sia::iLQR::Metrics::J)
-      .def_readwrite("z", &sia::iLQR::Metrics::z)
       .def_readwrite("elapsed_us", &sia::iLQR::Metrics::elapsed_us)
-      .def_readwrite("backstep_iter", &sia::iLQR::Metrics::backstep_iter)
-      .def_readwrite("alpha", &sia::iLQR::Metrics::alpha);
+      .def_readwrite("lqr_iter", &sia::iLQR::Metrics::lqr_iter)
+      .def_readwrite("rho", &sia::iLQR::Metrics::rho)
+      .def_readwrite("dJ", &sia::iLQR::Metrics::dJ)
+      .def_readwrite("z", &sia::iLQR::Metrics::z)
+      .def_readwrite("alpha", &sia::iLQR::Metrics::alpha)
+      .def_readwrite("J", &sia::iLQR::Metrics::J);
 
   py::class_<sia::MPPI, sia::Controller>(m, "MPPI")
       .def(py::init<sia::DynamicsModel&, sia::CostFunction&,
                     const std::vector<Eigen::VectorXd>&, std::size_t,
                     const Eigen::MatrixXd&, double>(),
            py::arg("dynamics"), py::arg("cost"), py::arg("u0"),
-           py::arg("num_samples"), py::arg("sigma"), py::arg("lam") = 1.0)
+           py::arg("num_samples"), py::arg("sample_covariance"),
+           py::arg("temperature") = 1.0)
       .def("policy", &sia::MPPI::policy, py::arg("state"))
       .def("controls", &sia::MPPI::controls,
            py::return_value_policy::reference_internal)

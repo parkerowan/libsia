@@ -43,12 +43,18 @@ class LQR : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
+  /// Access policy terms
+  const Trajectory<Eigen::VectorXd>& feedforward() const;
+  const Trajectory<Eigen::MatrixXd>& feedback() const;
+
  private:
   LinearGaussianDynamics& m_dynamics;
   QuadraticCost& m_cost;
+  std::size_t m_horizon;
   Trajectory<Eigen::VectorXd> m_controls;
   Trajectory<Eigen::VectorXd> m_states;
-  std::size_t m_horizon;
+  std::vector<Eigen::VectorXd> m_feedforward;
+  std::vector<Eigen::MatrixXd> m_feedback;
 };
 
 }  // namespace sia

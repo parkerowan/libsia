@@ -25,12 +25,8 @@ double input_cost = 1e-2;
 std::string algorithm = "ilqr";
 
 // iLQR parameters
-std::size_t max_iter = 10;
-std::size_t max_backsteps = 1;
-double epsilon = 1e-1;
-double tau = 0.5;
-double min_z = 1e-1;
-double mu = 0;
+std::size_t max_lqr_iter = 10;
+double cost_tol = 1e-1;
 
 // MPPI parameters
 std::size_t num_samples = 100;
@@ -54,12 +50,8 @@ bool parse_args(int argc, char* argv[]) {
       std::cout << "  --datafile <value> File path the csv data output\n";
       std::cout << "  --input_cost <value> Input cost coefficient\n";
       std::cout << "  --algorithm <value> Options 'ilqr' or 'mppi'\n";
-      std::cout << "  --max_iter <value> [iLQR] iterations\n";
-      std::cout << "  --max_backsteps <value> [iLQR] backsteps per iteration\n";
-      std::cout << "  --epsilon <value> [iLQR] dJ convergence threshold\n";
-      std::cout << "  --tau <value> [iLQR] backstep rate\n";
-      std::cout << "  --min_z <value> [iLQR] backstep convergence threshold\n";
-      std::cout << "  --mu <value> [iLQR] state update regularization\n";
+      std::cout << "  --max_lqr_iter <value> [iLQR] iterations\n";
+      std::cout << "  --cost_tol <value> [iLQR] dJ convergence threshold\n";
       std::cout << "  --num_samples <value> [MPPI] Number of samples\n";
       std::cout << "  --sigma <value> [MPPI] Control sampling variance\n";
       std::cout << "  --lambda <value> [MPPI] Free energy temperature\n";
@@ -83,18 +75,10 @@ bool parse_args(int argc, char* argv[]) {
       input_cost = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--algorithm") {
       algorithm = std::string(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--max_iter") {
-      max_iter = std::atoi(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--max_backsteps") {
-      max_backsteps = std::atoi(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--epsilon") {
-      epsilon = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--tau") {
-      tau = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--min_z") {
-      min_z = std::atof(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--mu") {
-      mu = std::atof(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--max_lqr_iter") {
+      max_lqr_iter = std::atoi(argv[i + 1]);
+    } else if (std::string(argv[i]) == "--cost_tol") {
+      cost_tol = std::atof(argv[i + 1]);
     } else if (std::string(argv[i]) == "--num_samples") {
       num_samples = std::atoi(argv[i + 1]);
     } else if (std::string(argv[i]) == "--sigma") {
@@ -211,18 +195,13 @@ sia::QuadraticCost create_cost(double r = 1e-2) {
 sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
                                         sia::QuadraticCost& cost,
                                         std::size_t horizon,
-                                        std::size_t max_iter,
-                                        std::size_t max_backsteps,
-                                        double epsilon,
-                                        double tau,
-                                        double min_z,
-                                        double mu) {
+                                        std::size_t max_lqr_iter,
+                                        double cost_tol) {
   std::vector<Eigen::VectorXd> u0;
   for (std::size_t i = 0; i < horizon; ++i) {
     u0.emplace_back(Eigen::VectorXd::Zero(INPUT_DIM));
   }
-  return new sia::iLQR(dynamics, cost, u0, max_iter, max_backsteps, epsilon,
-                       tau, min_z, mu);
+  return new sia::iLQR(dynamics, cost, u0, max_lqr_iter, cost_tol);
 }
 
 sia::Controller* create_mppi_controller(sia::LinearizableDynamics& dynamics,
@@ -269,8 +248,8 @@ int main(int argc, char* argv[]) {
   // Create the controller
   sia::Controller* controller{nullptr};
   if (algorithm == "ilqr") {
-    controller = create_ilqr_controller(dynamics, cost, horizon, max_iter,
-                                        max_backsteps, epsilon, tau, min_z, mu);
+    controller =
+        create_ilqr_controller(dynamics, cost, horizon, max_lqr_iter, cost_tol);
   } else if (algorithm == "mppi") {
     controller = create_mppi_controller(dynamics, cost, horizon, num_samples,
                                         sigma, lambda);

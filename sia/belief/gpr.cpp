@@ -8,8 +8,6 @@
 #include <glog/logging.h>
 #include <limits>
 
-#include <iostream>
-
 namespace sia {
 
 // Evalutes the kernel with training data to construct the na x 1 kernel vector

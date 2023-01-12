@@ -7,32 +7,38 @@
 #include <sia/sia.h>
 
 TEST(Controllers, QuadraticCost) {
-  Eigen::MatrixXd Q(3, 3), Qf(3, 3), R(2, 2);
-  Eigen::VectorXd xd(3);
-  Qf << 100, 0, 0, 0, 50, 0, 0, 0, 10;
-  Q << 10, 0, 0, 0, 5, 0, 0, 0, 1;
-  R << 3, 0, 0, 1;
-  xd << 1, 2, 3;
-  sia::QuadraticCost cost_a(Qf, Q, R);
+  std::size_t n = 3;
+  std::size_t m = 2;
+  const Eigen::MatrixXd T1 = Eigen::MatrixXd::Random(n, n);
+  const Eigen::MatrixXd Q = T1.transpose() * T1;
+  EXPECT_TRUE(sia::positiveDefinite(Q));
+  const Eigen::MatrixXd T2 = Eigen::MatrixXd::Random(n, n);
+  const Eigen::MatrixXd Qf = T2.transpose() * T2;
+  EXPECT_TRUE(sia::positiveDefinite(Qf));
+  const Eigen::MatrixXd T3 = Eigen::MatrixXd::Random(m, m);
+  const Eigen::MatrixXd R = T3.transpose() * T3;
+  EXPECT_TRUE(sia::positiveDefinite(R));
+  const Eigen::VectorXd xd = Eigen::VectorXd::Random(n);
+  const Eigen::VectorXd x = Eigen::VectorXd::Random(n);
+  const Eigen::VectorXd u = Eigen::VectorXd::Random(m);
+  const Eigen::VectorXd e = x - xd;
 
-  Eigen::VectorXd x(3), u(2);
-  x << 3, 6, 9;
-  u << -1, -2;
+  sia::QuadraticCost cost_a(Qf, Q, R, xd);
 
   // Evaluation and terms
-  EXPECT_DOUBLE_EQ(cost_a.c(x, u, 0), x.dot(Q * x) / 2 + u.dot(R * u) / 2);
-  EXPECT_DOUBLE_EQ(cost_a.cf(x), x.dot(Qf * x) / 2);
+  EXPECT_DOUBLE_EQ(cost_a.c(x, u, 0), e.dot(Q * e) / 2 + u.dot(R * u) / 2);
+  EXPECT_DOUBLE_EQ(cost_a.cf(x), e.dot(Qf * e) / 2);
   EXPECT_TRUE(cost_a.Qf().isApprox(Qf));
   EXPECT_TRUE(cost_a.Q().isApprox(Q));
   EXPECT_TRUE(cost_a.R().isApprox(R));
 
   // Derivatives
-  EXPECT_TRUE(cost_a.cx(x, u, 0).isApprox(Q * x));
+  EXPECT_TRUE(cost_a.cx(x, u, 0).isApprox(Q * (x - xd)));
   EXPECT_TRUE(cost_a.cu(x, u, 0).isApprox(R * u));
   EXPECT_TRUE(cost_a.cxx(x, u, 0).isApprox(Q));
-  EXPECT_TRUE(cost_a.cux(x, u, 0).isApprox(Eigen::MatrixXd::Zero(3, 2)));
+  EXPECT_TRUE(cost_a.cux(x, u, 0).isApprox(Eigen::MatrixXd::Zero(2, 3)));
   EXPECT_TRUE(cost_a.cuu(x, u, 0).isApprox(R));
-  EXPECT_TRUE(cost_a.cfx(x).isApprox(Qf * x));
+  EXPECT_TRUE(cost_a.cfx(x).isApprox(Qf * (x - xd)));
   EXPECT_TRUE(cost_a.cfxx(x).isApprox(Qf));
 
   // Single target
@@ -58,11 +64,9 @@ TEST(Controllers, QuadraticCost) {
 
 TEST(Controllers, FunctionalCost) {
   Eigen::MatrixXd Q(3, 3), Qf(3, 3), R(2, 2);
-  Eigen::VectorXd xd(3);
   Qf << 100, 0, 0, 0, 50, 0, 0, 0, 10;
   Q << 10, 0, 0, 0, 5, 0, 0, 0, 1;
   R << 3, 0, 0, 1;
-  xd << 1, 2, 3;
 
   sia::TerminalCostFunction terminal_cost = [&](const Eigen::VectorXd& x) {
     return x.dot(Qf * x) / 2;
@@ -93,7 +97,7 @@ TEST(Controllers, FunctionalCost) {
   E = cost.cxx(x, u, 0) - Q;
   EXPECT_NEAR(E.norm(), 0.0, 2e-2);
 
-  E = cost.cux(x, u, 0) - Eigen::MatrixXd::Zero(3, 2);
+  E = cost.cux(x, u, 0) - Eigen::MatrixXd::Zero(2, 3);
   EXPECT_NEAR(E.norm(), 0.0, 2e-2);
 
   E = cost.cuu(x, u, 0) - R;
@@ -147,12 +151,10 @@ TEST(Controllers, LQR) {
 TEST(Controllers, iLQR) {
   sia::LinearGaussianDynamics dynamics = createIntegratorDynamics();
   sia::QuadraticCost cost = createTestCost();
-  std::size_t max_iter = 10;
-  std::size_t max_backsteps = 10;
   std::size_t horizon = 2;
   Eigen::VectorXd zero = Eigen::VectorXd::Zero(1);
   std::vector<Eigen::VectorXd> u0(horizon, zero);
-  sia::iLQR mpc(dynamics, cost, u0, max_iter, max_backsteps);
+  sia::iLQR mpc(dynamics, cost, u0);
 
   // Simulate a step forward and check the cost is at a local minima using a
   // stencil around the optimal control
@@ -182,10 +184,9 @@ TEST(Controllers, iLQR) {
 
   // Expect that the iLQR converged in 1 iteration and no backstepping was
   // needed since the system is linear
-  EXPECT_EQ(mpc.metrics().iter, 1);
-  EXPECT_EQ(mpc.metrics().backstep_iter, 1);
-  EXPECT_DOUBLE_EQ(mpc.metrics().alpha, 1.0);
-  EXPECT_DOUBLE_EQ(mpc.metrics().dJ, 0.0);
+  EXPECT_EQ(mpc.metrics().lqr_iter, 1);
+  EXPECT_DOUBLE_EQ(mpc.metrics().alpha.back(), 1.0);
+  EXPECT_DOUBLE_EQ(mpc.metrics().dJ.back(), 0.0);
 
   // Check the state and control rollout
   ASSERT_EQ(mpc.states().size(), horizon);

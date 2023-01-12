@@ -103,6 +103,23 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
   return V * S.array().inverse().matrix().asDiagonal() * U.transpose();
 }
 
+bool symmetric(const Eigen::MatrixXd& A) {
+  SIA_EXCEPTION(A.rows() == A.cols(),
+                "A matrix must be square to test symmetric");
+  return A.isApprox(A.transpose());
+}
+
+bool positiveDefinite(const Eigen::MatrixXd& A) {
+  if (!symmetric(A)) {
+    return false;
+  }
+
+  // If A is positive definite then the diagonal elements of D are all positive
+  const auto ldlt = A.selfadjointView<Eigen::Upper>().ldlt();
+  Eigen::VectorXd d = ldlt.vectorD();
+  return d.minCoeff() > 0;
+}
+
 bool svdInverse(const Eigen::MatrixXd& A,
                 Eigen::MatrixXd& Ainv,
                 double tolerance) {
@@ -274,13 +291,13 @@ const Eigen::MatrixXd d2fdux(
     const Eigen::VectorXd& u) {
   std::size_t m = x.size();
   std::size_t n = u.size();
-  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m, n);
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, m);
   for (std::size_t i = 0; i < n; ++i) {
     Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
     du(i) = NUMERICAL_DERIVATIVE_STEP;
     Eigen::VectorXd fp = dfdx(f, x, u + du);
     Eigen::VectorXd fn = dfdx(f, x, u - du);
-    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+    H.row(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
   }
   // Ensure that the Hessian is necessarily symmetric
   // return (H + H.transpose()) / 2.0;

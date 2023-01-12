@@ -16,3 +16,6 @@ sia::LinearGaussianMeasurement createTestMeasurement();
 
 // Create a quadratic cost for test
 sia::QuadraticCost createTestCost();
+
+// Create a positive definitie matrix
+Eigen::MatrixXd createPositiveDefiniteMatrix(std::size_t n);

@@ -1,6 +1,8 @@
 /// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
+#include "tests/helpers.h"
+
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
@@ -52,6 +54,25 @@ TEST(Math, ReplaceVector) {
   EXPECT_DOUBLE_EQ(y2(2), 2);
 }
 
+TEST(Math, Llt) {
+  Eigen::MatrixXd A(2, 2);
+  A << 10, 0.1, 0.1, 5;
+  Eigen::MatrixXd L;
+  EXPECT_TRUE(sia::llt(A, L));
+  EXPECT_TRUE(A.isApprox(L * L.transpose()));
+}
+
+TEST(Math, LdltSqrt) {
+  Eigen::MatrixXd A(2, 2);
+  A << 10, 0.1, 0.1, 5;
+  Eigen::MatrixXd M;
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
+  A << 2.1, 0, 0, 0;  // positive semi-definite
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
+}
+
 TEST(Math, Svd) {
   Eigen::MatrixXd A(2, 2);
   A << 0, 1, 2, 3;
@@ -66,21 +87,6 @@ TEST(Math, Svd) {
   // Compute the inverse from SVD
   Eigen::MatrixXd AAinv = A * sia::svdInverse(U, S, V);
   EXPECT_TRUE(Eigen::Matrix2d::Identity().isApprox(AAinv));
-
-  // Compute the LLT decomposition
-  A << 2, 0.1, 0.1, 1;
-  Eigen::MatrixXd L;
-  EXPECT_TRUE(sia::llt(A, L));
-  EXPECT_TRUE(A.isApprox(L * L.transpose()));
-
-  // Compute sqrt using the LDLT composition
-  Eigen::MatrixXd M;
-  EXPECT_TRUE(sia::ldltSqrt(A, M));
-  EXPECT_TRUE(A.isApprox(M * M.transpose()));
-
-  A << 2.1, 0, 0, 0;  // positive semi-definite
-  EXPECT_TRUE(sia::ldltSqrt(A, M));
-  EXPECT_TRUE(A.isApprox(M * M.transpose()));
 }
 
 TEST(Math, SvdInverse) {
@@ -96,6 +102,30 @@ TEST(Math, SvdInverse) {
   ASSERT_EQ(AAinv.rows(), 2);
   ASSERT_EQ(AAinv.cols(), 2);
   EXPECT_TRUE(Eigen::Matrix2d::Identity().isApprox(AAinv));
+}
+
+TEST(Math, Symmetric) {
+  Eigen::MatrixXd A(2, 2);
+  A << 1, 0, 0, -4;
+  EXPECT_TRUE(sia::symmetric(A));
+  A << 1, 1, 0, -4;
+  EXPECT_FALSE(sia::symmetric(A));
+
+  Eigen::MatrixXd X = createPositiveDefiniteMatrix(128);
+  EXPECT_TRUE(sia::symmetric(X));
+}
+
+TEST(Math, PositiveDefinite) {
+  Eigen::MatrixXd A(2, 2);
+  A << 1, 0, 0, -4;
+  EXPECT_FALSE(sia::positiveDefinite(A));
+  A << 1, 0, 0, 0;
+  EXPECT_FALSE(sia::positiveDefinite(A));
+  A << 1, 0, 0, 2;
+  EXPECT_TRUE(sia::positiveDefinite(A));
+
+  Eigen::MatrixXd X = createPositiveDefiniteMatrix(128);
+  EXPECT_TRUE(sia::positiveDefinite(X));
 }
 
 TEST(Math, Rk4) {

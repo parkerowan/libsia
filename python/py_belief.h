@@ -142,6 +142,11 @@ class PyKernel : public sia::Kernel {
   void setHyperparameters(const Eigen::VectorXd& p) override {
     PYBIND11_OVERRIDE_PURE(void, sia::Kernel, setHyperparameters, p);
   }
+
+  // Trampoline (need one for each virtual function)
+  std::size_t numHyperparameters() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Kernel, numHyperparameters);
+  }
 };
 
 // Define module
