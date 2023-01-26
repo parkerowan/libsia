@@ -4,8 +4,7 @@
 #include "sia/estimators/pf.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/uniform.h"
-
-#include <glog/logging.h>
+#include "sia/common/logger.h"
 
 namespace sia {
 
@@ -46,7 +45,6 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
     double neff = 1.0 / wp.array().pow(2).sum();
     double nt = m_resample_threshold * static_cast<double>(wp.size());
     if (neff < nt) {
-      VLOG(1) << "Performing resampling, Neff=" << neff << " Nt=" << nt;
       systematicResampling(wp, xp);
       m_belief.setWeights(wp);
     }
@@ -79,7 +77,6 @@ const Particles& PF::correct(const Eigen::VectorXd& observation) {
   // Correction step: update the weights using Bayes' rule
   wp = (wp.array().log() + lp.array()).exp();
   wp = wp.array() / wp.sum();
-  VLOG(2) << "lp(0): " << lp(0) << " wp(0): " << wp(0);
 
   m_belief.setWeights(wp);
   return m_belief;

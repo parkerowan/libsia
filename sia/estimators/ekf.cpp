@@ -3,9 +3,8 @@
 
 #include "sia/estimators/ekf.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 

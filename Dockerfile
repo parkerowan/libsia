@@ -6,28 +6,12 @@ FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y \
-    curl \
     ffmpeg \
     g++ \
     gcovr \
     git \
     lcov \
-    valgrind \
     wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# -----------------------------------------------------------------------------
-# Graphics drivers
-# -----------------------------------------------------------------------------
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt update && \
-    apt install -y \
-    ffmpeg \
-    mesa-utils \
-    ca-certificates \
-    libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    nvidia-340 --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------------------
@@ -37,12 +21,10 @@ RUN apt-get update && \
     apt-get install -y \
     cmake \
     libeigen3-dev \
-    libgoogle-glog-dev \
     libgtest-dev \
     python3-dev \
     python3-pip \
     python3-pytest \
-    python3-tk \
     && rm -rf /var/lib/apt/lists/*
 
 # Set python3 to default
@@ -57,7 +39,7 @@ RUN cd ~/ \
     && cd pybind11-2.6.1/ \
     && mkdir build && cd build \
     && cmake .. \
-    && make check \
+    && make \
     && make install
 
 # -----------------------------------------------------------------------------

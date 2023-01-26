@@ -4,8 +4,7 @@
 #include "sia/belief/particles.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/uniform.h"
-
-#include <glog/logging.h>
+#include "sia/common/logger.h"
 
 namespace sia {
 
@@ -106,8 +105,8 @@ bool Particles::devectorize(const Eigen::VectorXd& data) {
   std::size_t p = numParticles();
   std::size_t d = data.size();
   if (d != p * (n + 1)) {
-    LOG(WARNING) << "Devectorization failed, expected vector size "
-                 << p * (n + 1) << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << p * (n + 1) << ", received " << d);
     return false;
   }
   setValues(Eigen::MatrixXd::Map(data.head(n * p).data(), n, p));
@@ -144,8 +143,8 @@ void Particles::setWeights(const Eigen::VectorXd& weights) {
   double wsum = m_weights.array().sum();
 
   if (abs(wsum - 1.0) >= RENORMALIZE_WEIGHTS_TOLERANCE) {
-    LOG(WARNING) << "Provided weights sum to " << wsum
-                 << ", renormalizing to sum to 1";
+    SIA_WARN("Provided weights sum to " << wsum
+                                        << ", renormalizing to sum to 1");
     m_weights /= wsum;
   }
 }

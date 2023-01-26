@@ -3,8 +3,8 @@
 
 #include "sia/belief/dirichlet.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
@@ -45,7 +45,7 @@ double Dirichlet::logProb(const Eigen::VectorXd& x) const {
   // Check if x is in the domain of the distribution
   for (std::size_t i = 0; i < dimension(); i++) {
     if ((x(i) > (1.0 + SMALL_NUMBER)) || (x(i) < -SMALL_NUMBER)) {
-      LOG(WARNING) << "x(i) is " << x(i) << ", returning -INF";
+      SIA_WARN("x(i) is " << x(i) << ", returning -INF");
       return -INFINITY;
     }
   }
@@ -71,7 +71,7 @@ const Eigen::VectorXd Dirichlet::mean() const {
 const Eigen::VectorXd Dirichlet::mode() const {
   double min_alpha = m_alpha.minCoeff();
   if (min_alpha <= 1.0) {
-    LOG(WARNING) << "Mode is invalid for alpha concentrations <= 1";
+    SIA_WARN("Mode is invalid for alpha concentrations <= 1");
   }
   return (m_alpha.array() - 1.0) / (m_alpha.sum() - double(m_alpha.size()));
 }
@@ -93,8 +93,8 @@ bool Dirichlet::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t d = data.size();
   if (d != n) {
-    LOG(WARNING) << "Devectorization failed, expected vector size " << n
-                 << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << n << ", received " << d);
     return false;
   }
   setAlpha(data);
@@ -127,7 +127,7 @@ Eigen::VectorXd Dirichlet::normalizeInput(const Eigen::VectorXd& x) const {
   Eigen::VectorXd xnorm =
       (1 - 2 * VERY_SMALL_NUMBER) * x.array() + VERY_SMALL_NUMBER;
   if ((abs(x.sum() - 1.0)) > SMALL_NUMBER) {
-    LOG(WARNING) << "Sum of x is expected to be 1, applying normalization";
+    SIA_WARN("Sum of x is expected to be 1, applying normalization");
     xnorm /= xnorm.sum();
   }
   return xnorm;

@@ -73,14 +73,12 @@ endif()
 # Find depdendencies
 # ------------------------------------------------------------------------------
 find_package(Eigen3 3.3.4 REQUIRED)
-find_package(Glog 0.3.5 REQUIRED)
 find_package(GTest REQUIRED)
 
 # Dependency include directories
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${EIGEN3_INCLUDE_DIR}
-  ${GLOG_INCLUDE_DIR}
 )
 
 # ------------------------------------------------------------------------------

@@ -16,6 +16,7 @@
 #include "sia/belief/particles.h"
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/common/trajectory.h"
 #include "sia/controllers/controllers.h"
 #include "sia/controllers/ilqr.h"

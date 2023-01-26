@@ -3,8 +3,8 @@
 
 #include "sia/optimizers/bayesian_optimizer.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
@@ -149,7 +149,7 @@ double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
       return mu + m_beta * std;
   }
 
-  LOG(ERROR) << "GPRSurrogateModel received unsupported AcquisitionType";
+  SIA_ERROR("GPRSurrogateModel received unsupported AcquisitionType");
   return 0;
 }
 

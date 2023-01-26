@@ -3,9 +3,9 @@
 
 #include "sia/controllers/ilqr.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <chrono>
 
 #define SMALL_NUMBER 1e-12
@@ -183,7 +183,7 @@ void backwardPass(LinearizableDynamics& dynamics,
              (num_attempts < max_regularization_iter)) {
         recompute_pass = true;
         rho = std::max(rho * regularization_rate, regularization_min);
-        LOG(INFO) << "Increasing Quu regularization " << rho;
+        SIA_INFO("Increasing Quu regularization " << rho);
         QuuReg = Quu + rho * Iu;
         k = 0;
         num_attempts++;

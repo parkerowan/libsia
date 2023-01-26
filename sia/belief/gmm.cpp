@@ -3,9 +3,9 @@
 
 #include "sia/belief/gmm.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <algorithm>
 
 namespace sia {
@@ -135,8 +135,8 @@ bool GMM::devectorize(const Eigen::VectorXd& data) {
   auto n = dimension();
   std::size_t d = data.size();
   if (d != K * (n * (n + 1) + 1)) {
-    LOG(WARNING) << "Devectorization failed, expected vector size "
-                 << K * (n * (n + 1) + 1) << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << K * (n * (n + 1) + 1) << ", received " << d);
     return false;
   }
 
@@ -266,8 +266,8 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       priors.emplace_back(1.0 / double(K));
     }
   } else {
-    LOG(ERROR) << "Unsupported initialization method "
-               << static_cast<int>(init_method);
+    SIA_ERROR("Unsupported initialization method "
+              << static_cast<int>(init_method));
     return 0;
   }
 
@@ -295,8 +295,7 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
         } else if (fit_method == GMM::FitMethod::GAUSSIAN_LIKELIHOOD) {
           weights(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
         } else {
-          LOG(ERROR) << "Unsupported fit method "
-                     << static_cast<int>(fit_method);
+          SIA_ERROR("Unsupported fit method " << static_cast<int>(fit_method));
           return 0;
         }
       }
@@ -313,7 +312,7 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       const Eigen::MatrixXd samples_k =
           extractClusteredSamples(samples, classes, k);
       if (samples_k.cols() == 0) {
-        LOG(WARNING) << "No samples found for cluster " << k;
+        SIA_WARN("No samples found for cluster " << k);
       } else {
         double nk = double(samples_k.cols());
         const Eigen::VectorXd mu = samples_k.rowwise().sum() / nk;

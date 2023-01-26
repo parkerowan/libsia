@@ -5,9 +5,9 @@
 #include "sia/belief/gaussian.h"
 #include "sia/belief/helpers.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
@@ -148,8 +148,8 @@ bool KernelDensity::devectorize(const Eigen::VectorXd& data) {
   std::size_t p = numParticles();
   std::size_t d = data.size();
   if (d != p * (n + 1) + n * n) {
-    LOG(WARNING) << "Devectorization failed, expected vector size "
-                 << p * (n + 1) + n * n << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << p * (n + 1) + n * n << ", received " << d);
     return false;
   }
   setValues(Eigen::MatrixXd::Map(data.head(n * p).data(), n, p));

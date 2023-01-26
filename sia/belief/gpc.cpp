@@ -3,9 +3,9 @@
 
 #include "sia/belief/gpc.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <limits>
 
 namespace sia {

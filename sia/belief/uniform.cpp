@@ -3,8 +3,7 @@
 
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
-
-#include <glog/logging.h>
+#include "sia/common/logger.h"
 
 namespace sia {
 
@@ -77,8 +76,8 @@ bool Uniform::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t d = data.size();
   if (d != 2 * n) {
-    LOG(WARNING) << "Devectorization failed, expected vector size " << 2 * n
-                 << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << 2 * n << ", received " << d);
     return false;
   }
   setLower(data.head(n));

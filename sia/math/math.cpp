@@ -3,8 +3,8 @@
 
 #include "sia/math/math.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <Eigen/SVD>
 
 namespace sia {
@@ -48,8 +48,8 @@ bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L) {
   Eigen::LLT<Eigen::MatrixXd> llt(A);
   L = llt.matrixL();
   if (llt.info() != Eigen::ComputationInfo::Success) {
-    LOG(WARNING) << "LLT decomposition of matrix A = " << A << " failed with "
-                 << llt.info();
+    SIA_WARN("LLT decomposition of matrix A = " << A << " failed with "
+                                                << llt.info());
     return false;
   }
   return true;
@@ -63,8 +63,8 @@ bool ldltSqrt(const Eigen::MatrixXd& A, Eigen::MatrixXd& M) {
   const Eigen::VectorXd D = ldlt.vectorD();
   M = P.transpose() * L * D.array().sqrt().matrix().asDiagonal();
   if (ldlt.info() != Eigen::ComputationInfo::Success) {
-    LOG(WARNING) << "LDLT decomposition of matrix A = " << A << " failed with "
-                 << ldlt.info();
+    SIA_WARN("LDLT decomposition of matrix A = " << A << " failed with "
+                                                 << ldlt.info());
     return false;
   }
   return true;
@@ -85,7 +85,7 @@ bool svd(const Eigen::MatrixXd& A,
   // Check for singular condition
   for (int i = 0; i < singular_values.size(); ++i) {
     if (singular_values(i) <= tolerance) {
-      LOG(WARNING) << "Singular value is less than tolerance";
+      SIA_WARN("Singular value is less than tolerance");
       result = false;
     }
   }

@@ -4,8 +4,8 @@
 #include "sia/belief/categorical.h"
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
@@ -67,8 +67,8 @@ bool Categorical::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t d = data.size();
   if (d != n) {
-    LOG(WARNING) << "Devectorization failed, expected vector size " << n
-                 << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << n << ", received " << d);
     return false;
   }
   setProbs(data);

@@ -3,9 +3,8 @@
 
 #include "sia/optimizers/gradient_descent.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 
@@ -82,7 +81,7 @@ Eigen::VectorXd GradientDescent::minimize(
   } while ((abs(fref_prev - fref) > m_options.tol) && (i < m_options.max_iter));
 
   if (i >= m_options.max_iter) {
-    LOG(WARNING) << "GradientDescent reached max_iter=" << m_options.max_iter;
+    SIA_WARN("GradientDescent reached max_iter=" << m_options.max_iter);
   }
 
   return x;

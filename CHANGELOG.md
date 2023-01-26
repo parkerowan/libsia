@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.x] - YYYY-MM-DD
 ### Added
+- Custom logging interface
 - Access to control gain terms for LQR/iLQR
 - Regularization schedule to iLQR for robust Hessian computation
 - Explicit dimensions to dynamics and measurement models
@@ -15,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BayesianOptimizer support for conditioning on input vectors
 - GPR edge case test coverage
 ### Changed
+- Removed GLOG dependency
 - Refactored iLQR code for readability
 - Changed iLQR and MPPI parameter names to be readable
 - Improved numerical stability of iLQR algorithm

@@ -3,9 +3,8 @@
 
 #include "sia/models/linear_gaussian.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 
@@ -240,10 +239,10 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
       break;
     }
     default:
-      LOG(ERROR)
-          << "LinearGaussianDynamicsCT::discretizeDynamics not implemented "
-             "for discretization type "
-          << static_cast<int>(m_type);
+      SIA_ERROR(
+          "LinearGaussianDynamicsCT::discretizeDynamics not implemented "
+          "for discretization type "
+          << static_cast<int>(m_type));
   }
 }
 
