@@ -124,7 +124,7 @@ GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,
   // Compute inverse
   Eigen::MatrixXd sigma_xx_inv;
   bool r = svdInverse(sigma_xx, sigma_xx_inv);
-  SIA_EXCEPTION(r, "Failed to compute SVD of sigma_xx");
+  SIA_THROW_IF_NOT(r, "Failed to compute SVD of sigma_xx");
 
   // Compute Gaussian conditioning
   m_sigma_yx_sigma_xx_inv = sigma_yx * sigma_xx_inv;

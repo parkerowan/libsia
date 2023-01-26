@@ -192,7 +192,7 @@ void backwardPass(LinearizableDynamics& dynamics,
       // Invert Quu
       Eigen::MatrixXd QuuInv;
       bool r = svdInverse(QuuReg, QuuInv);
-      SIA_EXCEPTION(r, "Failed to invert Quu in iLQR backward pass");
+      SIA_THROW_IF_NOT(r, "Failed to invert Quu in iLQR backward pass");
 
       // Equation (46) from [3]
       const Eigen::MatrixXd K = -QuuInv * Qux;
@@ -214,8 +214,8 @@ void backwardPass(LinearizableDynamics& dynamics,
   } while (recompute_pass && (num_attempts < max_regularization_iter));
 
   // If we ran out of recomputes, Quu is divergent and the solution not useful
-  SIA_EXCEPTION(num_attempts < max_regularization_iter,
-                "Failed to find a regularization within max iterations");
+  SIA_THROW_IF_NOT(num_attempts < max_regularization_iter,
+                   "Failed to find a regularization within max iterations");
 
   // Record metrics
   metrics.rho.emplace_back(rho);

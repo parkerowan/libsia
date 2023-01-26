@@ -47,20 +47,20 @@ Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
 void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x,
                                      double y,
                                      const Eigen::VectorXd& u) {
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(
       x.size() == int(m_sampler.dimension()),
       "BayesianOptimizer expects input data to have same dimension as bounds");
-  SIA_EXCEPTION(u.size() == int(m_cond_inputs_dim),
-                "BayesianOptimizer expects u to have size cond_inputs_dim");
+  SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
+                   "BayesianOptimizer expects u to have size cond_inputs_dim");
   m_input_data.emplace_back(x);
   m_output_data.emplace_back(y);
   m_cond_input_data.emplace_back(u);
 }
 
 void BayesianOptimizer::updateModel(bool train) {
-  SIA_EXCEPTION(m_input_data.size() > 0,
-                "BayesianOptimizer expects data points to be added before "
-                "calling updateModel()");
+  SIA_THROW_IF_NOT(m_input_data.size() > 0,
+                   "BayesianOptimizer expects data points to be added before "
+                   "calling updateModel()");
   assert(m_input_data.size() == m_output_data.size());
   assert(m_input_data.size() == m_cond_input_data.size());
 
@@ -113,11 +113,11 @@ GradientDescent& BayesianOptimizer::optimizer() {
 const Gaussian& BayesianOptimizer::objective(const Eigen::VectorXd& x,
                                              const Eigen::VectorXd& u) {
   std::size_t n_input_dim = m_sampler.dimension();
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(
       x.size() == int(n_input_dim),
       "BayesianOptimizer expects input data to have same dimension as bounds");
-  SIA_EXCEPTION(u.size() == int(m_cond_inputs_dim),
-                "BayesianOptimizer expects u to have size cond_inputs_dim");
+  SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
+                   "BayesianOptimizer expects u to have size cond_inputs_dim");
   Eigen::VectorXd xu = Eigen::VectorXd(n_input_dim + m_cond_inputs_dim);
   xu.head(n_input_dim) = x;
   xu.tail(m_cond_inputs_dim) = u;

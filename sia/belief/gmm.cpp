@@ -29,9 +29,9 @@ GMM::GMM(const std::vector<Gaussian>& gaussians,
       m_priors(priors) {
   bool r1 = m_gaussians.size() == m_priors.size();
   bool r2 = m_gaussians.size() > 0;
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(
       r1, "Number of clusters and priors in GMM constructor do not match");
-  SIA_EXCEPTION(r2, "GMM constructor needs one or more clusters");
+  SIA_THROW_IF_NOT(r2, "GMM constructor needs one or more clusters");
   m_num_clusters = gaussians.size();
   m_dimension = gaussians[0].dimension();
 }

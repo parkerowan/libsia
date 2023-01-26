@@ -16,14 +16,14 @@ LinearGaussianDynamics::LinearGaussianDynamics(const Eigen::MatrixXd& F,
       m_input_matrix(G),
       m_process_covariance(Q),
       m_prob_dynamics(Q.rows()) {
-  SIA_EXCEPTION(F.rows() == F.cols(),
-                "Linear Gaussian F matrix is expected to be square");
-  SIA_EXCEPTION(F.rows() == G.rows(),
-                "Linear Gaussian F and G rows should be consistent");
-  SIA_EXCEPTION(Q.rows() == Q.cols(),
-                "Linear Gaussian Q matrix is expected to be square");
-  SIA_EXCEPTION(F.rows() == Q.rows(),
-                "Linear Gaussian F and Q rows should be consistent");
+  SIA_THROW_IF_NOT(F.rows() == F.cols(),
+                   "Linear Gaussian F matrix is expected to be square");
+  SIA_THROW_IF_NOT(F.rows() == G.rows(),
+                   "Linear Gaussian F and G rows should be consistent");
+  SIA_THROW_IF_NOT(Q.rows() == Q.cols(),
+                   "Linear Gaussian Q matrix is expected to be square");
+  SIA_THROW_IF_NOT(F.rows() == Q.rows(),
+                   "Linear Gaussian F and Q rows should be consistent");
   cacheStateCovariance();
 }
 
@@ -104,8 +104,8 @@ LinearGaussianMeasurement::LinearGaussianMeasurement(const Eigen::MatrixXd& H,
       m_measurement_matrix(H),
       m_measurement_covariance(R),
       m_prob_measurement(R.rows()) {
-  SIA_EXCEPTION(H.rows() == R.rows(),
-                "Linear Gaussian H and R rows should be consistent");
+  SIA_THROW_IF_NOT(H.rows() == R.rows(),
+                   "Linear Gaussian H and R rows should be consistent");
   cacheMeasurementCovariance();
 }
 
@@ -163,14 +163,14 @@ LinearGaussianDynamicsCT::LinearGaussianDynamicsCT(
       m_input_matrix_ct(B),
       m_dt(dt),
       m_type(type) {
-  SIA_EXCEPTION(A.rows() == A.cols(),
-                "Linear Gaussian A matrix is expected to be square");
-  SIA_EXCEPTION(A.rows() == B.rows(),
-                "Linear Gaussian A and B rows should be consistent");
-  SIA_EXCEPTION(Qpsd.rows() == Qpsd.cols(),
-                "Linear Gaussian Qpsd matrix is expected to be square");
-  SIA_EXCEPTION(A.rows() == Qpsd.rows(),
-                "Linear Gaussian A and Qpsd rows should be consistent");
+  SIA_THROW_IF_NOT(A.rows() == A.cols(),
+                   "Linear Gaussian A matrix is expected to be square");
+  SIA_THROW_IF_NOT(A.rows() == B.rows(),
+                   "Linear Gaussian A and B rows should be consistent");
+  SIA_THROW_IF_NOT(Qpsd.rows() == Qpsd.cols(),
+                   "Linear Gaussian Qpsd matrix is expected to be square");
+  SIA_THROW_IF_NOT(A.rows() == Qpsd.rows(),
+                   "Linear Gaussian A and Qpsd rows should be consistent");
   discretizeDynamics();
   cacheStateCovariance();
 }
@@ -229,7 +229,7 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
   switch (m_type) {
     case Type::BACKWARD_EULER: {
       bool r = svdInverse(I - m_dt * A, F);
-      SIA_EXCEPTION(r, "Failed to solve Backward euler discretization");
+      SIA_THROW_IF_NOT(r, "Failed to solve Backward euler discretization");
       G = m_dt * F * B;
       break;
     }

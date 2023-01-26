@@ -32,15 +32,17 @@ const GradientDescent::Options& GradientDescent::options() const {
 }
 
 void GradientDescent::setOptions(const GradientDescent::Options& options) {
-  SIA_EXCEPTION(options.n_starts > 0,
-                "GradientDescent n_starts expected to be > 0");
-  SIA_EXCEPTION(options.max_iter > 0,
-                "GradientDescent max_iter expected to be > 0");
-  SIA_EXCEPTION(options.tol > 0, "GradientDescent tol expected to be > 0");
-  SIA_EXCEPTION(options.eta > 0, "GradientDescent eta expected to be > 0");
-  SIA_EXCEPTION(options.eta < 1, "GradientDescent eta expected to be < 1");
-  SIA_EXCEPTION(options.delta > 0, "GradientDescent delta expected to be > 0");
-  SIA_EXCEPTION(options.delta < 1, "GradientDescent delta expected to be < 1");
+  SIA_THROW_IF_NOT(options.n_starts > 0,
+                   "GradientDescent n_starts expected to be > 0");
+  SIA_THROW_IF_NOT(options.max_iter > 0,
+                   "GradientDescent max_iter expected to be > 0");
+  SIA_THROW_IF_NOT(options.tol > 0, "GradientDescent tol expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta > 0, "GradientDescent eta expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta < 1, "GradientDescent eta expected to be < 1");
+  SIA_THROW_IF_NOT(options.delta > 0,
+                   "GradientDescent delta expected to be > 0");
+  SIA_THROW_IF_NOT(options.delta < 1,
+                   "GradientDescent delta expected to be < 1");
   m_options = options;
 }
 
@@ -48,8 +50,8 @@ Eigen::VectorXd GradientDescent::minimize(
     GradientDescent::Cost f,
     const Eigen::VectorXd& x0,
     GradientDescent::Jacobian jacobian) const {
-  SIA_EXCEPTION(dimension() == (std::size_t)x0.size(),
-                "x0 expected to be same dimension as bounds");
+  SIA_THROW_IF_NOT(dimension() == (std::size_t)x0.size(),
+                   "x0 expected to be same dimension as bounds");
 
   // Monotone Gradient Projection Algorithm
   // See: https://www.math.lsu.edu/~hozhang/papers/63522-gg.pdf

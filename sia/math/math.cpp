@@ -33,12 +33,12 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
 Eigen::VectorXd replace(const Eigen::VectorXd& x,
                         const Eigen::VectorXd& u,
                         const std::vector<std::size_t>& indices) {
-  SIA_EXCEPTION(indices.empty() || (u.size() == int(indices.size())),
-                "Input vector u and indices not consistent");
+  SIA_THROW_IF_NOT(indices.empty() || (u.size() == int(indices.size())),
+                   "Input vector u and indices not consistent");
   Eigen::VectorXd y = x;
   for (std::size_t i = 0; i < indices.size(); ++i) {
-    SIA_EXCEPTION(int(indices.at(i)) < x.size(),
-                  "Index value exceeds size of input vector x");
+    SIA_THROW_IF_NOT(int(indices.at(i)) < x.size(),
+                     "Index value exceeds size of input vector x");
     y(indices.at(i)) = u(i);
   }
   return y;
@@ -104,8 +104,8 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
 }
 
 bool symmetric(const Eigen::MatrixXd& A) {
-  SIA_EXCEPTION(A.rows() == A.cols(),
-                "A matrix must be square to test symmetric");
+  SIA_THROW_IF_NOT(A.rows() == A.cols(),
+                   "A matrix must be square to test symmetric");
   return A.isApprox(A.transpose());
 }
 

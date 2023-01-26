@@ -108,7 +108,7 @@ void Uniform::checkDimensions(const Eigen::VectorXd& lower,
   std::size_t n = lower.size();
   std::size_t m = upper.size();
   bool r = n == m;
-  SIA_EXCEPTION(r, "Inconsistent dimensions between lower and upper");
+  SIA_THROW_IF_NOT(r, "Inconsistent dimensions between lower and upper");
 }
 
 }  // namespace sia

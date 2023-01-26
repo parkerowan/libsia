@@ -15,10 +15,10 @@ NonlinearGaussianDynamics::NonlinearGaussianDynamics(DynamicsEquation dynamics,
       m_dynamics(dynamics),
       m_process_covariance(Q),
       m_prob_dynamics(Q.rows()) {
-  SIA_EXCEPTION(Q.rows() == Q.cols(),
-                "Nonlinear Gaussian Q matrix is expected to be square");
-  SIA_EXCEPTION(Q.rows() == int(state_dim),
-                "Nonlinear Gaussian Q rows expected to be state dimension");
+  SIA_THROW_IF_NOT(Q.rows() == Q.cols(),
+                   "Nonlinear Gaussian Q matrix is expected to be square");
+  SIA_THROW_IF_NOT(Q.rows() == int(state_dim),
+                   "Nonlinear Gaussian Q rows expected to be state dimension");
   cacheStateCovariance();
 }
 
@@ -65,9 +65,9 @@ NonlinearGaussianMeasurement::NonlinearGaussianMeasurement(
       m_measurement(measurement),
       m_measurement_covariance(R),
       m_prob_measurement(R.rows()) {
-  SIA_EXCEPTION(R.rows() == R.cols(),
-                "Nonlinear Gaussian R matrix is expected to be square");
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(R.rows() == R.cols(),
+                   "Nonlinear Gaussian R matrix is expected to be square");
+  SIA_THROW_IF_NOT(
       R.rows() == int(measurement_dim),
       "Nonlinear Gaussian Q rows expected to be measurement dimension");
   cacheMeasurementCovariance();

@@ -14,7 +14,7 @@ namespace sia {
 
 Dirichlet::Dirichlet(std::size_t dimension)
     : Distribution(Generator::instance()) {
-  SIA_EXCEPTION(dimension >= 2, "Dirichlet distribution requires dim >= 2");
+  SIA_THROW_IF_NOT(dimension >= 2, "Dirichlet distribution requires dim >= 2");
   setAlpha(Eigen::VectorXd::Ones(dimension));
 }
 

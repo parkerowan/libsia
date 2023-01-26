@@ -39,8 +39,8 @@ GPC::GPC(std::size_t input_dim,
 
 void GPC::setData(const Eigen::MatrixXd& input_samples,
                   const Eigen::VectorXi& output_samples) {
-  SIA_EXCEPTION(input_samples.cols() == output_samples.size(),
-                "Inconsistent number of input cols to output length");
+  SIA_THROW_IF_NOT(input_samples.cols() == output_samples.size(),
+                   "Inconsistent number of input cols to output length");
   m_input_samples = input_samples;
   m_output_samples = output_samples;
   cacheRegressionModel();

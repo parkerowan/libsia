@@ -20,10 +20,10 @@ std::size_t DynamicsModel::controlDimension() const {
 
 void DynamicsModel::checkDimensions(const Eigen::VectorXd& state,
                                     const Eigen::VectorXd& control) const {
-  SIA_EXCEPTION(state.size() == int(m_state_dim),
-                "Dynamics Model input does not match state dimension");
-  SIA_EXCEPTION(control.size() == int(m_control_dim),
-                "Dynamics Model input does not match control dimension");
+  SIA_THROW_IF_NOT(state.size() == int(m_state_dim),
+                   "Dynamics Model input does not match state dimension");
+  SIA_THROW_IF_NOT(control.size() == int(m_control_dim),
+                   "Dynamics Model input does not match control dimension");
 }
 
 MeasurementModel::MeasurementModel(std::size_t state_dim,
@@ -39,8 +39,8 @@ std::size_t MeasurementModel::measurementDimension() const {
 }
 
 void MeasurementModel::checkDimensions(const Eigen::VectorXd& state) const {
-  SIA_EXCEPTION(state.size() == int(m_state_dim),
-                "Measurement Model input does not match state dimension");
+  SIA_THROW_IF_NOT(state.size() == int(m_state_dim),
+                   "Measurement Model input does not match state dimension");
 }
 
 LinearizableDynamics::LinearizableDynamics(std::size_t state_dim,

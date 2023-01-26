@@ -85,7 +85,7 @@ double CompositeKernel::eval(const Eigen::VectorXd& x,
   } else if (m_operation == Operation::ADD) {
     return m_kernel_a.eval(x, output_index) + m_kernel_b.eval(x, output_index);
   } else {
-    SIA_EXCEPTION(false, "Kernel Operation not implemented")
+    SIA_THROW_IF_NOT(false, "Kernel Operation not implemented")
   }
 }
 
@@ -99,7 +99,7 @@ double CompositeKernel::eval(const Eigen::VectorXd& x,
     return m_kernel_a.eval(x, y, output_index) +
            m_kernel_b.eval(x, y, output_index);
   } else {
-    SIA_EXCEPTION(false, "Kernel Operation not implemented")
+    SIA_THROW_IF_NOT(false, "Kernel Operation not implemented")
   }
 }
 
@@ -119,7 +119,7 @@ Eigen::VectorXd CompositeKernel::grad(const Eigen::VectorXd& x,
     p.head(na) = m_kernel_a.grad(x, y, output_index);
     p.tail(nb) = m_kernel_b.grad(x, y, output_index);
   } else {
-    SIA_EXCEPTION(false, "Kernel Operation not implemented")
+    SIA_THROW_IF_NOT(false, "Kernel Operation not implemented")
   }
   return p;
 }
@@ -136,8 +136,8 @@ Eigen::VectorXd CompositeKernel::hyperparameters() const {
 void CompositeKernel::setHyperparameters(const Eigen::VectorXd& p) {
   int na = m_kernel_a.numHyperparameters();
   int nb = m_kernel_b.numHyperparameters();
-  SIA_EXCEPTION(p.size() == na + nb,
-                "CompositeKernel hyperparameter dim expexted to be na + nb");
+  SIA_THROW_IF_NOT(p.size() == na + nb,
+                   "CompositeKernel hyperparameter dim expexted to be na + nb");
   m_kernel_a.setHyperparameters(p.head(na));
   m_kernel_b.setHyperparameters(p.tail(nb));
 }
@@ -202,11 +202,12 @@ Eigen::VectorXd SEKernel::hyperparameters() const {
 }
 
 void SEKernel::setHyperparameters(const Eigen::VectorXd& p) {
-  SIA_EXCEPTION(p.size() == 2, "SEKernel hyperparameter dim expexted to be 2");
+  SIA_THROW_IF_NOT(p.size() == 2,
+                   "SEKernel hyperparameter dim expexted to be 2");
   m_length = p(0);
   m_signal_var = p(1);
-  SIA_EXCEPTION(m_length > 0, "SEKernel expects length scale > 0");
-  SIA_EXCEPTION(m_signal_var > 0, "SEKernel expects signal var > 0");
+  SIA_THROW_IF_NOT(m_length > 0, "SEKernel expects length scale > 0");
+  SIA_THROW_IF_NOT(m_signal_var > 0, "SEKernel expects signal var > 0");
 }
 
 std::size_t SEKernel::numHyperparameters() const {
@@ -254,10 +255,10 @@ Eigen::VectorXd NoiseKernel::hyperparameters() const {
 }
 
 void NoiseKernel::setHyperparameters(const Eigen::VectorXd& p) {
-  SIA_EXCEPTION(p.size() == 1,
-                "NoiseKernel hyperparameter dim expexted to be 1");
+  SIA_THROW_IF_NOT(p.size() == 1,
+                   "NoiseKernel hyperparameter dim expexted to be 1");
   m_noise_var = p(0);
-  SIA_EXCEPTION(m_noise_var > 0, "NoiseKernel expects noise var > 0");
+  SIA_THROW_IF_NOT(m_noise_var > 0, "NoiseKernel expects noise var > 0");
 }
 
 std::size_t NoiseKernel::numHyperparameters() const {
@@ -272,9 +273,9 @@ VariableNoiseKernel::VariableNoiseKernel(VarianceFunction var_function)
 double VariableNoiseKernel::eval(const Eigen::VectorXd& x,
                                  std::size_t output_index) const {
   const Eigen::VectorXd z = m_var_function(x);
-  SIA_EXCEPTION(int(output_index) < z.size(),
-                "VariableNoiseKernel var_function dimension not match GPR "
-                "output dimension");
+  SIA_THROW_IF_NOT(int(output_index) < z.size(),
+                   "VariableNoiseKernel var_function dimension not match GPR "
+                   "output dimension");
   return z(output_index);
 }
 
@@ -301,8 +302,8 @@ Eigen::VectorXd VariableNoiseKernel::hyperparameters() const {
 }
 
 void VariableNoiseKernel::setHyperparameters(const Eigen::VectorXd& p) {
-  SIA_EXCEPTION(p.size() == 0,
-                "VariableNoiseKernel hyperparameter dim expexted to be 0");
+  SIA_THROW_IF_NOT(p.size() == 0,
+                   "VariableNoiseKernel hyperparameter dim expexted to be 0");
 }
 
 std::size_t VariableNoiseKernel::numHyperparameters() const {
@@ -333,9 +334,10 @@ GPR::GPR(std::size_t input_dim,
 
 void GPR::setData(const Eigen::MatrixXd& input_samples,
                   const Eigen::MatrixXd& output_samples) {
-  SIA_EXCEPTION(input_samples.cols() == output_samples.cols(),
-                "GPR training data samples (inputs, outputs) expected to have "
-                "same number of columns");
+  SIA_THROW_IF_NOT(
+      input_samples.cols() == output_samples.cols(),
+      "GPR training data samples (inputs, outputs) expected to have "
+      "same number of columns");
   m_input_dim = input_samples.rows();
   m_output_dim = output_samples.rows();
   m_input_samples = input_samples;
@@ -387,9 +389,10 @@ const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
 }
 
 double GPR::negLogMarginalLik() const {
-  SIA_EXCEPTION(numSamples() > 0,
-                "GPR negLogMarginalLik cannot be computed because no training "
-                "data has been provided");
+  SIA_THROW_IF_NOT(
+      numSamples() > 0,
+      "GPR negLogMarginalLik cannot be computed because no training "
+      "data has been provided");
 
   // Eqn 2.30 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   // Note the determinant of a triangular matrix is the product of its
@@ -408,9 +411,9 @@ double GPR::negLogMarginalLik() const {
 }
 
 Eigen::VectorXd GPR::negLogMarginalLikGrad() const {
-  SIA_EXCEPTION(numSamples() > 0,
-                "GPR negLogMarginalLikGrad cannot be computed because no "
-                "training data has been provided");
+  SIA_THROW_IF_NOT(numSamples() > 0,
+                   "GPR negLogMarginalLikGrad cannot be computed because no "
+                   "training data has been provided");
 
   // Eqn 5.9 in http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   std::size_t np = m_kernel.numHyperparameters();
@@ -431,16 +434,17 @@ Eigen::VectorXd GPR::negLogMarginalLikGrad() const {
 void GPR::train(const std::vector<std::size_t>& hp_indices,
                 double hp_min,
                 double hp_max) {
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(
       numSamples() > 0,
       "GPR cannot be trained because no training data has been provided");
-  SIA_EXCEPTION(hp_min > 0, "GPR expects hp_min > 0");
-  SIA_EXCEPTION(hp_max >= hp_min, "GPR expects hp_max >= hp_min");
+  SIA_THROW_IF_NOT(hp_min > 0, "GPR expects hp_min > 0");
+  SIA_THROW_IF_NOT(hp_max >= hp_min, "GPR expects hp_max >= hp_min");
 
   std::size_t n = numHyperparameters();
   if (!hp_indices.empty()) {
-    SIA_EXCEPTION(hp_indices.size() <= n,
-                  "GPR expects unique indices for trainable hyperparameters");
+    SIA_THROW_IF_NOT(
+        hp_indices.size() <= n,
+        "GPR expects unique indices for trainable hyperparameters");
     n = hp_indices.size();
   }
 
@@ -522,9 +526,10 @@ std::size_t GPR::numHyperparameters() const {
 
 void GPR::cacheRegressionModels() {
   std::size_t n = numSamples();
-  SIA_EXCEPTION(n > 0,
-                "GPR regression model cannot be computed because no training "
-                "data has been provided");
+  SIA_THROW_IF_NOT(
+      n > 0,
+      "GPR regression model cannot be computed because no training "
+      "data has been provided");
 
   std::size_t m = outputDimension();
   const Eigen::MatrixXd& X = m_input_samples;
@@ -537,8 +542,8 @@ void GPR::cacheRegressionModels() {
     // Cholesky decomposition of K
     Eigen::MatrixXd L;
     bool r = llt(K, L);
-    SIA_EXCEPTION(r,
-                  "Failed to compute cholesky decomposition of Ksample matrix");
+    SIA_THROW_IF_NOT(
+        r, "Failed to compute cholesky decomposition of Ksample matrix");
     // Compute inverse of K
     const Eigen::MatrixXd L_inv =
         L.triangularView<Eigen::Lower>().solve(Eigen::MatrixXd::Identity(n, n));

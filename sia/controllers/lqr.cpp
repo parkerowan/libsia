@@ -42,7 +42,8 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
   for (int k = T - 1; k >= 0; --k) {
     const Eigen::MatrixXd Quu = R + G.transpose() * P * G;
     bool r = svdInverse(Quu, QuuInv);
-    SIA_EXCEPTION(r, "Matrix inversion failed in LQR cost to go computation");
+    SIA_THROW_IF_NOT(r,
+                     "Matrix inversion failed in LQR cost to go computation");
     const Eigen::MatrixXd K = -QuuInv * G.transpose() * P * F;
     const Eigen::VectorXd d = -QuuInv * G.transpose() * v;
     m_feedback.emplace_back(K);

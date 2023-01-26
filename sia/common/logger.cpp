@@ -48,32 +48,32 @@ void Logger::setCustomLogger(LoggerInterface& interface) {
 }
 
 void Logger::debug(const std::string& msg) {
-  SIA_EXCEPTION(instance().m_interface != nullptr,
-                "LoggerInterface is not defined");
+  SIA_THROW_IF_NOT(instance().m_interface != nullptr,
+                   "LoggerInterface is not defined");
   instance().m_interface->debug(msg);
 }
 
 void Logger::info(const std::string& msg) {
-  SIA_EXCEPTION(instance().m_interface != nullptr,
-                "LoggerInterface is not defined");
+  SIA_THROW_IF_NOT(instance().m_interface != nullptr,
+                   "LoggerInterface is not defined");
   instance().m_interface->info(msg);
 }
 
 void Logger::warn(const std::string& msg) {
-  SIA_EXCEPTION(instance().m_interface != nullptr,
-                "LoggerInterface is not defined");
+  SIA_THROW_IF_NOT(instance().m_interface != nullptr,
+                   "LoggerInterface is not defined");
   instance().m_interface->warn(msg);
 }
 
 void Logger::error(const std::string& msg) {
-  SIA_EXCEPTION(instance().m_interface != nullptr,
-                "LoggerInterface is not defined");
+  SIA_THROW_IF_NOT(instance().m_interface != nullptr,
+                   "LoggerInterface is not defined");
   instance().m_interface->error(msg);
 }
 
 void Logger::critical(const std::string& msg) {
-  SIA_EXCEPTION(instance().m_interface != nullptr,
-                "LoggerInterface is not defined");
+  SIA_THROW_IF_NOT(instance().m_interface != nullptr,
+                   "LoggerInterface is not defined");
   instance().m_interface->critical(msg);
 }
 

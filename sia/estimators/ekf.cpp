@@ -52,7 +52,7 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   // Gain
   Eigen::MatrixXd HPHTRinv;
   bool r = svdInverse(H * P * H.transpose() + R, HPHTRinv);
-  SIA_EXCEPTION(r, "Matrix inversion failed in EKF gain computation");
+  SIA_THROW_IF_NOT(r, "Matrix inversion failed in EKF gain computation");
   const Eigen::MatrixXd K = P * H.transpose() * HPHTRinv;
 
   // Update

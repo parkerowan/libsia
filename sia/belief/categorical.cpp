@@ -14,7 +14,8 @@ namespace sia {
 
 Categorical::Categorical(std::size_t dimension)
     : Distribution(Generator::instance()) {
-  SIA_EXCEPTION(dimension >= 1, "Categorical distribution requires dim >= 1");
+  SIA_THROW_IF_NOT(dimension >= 1,
+                   "Categorical distribution requires dim >= 1");
   setProbs(Eigen::VectorXd::Ones(dimension) / double(dimension));
 }
 
@@ -33,10 +34,10 @@ const Eigen::VectorXd Categorical::sample() {
 }
 
 double Categorical::logProb(const Eigen::VectorXd& x) const {
-  SIA_EXCEPTION(std::size_t(x.size()) == dimension(),
-                "Categorical distribution one hot vectors = dim");
-  SIA_EXCEPTION((abs(x.sum() - 1.0)) <= SMALL_NUMBER,
-                "Categorical distribution expects sum of x = 1");
+  SIA_THROW_IF_NOT(std::size_t(x.size()) == dimension(),
+                   "Categorical distribution one hot vectors = dim");
+  SIA_THROW_IF_NOT((abs(x.sum() - 1.0)) <= SMALL_NUMBER,
+                   "Categorical distribution expects sum of x = 1");
   return log(m_probs.cwiseProduct(x).sum());
 }
 
@@ -86,22 +87,24 @@ const Eigen::VectorXd& Categorical::probs() const {
 }
 
 void Categorical::setProbs(const Eigen::VectorXd& probs) {
-  SIA_EXCEPTION((abs(probs.sum() - 1.0)) <= SMALL_NUMBER,
-                "Categorical distribution expects sum of probs = 1");
+  SIA_THROW_IF_NOT((abs(probs.sum() - 1.0)) <= SMALL_NUMBER,
+                   "Categorical distribution expects sum of probs = 1");
   m_probs = probs;
 }
 
 Eigen::VectorXd Categorical::oneHot(std::size_t category) const {
-  SIA_EXCEPTION(category < dimension(),
-                "Categorical distribution expects category index to be < dim");
+  SIA_THROW_IF_NOT(
+      category < dimension(),
+      "Categorical distribution expects category index to be < dim");
   Eigen::VectorXd probs = Eigen::VectorXd::Zero(dimension());
   probs(category) = 1.0;
   return probs;
 }
 
 Eigen::MatrixXd Categorical::oneHot(const Eigen::VectorXi& category) const {
-  SIA_EXCEPTION(std::size_t(category.maxCoeff()) < dimension(),
-                "Categorical distribution expects category index to be < dim");
+  SIA_THROW_IF_NOT(
+      std::size_t(category.maxCoeff()) < dimension(),
+      "Categorical distribution expects category index to be < dim");
   Eigen::MatrixXd probs = Eigen::MatrixXd::Zero(dimension(), category.size());
   for (int i = 0; i < category.size(); ++i) {
     probs.col(i) = oneHot(category(i));

@@ -133,12 +133,12 @@ void Gaussian::checkDimensions(const Eigen::VectorXd& mu,
   std::size_t m = sigma.rows();
   std::size_t p = sigma.cols();
   bool r = (n == m) && (n == p);
-  SIA_EXCEPTION(r, "Inconsistent dimensions between mu and sigma");
+  SIA_THROW_IF_NOT(r, "Inconsistent dimensions between mu and sigma");
 }
 
 void Gaussian::cacheSigmaChol() {
   bool r = llt(m_sigma, m_cached_sigma_L);
-  SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of covariance");
+  SIA_THROW_IF_NOT(r, "Failed to compute cholesky decomposition of covariance");
 
   m_cached_sigma_L_inv = m_cached_sigma_L.triangularView<Eigen::Lower>().solve(
       Eigen::MatrixXd::Identity(dimension(), dimension()));

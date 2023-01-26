@@ -204,7 +204,7 @@ SmoothingKernel& KernelDensity::kernel() {
 void KernelDensity::setBandwidthMatrix(const Eigen::MatrixXd& H) {
   m_bandwidth = H;
   bool r = svdInverse(m_bandwidth, m_bandwidth_inv);
-  SIA_EXCEPTION(r, "Failed to compute inverse of bandwidth matrix");
+  SIA_THROW_IF_NOT(r, "Failed to compute inverse of bandwidth matrix");
   m_bandwidth_det = m_bandwidth.determinant();
 }
 
@@ -226,7 +226,7 @@ void KernelDensity::bandwidthScottRule(const Eigen::MatrixXd& Sigma) {
   double c = m_bandwidth_scaling * pow(n, -1.0 / (d + 4));
   Eigen::MatrixXd H;
   bool r = llt(Sigma, H);
-  SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of covariance");
+  SIA_THROW_IF_NOT(r, "Failed to compute cholesky decomposition of covariance");
   H *= c;
   setBandwidthMatrix(H);
 }
