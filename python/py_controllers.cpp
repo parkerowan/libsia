@@ -169,8 +169,7 @@ void export_py_controllers(py::module& m_sup) {
       .def_readwrite("num_samples", &sia::MPPI::Options::num_samples)
       .def_readwrite("temperature", &sia::MPPI::Options::temperature);
 
-  py::class_<sia::MPPI, sia::Controller>(m, "MPPI")
-      .def(py::init<sia::DynamicsModel&, sia::CostFunction&,
+  mppi.def(py::init<sia::DynamicsModel&, sia::CostFunction&,
                     const std::vector<Eigen::VectorXd>&, const Eigen::MatrixXd&,
                     const sia::MPPI::Options&>(),
            py::arg("dynamics"), py::arg("cost"), py::arg("u0"),

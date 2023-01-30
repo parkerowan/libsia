@@ -54,7 +54,7 @@ void export_py_optimizers(py::module& m_sup) {
              sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
-  py::class_<sia::BayesianOptimizer::Options>(gd, "Options")
+  py::class_<sia::BayesianOptimizer::Options>(bo, "Options")
       .def(py::init<>())
       .def_readwrite("acquisition",
                      &sia::BayesianOptimizer::Options::acquisition)

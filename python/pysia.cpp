@@ -15,10 +15,10 @@ namespace py = pybind11;
 PYBIND11_MODULE(pysia, m) {
   m.doc() = "Model-based Stochastic Estimation and Control";
 
+  export_py_math(m);
+  export_py_optimizers(m);
   export_py_belief(m);
   export_py_controllers(m);
   export_py_estimators(m);
-  export_py_math(m);
   export_py_models(m);
-  export_py_optimizers(m);
 }
