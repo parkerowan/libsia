@@ -19,8 +19,10 @@ const Gaussian& EKF::belief() const {
 
 const Gaussian& EKF::estimate(const Eigen::VectorXd& observation,
                               const Eigen::VectorXd& control) {
+  m_metrics = EKF::Metrics();
   m_belief = predict(control);
   m_belief = correct(observation);
+  m_metrics.clockElapsedUs();
   return m_belief;
 }
 
@@ -54,6 +56,7 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   bool r = svdInverse(H * P * H.transpose() + R, HPHTRinv);
   SIA_THROW_IF_NOT(r, "Matrix inversion failed in EKF gain computation");
   const Eigen::MatrixXd K = P * H.transpose() * HPHTRinv;
+  m_metrics.kalman_gain_norm = K.norm();
 
   // Update
   x += K * (y - m_measurement.h(x));
@@ -62,6 +65,10 @@ const Gaussian& EKF::correct(const Eigen::VectorXd& observation) {
   m_belief.setMean(x);
   m_belief.setCovariance(P);
   return m_belief;
+}
+
+const EKF::Metrics& EKF::metrics() const {
+  return m_metrics;
 }
 
 }  // namespace sia

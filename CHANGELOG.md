@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.x.x] - YYYY-MM-DD
 ### Added
+- Adds metrics for controllers and estimators
 - Custom logging interface
 - Access to control gain terms for LQR/iLQR
 - Regularization schedule to iLQR for robust Hessian computation

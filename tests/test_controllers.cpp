@@ -126,6 +126,9 @@ TEST(Controllers, LQR) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
+  const auto& metrics = mpc.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   auto xm = dynamics.f(state.mean(), u);
   auto xp = dynamics.f(state.mean(), u + eps);
   auto xn = dynamics.f(state.mean(), u - eps);
@@ -166,6 +169,9 @@ TEST(Controllers, iLQR) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
+  const auto& metrics = mpc.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   auto xm = dynamics.f(state.mean(), u);
   auto xp = dynamics.f(state.mean(), u + eps);
   auto xn = dynamics.f(state.mean(), u - eps);
@@ -220,6 +226,9 @@ TEST(Controllers, MPPI) {
   // Compute the policy for a single step
   state.setMean(x);
   Eigen::VectorXd u = mpc.policy(state);
+  const auto& metrics = mpc.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   auto xm = dynamics.f(state.mean(), u);
   auto xp = dynamics.f(state.mean(), u + eps);
   auto xn = dynamics.f(state.mean(), u - eps);

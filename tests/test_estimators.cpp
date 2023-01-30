@@ -20,6 +20,9 @@ TEST(Estimators, KF) {
   y << 0.1;
   u << 1;
   belief = kf.estimate(y, u);
+  const auto& metrics = kf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
@@ -38,6 +41,9 @@ TEST(Estimators, EKF) {
   y << 0.1;
   u << 1;
   belief = ekf.estimate(y, u);
+  const auto& metrics = ekf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
@@ -62,6 +68,9 @@ TEST(Estimators, PF) {
   y << 0.1;
   u << 1;
   belief = pf.estimate(y, u);
+  const auto& metrics = pf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 

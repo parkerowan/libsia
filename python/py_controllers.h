@@ -126,6 +126,11 @@ class PyController : public sia::Controller {
     PYBIND11_OVERRIDE_PURE(const sia::Trajectory<Eigen::VectorXd>&,
                            sia::Controller, states);
   }
+
+  // Trampoline (need one for each virtual function)
+  const sia::BaseMetrics& metrics() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::BaseMetrics&, sia::Controller, metrics);
+  }
 };
 
 // Define module

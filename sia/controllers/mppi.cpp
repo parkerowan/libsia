@@ -23,6 +23,7 @@ MPPI::MPPI(DynamicsModel& dynamics,
 }
 
 const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
+  m_metrics = MPPI::Metrics();
   auto T = m_horizon;
   auto N = m_options.num_samples;
   auto x = state.mean();
@@ -86,6 +87,10 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
     x = m_dynamics.dynamics(x, m_controls.at(i)).mean();
     m_states.emplace_back(x);
   }
+
+  // Populate metrics
+  m_metrics.cost = m_cost.eval(m_states, m_controls);
+  m_metrics.clockElapsedUs();
   return m_controls.at(0);
 }
 
@@ -103,6 +108,10 @@ const std::vector<Trajectory<Eigen::VectorXd>>& MPPI::rolloutStates() const {
 
 const Eigen::VectorXd& MPPI::rolloutWeights() const {
   return m_rollout_weights;
+}
+
+const MPPI::Metrics& MPPI::metrics() const {
+  return m_metrics;
 }
 
 void MPPI::cacheSigmaInv() {

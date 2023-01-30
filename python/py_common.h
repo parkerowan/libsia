@@ -5,7 +5,8 @@
 
 #include <pybind11/pybind11.h>
 
-#include "sia/common/logger.h
+#include "sia/common/logger.h"
+#include "sia/common/metrics.h"
 
 namespace py = pybind11;
 

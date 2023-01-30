@@ -66,14 +66,13 @@ class iLQR : public Controller {
     double linesearch_tol_ub = 1;
   };
 
-  struct Metrics {
-    unsigned elapsed_us{0};
+  struct Metrics : public BaseMetrics {
     std::size_t lqr_iter{0};
     std::vector<double> rho{};    // Quu regularization
     std::vector<double> dJ{};     // Linearized change in cost
     std::vector<double> z{};      // (J1 - J0) / dJ
     std::vector<double> alpha{};  // Feedforward scale
-    std::vector<double> J{};      // Cost based on optimization
+    std::vector<double> cost{};   // Cost based on optimization
   };
 
   explicit iLQR(LinearizableDynamics& dynamics,
@@ -91,12 +90,12 @@ class iLQR : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
   /// Access policy terms
   const Trajectory<Eigen::VectorXd>& feedforward() const;
   const Trajectory<Eigen::MatrixXd>& feedback() const;
-
-  /// Return the metrics
-  const Metrics& metrics() const;
 
  private:
   LinearizableDynamics& m_dynamics;

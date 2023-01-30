@@ -19,6 +19,10 @@ namespace sia {
 /// correction.
 class EKF : public Estimator {
  public:
+  struct Metrics : public BaseMetrics {
+    double kalman_gain_norm{0};
+  };
+
   explicit EKF(LinearizableDynamics& dynamics,
                LinearizableMeasurement& measurement,
                const Gaussian& state);
@@ -35,10 +39,14 @@ class EKF : public Estimator {
   /// Corrects the belief with the measurement.
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
  private:
   LinearizableDynamics& m_dynamics;
   LinearizableMeasurement& m_measurement;
   Gaussian m_belief;
+  Metrics m_metrics;
 };
 
 }  // namespace sia

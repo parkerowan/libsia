@@ -45,6 +45,11 @@ class PyRecursiveBayesEstimator : public sia::Estimator {
     PYBIND11_OVERRIDE_PURE(const sia::Distribution&, sia::Estimator, correct,
                            observation);
   }
+
+  // Trampoline (need one for each virtual function)
+  const sia::BaseMetrics& metrics() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::BaseMetrics&, sia::Estimator, metrics);
+  }
 };
 
 // Define module

@@ -12,14 +12,6 @@
 
 namespace sia {
 
-// TODO: Make a common function to record metrics for estimators, controllers.
-using steady_clock = std::chrono::steady_clock;
-static unsigned get_elapsed_us(steady_clock::time_point tic,
-                               steady_clock::time_point toc) {
-  return std::chrono::duration_cast<std::chrono::microseconds>(toc - tic)
-      .count();
-};
-
 iLQR::iLQR(LinearizableDynamics& dynamics,
            DifferentiableCost& cost,
            const std::vector<Eigen::VectorXd>& u0,
@@ -31,9 +23,8 @@ iLQR::iLQR(LinearizableDynamics& dynamics,
       m_controls(u0) {}
 
 const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
-  auto tic = steady_clock::now();
+  m_metrics = iLQR::Metrics();
   auto T = m_horizon;
-  m_metrics = Metrics{};
 
   // Initialize from the previous trajectory
   if (!m_first_pass) {
@@ -72,9 +63,8 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
            (abs(dJ) > m_options.cost_tol));
 
   // Populate metrics
-  auto toc = steady_clock::now();
   m_metrics.lqr_iter = lqr_iter;
-  m_metrics.elapsed_us = get_elapsed_us(tic, toc);
+  m_metrics.clockElapsedUs();
   return m_controls.at(0);
 }
 
@@ -258,7 +248,7 @@ void forwardPass(LinearizableDynamics& dynamics,
     metrics.dJ.emplace_back(dJ);
     metrics.z.emplace_back(z);
     metrics.alpha.emplace_back(alpha);
-    metrics.J.emplace_back(J1);
+    metrics.cost.emplace_back(J1);
 
     // Backtracking iteration - shrink alpha (feedfoward contribution)
     alpha *= options.linesearch_rate;

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "sia/belief/distribution.h"
+#include "sia/common/metrics.h"
 
 #include <Eigen/Dense>
 
@@ -27,7 +28,7 @@ class Estimator {
   virtual ~Estimator() = default;
   virtual const Distribution& belief() const = 0;
 
-  /// Performs the combined prediction and correction.
+  /// Performs the combined prediction and correction step.
   virtual const Distribution& estimate(const Eigen::VectorXd& observation,
                                        const Eigen::VectorXd& control) = 0;
 
@@ -36,6 +37,9 @@ class Estimator {
 
   /// Corrects the belief with the measurement.
   virtual const Distribution& correct(const Eigen::VectorXd& observation) = 0;
+
+  /// Return metrics from the latest step
+  virtual const BaseMetrics& metrics() const = 0;
 };
 
 }  // namespace sia

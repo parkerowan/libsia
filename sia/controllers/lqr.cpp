@@ -14,6 +14,7 @@ LQR::LQR(LinearGaussianDynamics& dynamics,
     : m_dynamics(dynamics), m_cost(cost), m_horizon(horizon) {}
 
 const Eigen::VectorXd& LQR::policy(const Distribution& state) {
+  m_metrics = LQR::Metrics();
   auto T = m_horizon;
   auto x = state.mean();
   const auto& Qf = m_cost.Qf();
@@ -66,6 +67,9 @@ const Eigen::VectorXd& LQR::policy(const Distribution& state) {
     x = m_dynamics.f(x, u);
   }
 
+  // Populate metrics
+  m_metrics.cost = m_cost.eval(m_states, m_controls);
+  m_metrics.clockElapsedUs();
   return m_controls.at(0);
 }
 
@@ -83,6 +87,10 @@ const Trajectory<Eigen::VectorXd>& LQR::feedforward() const {
 
 const Trajectory<Eigen::MatrixXd>& LQR::feedback() const {
   return m_feedback;
+}
+
+const LQR::Metrics& LQR::metrics() const {
+  return m_metrics;
 }
 
 }  // namespace sia

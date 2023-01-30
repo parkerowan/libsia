@@ -22,5 +22,10 @@ void export_py_common(py::module& m_sup) {
       .def_static("info", &sia::Logger::info, py::arg("msg"))
       .def_static("warn", &sia::Logger::warn, py::arg("msg"))
       .def_static("error", &sia::Logger::error, py::arg("msg"))
-      .def_static("critical", &sia::Logger::critical, py::arg("msg"))
+      .def_static("critical", &sia::Logger::critical, py::arg("msg"));
+
+  py::class_<sia::BaseMetrics>(m, "BaseMetrics")
+      .def(py::init<>())
+      .def("clockElapsedUs", &sia::BaseMetrics::clockElapsedUs)
+      .def_readwrite("elapsed_us", &sia::BaseMetrics::elapsed_us);
 }

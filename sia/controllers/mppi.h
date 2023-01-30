@@ -38,6 +38,10 @@ namespace sia {
 /// https://homes.cs.washington.edu/~bboots/files/InformationTheoreticMPC.pdf
 class MPPI : public Controller {
  public:
+  struct Metrics : public BaseMetrics {
+    double cost{0};
+  };
+
   /// Algorithm options
   struct Options {
     explicit Options() {}
@@ -61,6 +65,9 @@ class MPPI : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
   /// Returns the sampled state trajectories $X$ over the horizon
   const std::vector<Trajectory<Eigen::VectorXd>>& rolloutStates() const;
 
@@ -74,6 +81,7 @@ class MPPI : public Controller {
   CostFunction& m_cost;
   std::size_t m_horizon;
   Options m_options;
+  Metrics m_metrics;
   Gaussian m_sigma;
   Eigen::MatrixXd m_sigma_inv;
   Trajectory<Eigen::VectorXd> m_controls;

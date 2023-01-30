@@ -4,6 +4,9 @@
 #include <gtest/gtest.h>
 #include <sia/sia.h>
 
+#include <chrono>
+#include <thread>
+
 class MyCustomLogger : public sia::LoggerInterface {
  public:
   MyCustomLogger() = default;
@@ -42,4 +45,11 @@ TEST(Common, LoggerInterface) {
   sia::Logger::warn("My warn");
   sia::Logger::error("My error");
   sia::Logger::critical("My critical");
+}
+
+TEST(Common, Metrics) {
+  sia::BaseMetrics metrics{};
+  std::this_thread::sleep_for(std::chrono::microseconds(1));
+  metrics.clockElapsedUs();
+  EXPECT_GT(metrics.elapsed_us, 0);
 }

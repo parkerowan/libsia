@@ -38,6 +38,12 @@ class PF : public Estimator {
     double roughening_factor = 0.0;
   };
 
+  struct Metrics : public BaseMetrics {
+    double ratio_effective_particles{0};
+    std::size_t resampled{0};
+    std::size_t roughened{0};
+  };
+
   explicit PF(DynamicsModel& dynamics,
               MeasurementModel& measurement,
               const Particles& particles,
@@ -55,6 +61,9 @@ class PF : public Estimator {
   /// Propogates the belief through model dynamics.
   const Particles& correct(const Eigen::VectorXd& observation) override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
  private:
   void systematicResampling(Eigen::VectorXd& wp, Eigen::MatrixXd& xp) const;
   void roughenParticles(Eigen::MatrixXd& xp) const;
@@ -63,6 +72,7 @@ class PF : public Estimator {
   MeasurementModel& m_measurement;
   Particles m_belief;
   Options m_options;
+  Metrics m_metrics;
   bool m_first_pass{true};
 };
 

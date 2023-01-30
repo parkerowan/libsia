@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 
 #include "python/py_belief.h"
+#include "python/py_common.h"
 #include "python/py_controllers.h"
 #include "python/py_estimators.h"
 #include "python/py_math.h"
@@ -15,6 +16,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(pysia, m) {
   m.doc() = "Model-based Stochastic Estimation and Control";
 
+  export_py_common(m);
   export_py_math(m);
   export_py_optimizers(m);
   export_py_belief(m);

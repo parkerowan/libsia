@@ -16,6 +16,10 @@ namespace sia {
 /// prediction and correction.
 class KF : public Estimator {
  public:
+  struct Metrics : public BaseMetrics {
+    double kalman_gain_norm{0};
+  };
+
   explicit KF(LinearGaussianDynamics& dynamics,
               LinearGaussianMeasurement& measurement,
               const Gaussian& state);
@@ -32,10 +36,14 @@ class KF : public Estimator {
   /// Corrects the belief with the measurement.
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
  private:
   LinearGaussianDynamics& m_dynamics;
   LinearGaussianMeasurement& m_measurement;
   Gaussian m_belief;
+  Metrics m_metrics;
 };
 
 }  // namespace sia

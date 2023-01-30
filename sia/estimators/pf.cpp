@@ -23,8 +23,10 @@ const Particles& PF::belief() const {
 
 const Particles& PF::estimate(const Eigen::VectorXd& observation,
                               const Eigen::VectorXd& control) {
+  m_metrics = PF::Metrics();
   m_belief = predict(control);
   m_belief = correct(observation);
+  m_metrics.clockElapsedUs();
   return m_belief;
 }
 
@@ -42,14 +44,17 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
     // Resample step: if particle variance is high (particles are collapsing)
     double neff = 1.0 / wp.array().pow(2).sum();
     double nt = m_options.resample_threshold * static_cast<double>(wp.size());
+    m_metrics.ratio_effective_particles = neff;
     if (neff < nt) {
       systematicResampling(wp, xp);
       m_belief.setWeights(wp);
+      m_metrics.resampled = 1;
     }
 
     // Roughening step: add some noise
     if (m_options.roughening_factor > 0) {
       roughenParticles(xp);
+      m_metrics.roughened = 1;
     }
   }
 
@@ -78,6 +83,10 @@ const Particles& PF::correct(const Eigen::VectorXd& observation) {
 
   m_belief.setWeights(wp);
   return m_belief;
+}
+
+const PF::Metrics& PF::metrics() const {
+  return m_metrics;
 }
 
 void PF::systematicResampling(Eigen::VectorXd& wp, Eigen::MatrixXd& xp) const {
