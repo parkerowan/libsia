@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.x] - YYYY-MM-DD
+## [0.x.x] - YYYY-MM-DD
 ### Added
 - Custom logging interface
 - Access to control gain terms for LQR/iLQR
@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BayesianOptimizer support for conditioning on input vectors
 - GPR edge case test coverage
 ### Changed
+- Moved algorithm parameters to options structs
 - Removed GLOG dependency
 - Refactored iLQR code for readability
 - Changed iLQR and MPPI parameter names to be readable

@@ -11,20 +11,22 @@ namespace sia {
 
 /// Projected Gradient Descent with simple box constraints.
 ///
+/// More information on the parameters is available in [1].
+/// - n_starts: (>0) number of multi-starts using uniform random initial guesses
+/// - max_iter: (>0) maximum number of iterations
+/// - tol: (>0) termination based on change in f(x)
+/// - eta: (>0, <1) decay rate of backtracking line search
+/// - delta: (>0, <1) descent of backtracking line search
+///
 /// References:
 /// [1] W. Hager and H. Zhang, "A New Active Set Algorithm for Box Constrained
 /// Optimization," SIAM, 2006.
 /// [2] https://www.cs.cmu.edu/~ggordon/10725-F12/slides/05-gd-revisited.pdf
 class GradientDescent {
  public:
-  /// Solver parameters
-  /// n_starts > 0 number of multi-starts using uniform random initial guesses
-  /// max_iter > 0 maximum number of iterations
-  /// tol > 0 termination based on change in f(x)
-  /// 1 > eta > 0 decay rate of backtracking line search
-  /// 1 > delta > 0 descent of backtracking line search
+  /// Algorithm options
   struct Options {
-    explicit Options() {}  // Needed due to clang compiler issue
+    explicit Options() {}
     std::size_t n_starts = 10;
     std::size_t max_iter = 500;
     double tol = 1e-6;
@@ -32,15 +34,13 @@ class GradientDescent {
     double delta = 0.5;
   };
 
-  GradientDescent(const Eigen::VectorXd& lower,
-                  const Eigen::VectorXd& upper,
-                  const Options& options = Options());
+  explicit GradientDescent(const Eigen::VectorXd& lower,
+                           const Eigen::VectorXd& upper,
+                           const Options& options = Options());
   virtual ~GradientDescent() = default;
   std::size_t dimension() const;
   const Eigen::VectorXd& lower() const;
   const Eigen::VectorXd& upper() const;
-  const Options& options() const;
-  void setOptions(const Options& options);
 
   /// Returns the cost f(x).
   using Cost = std::function<double(const Eigen::VectorXd&)>;

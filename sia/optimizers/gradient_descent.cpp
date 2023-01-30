@@ -11,8 +11,18 @@ namespace sia {
 GradientDescent::GradientDescent(const Eigen::VectorXd& lower,
                                  const Eigen::VectorXd& upper,
                                  const GradientDescent::Options& options)
-    : m_sampler(lower, upper) {
-  setOptions(options);
+    : m_sampler(lower, upper), m_options(options) {
+  SIA_THROW_IF_NOT(options.n_starts > 0,
+                   "GradientDescent n_starts expected to be > 0");
+  SIA_THROW_IF_NOT(options.max_iter > 0,
+                   "GradientDescent max_iter expected to be > 0");
+  SIA_THROW_IF_NOT(options.tol > 0, "GradientDescent tol expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta > 0, "GradientDescent eta expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta < 1, "GradientDescent eta expected to be < 1");
+  SIA_THROW_IF_NOT(options.delta > 0,
+                   "GradientDescent delta expected to be > 0");
+  SIA_THROW_IF_NOT(options.delta < 1,
+                   "GradientDescent delta expected to be < 1");
 }
 
 std::size_t GradientDescent::dimension() const {
@@ -25,25 +35,6 @@ const Eigen::VectorXd& GradientDescent::lower() const {
 
 const Eigen::VectorXd& GradientDescent::upper() const {
   return m_sampler.upper();
-}
-
-const GradientDescent::Options& GradientDescent::options() const {
-  return m_options;
-}
-
-void GradientDescent::setOptions(const GradientDescent::Options& options) {
-  SIA_THROW_IF_NOT(options.n_starts > 0,
-                   "GradientDescent n_starts expected to be > 0");
-  SIA_THROW_IF_NOT(options.max_iter > 0,
-                   "GradientDescent max_iter expected to be > 0");
-  SIA_THROW_IF_NOT(options.tol > 0, "GradientDescent tol expected to be > 0");
-  SIA_THROW_IF_NOT(options.eta > 0, "GradientDescent eta expected to be > 0");
-  SIA_THROW_IF_NOT(options.eta < 1, "GradientDescent eta expected to be < 1");
-  SIA_THROW_IF_NOT(options.delta > 0,
-                   "GradientDescent delta expected to be > 0");
-  SIA_THROW_IF_NOT(options.delta < 1,
-                   "GradientDescent delta expected to be < 1");
-  m_options = options;
 }
 
 Eigen::VectorXd GradientDescent::minimize(

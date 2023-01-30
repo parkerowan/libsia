@@ -9,24 +9,22 @@ namespace sia {
 MPPI::MPPI(DynamicsModel& dynamics,
            CostFunction& cost,
            const std::vector<Eigen::VectorXd>& u0,
-           std::size_t num_samples,
            const Eigen::MatrixXd& sample_covariance,
-           double temperature)
+           const MPPI::Options& options)
     : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
-      m_num_samples(num_samples),
+      m_options(options),
       m_sigma(Gaussian(Eigen::VectorXd::Zero(sample_covariance.rows()),
                        sample_covariance)),
-      m_lambda(temperature),
       m_controls(u0),
-      m_rollout_weights(Eigen::VectorXd::Zero(num_samples)) {
+      m_rollout_weights(Eigen::VectorXd::Zero(options.num_samples)) {
   cacheSigmaInv();
 }
 
 const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
   auto T = m_horizon;
-  auto N = m_num_samples;
+  auto N = m_options.num_samples;
   auto x = state.mean();
 
   // Initialize from the previous trajectory
@@ -58,7 +56,8 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
       const auto& u = m_controls.at(i);
       const auto& e = samples.at(i);
       const auto uhat = u + e;
-      S(j) += m_cost.c(x, uhat, i) + m_lambda * u.transpose() * m_sigma_inv * e;
+      S(j) += m_cost.c(x, uhat, i) +
+              m_options.temperature * u.transpose() * m_sigma_inv * e;
       x = m_dynamics.dynamics(x, uhat).mean();  // TODO: Add option to sample
       state_rollout.emplace_back(x);
     }
@@ -68,7 +67,7 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
 
   // Compute weights
   double beta = S.minCoeff();
-  m_rollout_weights = exp(-(S.array() - beta) / m_lambda);
+  m_rollout_weights = exp(-(S.array() - beta) / m_options.temperature);
   m_rollout_weights /= m_rollout_weights.sum();
 
   // Clear the states

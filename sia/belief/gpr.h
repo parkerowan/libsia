@@ -76,7 +76,12 @@ CompositeKernel operator+(Kernel& a, Kernel& b);
 /// - signal_var controls the marginal variance of the Gaussian prior
 class SEKernel : public Kernel {
  public:
-  explicit SEKernel(double length = 1.0, double signal_var = 1.0);
+  /// Default hyperparameter values
+  static constexpr double DEFAULT_LENGTH = 1.0;
+  static constexpr double DEFAULT_SIGNAL_VAR = 1.0;
+
+  explicit SEKernel(double length = DEFAULT_LENGTH,
+                    double signal_var = DEFAULT_SIGNAL_VAR);
   explicit SEKernel(const Eigen::Vector2d& hyperparameters);
   virtual ~SEKernel() = default;
   double eval(const Eigen::VectorXd& x,
@@ -102,7 +107,10 @@ class SEKernel : public Kernel {
 /// posterior
 class NoiseKernel : public Kernel {
  public:
-  explicit NoiseKernel(double noise_var = 0.1);
+  /// Default hyperparameter value
+  static constexpr double DEFAULT_NOISE_VAR = 0.1;
+
+  explicit NoiseKernel(double noise_var = DEFAULT_NOISE_VAR);
   virtual ~NoiseKernel() = default;
   double eval(const Eigen::VectorXd& x,
               std::size_t output_index) const override;
@@ -189,9 +197,11 @@ class GPR : public Inference {
   /// Train the hyperparameters.  A list of trainable hyperparameter indices can
   /// be provided.  If the list is empty (default), all hyperparameters are
   /// optimized.
-  void train(const std::vector<std::size_t>& hp_indices = {},
-             double hp_min = DEFAULT_HP_MIN,
-             double hp_max = DEFAULT_HP_MAX);
+  void train(
+      const std::vector<std::size_t>& hp_indices = {},
+      double hp_min = DEFAULT_HP_MIN,
+      double hp_max = DEFAULT_HP_MAX,
+      const GradientDescent::Options& options = GradientDescent::Options());
 
   /// Dimensions
   std::size_t inputDimension() const override;

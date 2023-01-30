@@ -39,6 +39,12 @@ namespace sia {
 ///
 /// $x^* = \argmax f(x | u)$
 ///
+/// More information on the parameters is available in [1].
+/// - cond_inputs_dim: (>=0) number of dimensions of the conditioning input u
+/// - acquisition: Acquisition method
+/// - beta: (>0) Confidence interval for the UPPER_CONFIDENCE_BOUND acquisition
+/// - gradient_descent: Parameters for the optimizer
+///
 /// References:
 /// [1] B. Shahriari et. al., "Taking the Human Out of the Loop: A Review of
 /// Bayesian Optimization," Proceedings of the IEEE, 104(1), 2016.
@@ -51,15 +57,20 @@ class BayesianOptimizer {
     UPPER_CONFIDENCE_BOUND,
   };
 
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    AcquisitionType acquisition = AcquisitionType::EXPECTED_IMPROVEMENT;
+    double beta = 1;
+    GradientDescent::Options gradient_descent = GradientDescent::Options();
+  };
+
   /// Initialize the optimizer with lower and upper bounds on the parameters
-  BayesianOptimizer(
-      const Eigen::VectorXd& lower,
-      const Eigen::VectorXd& upper,
-      Kernel& kernel,
-      std::size_t cond_inputs_dim = 0,
-      AcquisitionType acquisition = AcquisitionType::EXPECTED_IMPROVEMENT,
-      double beta = 1,
-      const GradientDescent::Options& options = GradientDescent::Options());
+  explicit BayesianOptimizer(const Eigen::VectorXd& lower,
+                             const Eigen::VectorXd& upper,
+                             Kernel& kernel,
+                             std::size_t cond_inputs_dim = 0,
+                             const Options& options = Options());
   virtual ~BayesianOptimizer() = default;
 
   Eigen::VectorXd selectNextSample(
@@ -69,7 +80,6 @@ class BayesianOptimizer {
                     const Eigen::VectorXd& u = Eigen::VectorXd{});
   void updateModel(bool train = false);
   Eigen::VectorXd getSolution(const Eigen::VectorXd& u = Eigen::VectorXd{});
-  GradientDescent& optimizer();
   const Gaussian& objective(const Eigen::VectorXd& x,
                             const Eigen::VectorXd& u = Eigen::VectorXd{});
   double acquisition(const Eigen::VectorXd& x,
@@ -83,10 +93,9 @@ class BayesianOptimizer {
   Uniform m_sampler;
   GradientDescent m_optimizer;
   std::size_t m_cond_inputs_dim;
-  AcquisitionType m_acquisition_type;
+  Options m_options;
   Eigen::VectorXd m_cached_solution{0};
   GPR m_gpr;
-  double m_beta;
   bool m_dirty_solution{true};
   std::vector<Eigen::VectorXd> m_cond_input_data;
   std::vector<Eigen::VectorXd> m_input_data;

@@ -18,16 +18,30 @@ namespace sia {
 /// Over time the filter exhibits particle collapse, where one particle carries
 /// the entire estimate weight.  Resampling and roughening are injected noise
 /// that protect against particle collapse.
+///
+/// More information on the parameters is available in [1].
+/// - resample_threshold: (>=0, <=1) trigger threshold on effective particles, 0
+///   means no resampling is performed, 1 means it is always performed.
+/// - roughening_factor: (>=0) added noise to roughen particles.
+///
+/// References:
+/// [1] https://www.irisa.fr/aspi/legland/ensta/ref/arulampalam02a.pdf
+/// [2] https://docs.ufpr.br/~danielsantos/ProbabilisticRobotics.pdf
+/// [3] J. Crassidis and J. Junkins, Optimal Estimation of Dynamic Systems, 2nd
+///     Edition, 2011.
 class PF : public Estimator {
  public:
-  /// The resample_threshold is [0, 1], represents a trigger threshold
-  /// percentage of number of effective particles.  0 means no resampling is
-  /// performed, 1 means it is always performed.
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    double resample_threshold = 1.0;
+    double roughening_factor = 0.0;
+  };
+
   explicit PF(DynamicsModel& dynamics,
               MeasurementModel& measurement,
               const Particles& particles,
-              double resample_threshold = 1.0,
-              double roughening_factor = 0.0);
+              const Options& options = Options());
   virtual ~PF() = default;
   const Particles& belief() const override;
 
@@ -48,8 +62,7 @@ class PF : public Estimator {
   DynamicsModel& m_dynamics;
   MeasurementModel& m_measurement;
   Particles m_belief;
-  double m_resample_threshold;
-  double m_roughening_factor;
+  Options m_options;
   bool m_first_pass{true};
 };
 

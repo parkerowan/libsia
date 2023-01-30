@@ -41,11 +41,18 @@ void export_py_estimators(py::module& m_sup) {
       .def("correct", &sia::EKF::correct, py::arg("observation"),
            py::return_value_policy::reference_internal);
 
-  py::class_<sia::PF, sia::Estimator>(m, "PF")
-      .def(py::init<sia::DynamicsModel&, sia::MeasurementModel&,
-                    const sia::Particles&, double, double>(),
-           py::arg("dynamics"), py::arg("measurement"), py::arg("particles"),
-           py::arg("resample_threshold") = 1, py::arg("roughening_factor") = 0)
+  auto pf = py::class_<sia::PF, sia::Estimator>(m, "PF");
+
+  py::class_<sia::PF::Options>(pf, "Options")
+      .def(py::init<>())
+      .def_readwrite("resample_threshold",
+                     &sia::PF::Options::resample_threshold)
+      .def_readwrite("roughening_factor", &sia::PF::Options::roughening_factor);
+
+  pf.def(py::init<sia::DynamicsModel&, sia::MeasurementModel&,
+                  const sia::Particles&, const sia::PF::Options&>(),
+         py::arg("dynamics"), py::arg("measurement"), py::arg("particles"),
+         py::arg("options") = sia::PF::Options())
       .def("belief", &sia::PF::belief)
       .def("estimate", &sia::PF::estimate, py::arg("observation"),
            py::arg("control"), py::return_value_policy::reference_internal)

@@ -191,17 +191,21 @@ void export_py_belief(py::module& m_sup) {
       .export_values();
 
   kernel_density
+      .def("DEFAULT_BANDWIDTH_SCALING",
+           []() { return sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING; })
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXd&,
                     sia::SmoothingKernel&, sia::KernelDensity::BandwidthMode,
                     double>(),
            py::arg("values"), py::arg("weights"), py::arg("kernel"),
            py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
-           py::arg("bandwidth_scaling") = 1.0)
+           py::arg("bandwidth_scaling") =
+               sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING)
       .def(py::init<const sia::Particles&, sia::SmoothingKernel&,
                     sia::KernelDensity::BandwidthMode, double>(),
            py::arg("particles"), py::arg("kernel"),
            py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
-           py::arg("bandwidth_scaling") = 1.0)
+           py::arg("bandwidth_scaling") =
+               sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING)
       .def("probability", &sia::KernelDensity::probability, py::arg("x"))
       .def("dimension", &sia::KernelDensity::dimension)
       .def("sample", &sia::KernelDensity::sample)
@@ -238,8 +242,10 @@ void export_py_belief(py::module& m_sup) {
 
   py::class_<sia::GMM, sia::Distribution, sia::Inference> gmm(m, "GMM");
 
-  gmm.def(py::init<std::size_t, std::size_t>(), py::arg("K"),
-          py::arg("dimension"))
+  gmm.def("DEFAULT_REGULARIZATION",
+          []() { return sia::GMM::DEFAULT_REGULARIZATION; })
+      .def(py::init<std::size_t, std::size_t>(), py::arg("K"),
+           py::arg("dimension"))
       .def(py::init<const std::vector<sia::Gaussian>&,
                     const std::vector<double>&>(),
            py::arg("gaussians"), py::arg("weights"))
@@ -333,8 +339,12 @@ void export_py_belief(py::module& m_sup) {
       .def("numHyperparameters", &sia::CompositeKernel::numHyperparameters);
 
   py::class_<sia::SEKernel, sia::Kernel>(m, "SEKernel")
-      .def(py::init<double, double>(), py::arg("length") = 1.0,
-           py::arg("signal_var") = 1.0)
+      .def("DEFAULT_LENGTH", []() { return sia::SEKernel::DEFAULT_LENGTH; })
+      .def("DEFAULT_SIGNAL_VAR",
+           []() { return sia::SEKernel::DEFAULT_SIGNAL_VAR; })
+      .def(py::init<double, double>(),
+           py::arg("length") = sia::SEKernel::DEFAULT_LENGTH,
+           py::arg("signal_var") = sia::SEKernel::DEFAULT_SIGNAL_VAR)
       .def(py::init<const Eigen::Vector2d&>(), py::arg("hyperparameters"))
       .def(
           "eval",
@@ -354,7 +364,10 @@ void export_py_belief(py::module& m_sup) {
       .def("numHyperparameters", &sia::SEKernel::numHyperparameters);
 
   py::class_<sia::NoiseKernel, sia::Kernel>(m, "NoiseKernel")
-      .def(py::init<double>(), py::arg("noise_var") = 0.1)
+      .def("DEFAULT_NOISE_VAR",
+           []() { return sia::NoiseKernel::DEFAULT_NOISE_VAR; })
+      .def(py::init<double>(),
+           py::arg("noise_var") = sia::NoiseKernel::DEFAULT_NOISE_VAR)
       .def("eval",
            static_cast<double (sia::NoiseKernel::*)(const Eigen::VectorXd&,
                                                     std::size_t) const>(
@@ -393,6 +406,10 @@ void export_py_belief(py::module& m_sup) {
       .def("numHyperparameters", &sia::VariableNoiseKernel::numHyperparameters);
 
   py::class_<sia::GPR, sia::Inference>(m, "GPR")
+      .def("DEFAULT_REGULARIZATION",
+           []() { return sia::GPR::DEFAULT_REGULARIZATION; })
+      .def("DEFAULT_HP_MIN", []() { return sia::GPR::DEFAULT_HP_MIN; })
+      .def("DEFAULT_HP_MAX", []() { return sia::GPR::DEFAULT_HP_MAX; })
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     sia::Kernel&, double>(),
            py::arg("input_samples"), py::arg("output_samples"),
@@ -409,7 +426,8 @@ void export_py_belief(py::module& m_sup) {
       .def("train", &sia::GPR::train,
            py::arg("hp_indices") = std::vector<std::size_t>{},
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
-           py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX)
+           py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
+           py::arg("options") = sia::GradientDescent::Options())
       .def("inputDimension", &sia::GPR::inputDimension)
       .def("outputDimension", &sia::GPR::outputDimension)
       .def("numSamples", &sia::GPR::numSamples)
@@ -419,6 +437,8 @@ void export_py_belief(py::module& m_sup) {
            py::arg("hyperparameters"));
 
   py::class_<sia::GPC, sia::Inference>(m, "GPC")
+      .def("DEFAULT_CONCENTRATION",
+           []() { return sia::GPC::DEFAULT_CONCENTRATION; })
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXi&,
                     sia::Kernel&, double, double>(),
            py::arg("input_samples"), py::arg("output_samples"),
@@ -437,7 +457,8 @@ void export_py_belief(py::module& m_sup) {
       .def("train", &sia::GPC::train,
            py::arg("hp_indices") = std::vector<std::size_t>{},
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
-           py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX)
+           py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
+           py::arg("options") = sia::GradientDescent::Options())
       .def("inputDimension", &sia::GPC::inputDimension)
       .def("outputDimension", &sia::GPC::outputDimension)
       .def("numSamples", &sia::GPC::numSamples)

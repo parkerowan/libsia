@@ -28,8 +28,9 @@ namespace sia {
 /// algorithms or do not implement control cost in custom cost functions.
 ///
 /// More information on parameters is available in [1].
-/// - num_samples: (>0) Number of sample trajectories to rollout.
 /// - sample_covariance: (>0) Covariance matrix to sample control perturbations.
+///   Must be a square matrix with the same dimension as the control.
+/// - num_samples: (>0) Number of sample trajectories to rollout.
 /// - temperature: (>0) Penalizes the perturbation magnitude.
 ///
 /// References:
@@ -37,12 +38,18 @@ namespace sia {
 /// https://homes.cs.washington.edu/~bboots/files/InformationTheoreticMPC.pdf
 class MPPI : public Controller {
  public:
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    std::size_t num_samples = 10;
+    double temperature = 1.0;
+  };
+
   explicit MPPI(DynamicsModel& dynamics,
                 CostFunction& cost,
                 const std::vector<Eigen::VectorXd>& u0,
-                std::size_t num_samples,
                 const Eigen::MatrixXd& sample_covariance,
-                double temperature = 1.0);
+                const Options& options = Options());
   virtual ~MPPI() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
@@ -66,10 +73,9 @@ class MPPI : public Controller {
   DynamicsModel& m_dynamics;
   CostFunction& m_cost;
   std::size_t m_horizon;
-  std::size_t m_num_samples;
+  Options m_options;
   Gaussian m_sigma;
   Eigen::MatrixXd m_sigma_inv;
-  double m_lambda;
   Trajectory<Eigen::VectorXd> m_controls;
   Trajectory<Eigen::VectorXd> m_states;
   std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;

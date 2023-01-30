@@ -51,30 +51,35 @@ namespace sia {
 /// [3] https://bjack205.github.io/papers/AL_iLQR_Tutorial.pdf
 class iLQR : public Controller {
  public:
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    std::size_t max_lqr_iter = 50;
+    double cost_tol = 1e-4;
+    std::size_t max_regularization_iter = 10;
+    double regularization_init = 0;
+    double regularization_min = 1e-4;
+    double regularization_rate = 1.6;
+    std::size_t max_linesearch_iter = 10;
+    double linesearch_rate = 0.5;
+    double linesearch_tol_lb = 1e-8;
+    double linesearch_tol_ub = 1;
+  };
+
   struct Metrics {
     unsigned elapsed_us{0};
     std::size_t lqr_iter{0};
-    std::vector<double> rho{};     // Quu regularization
-    std::vector<double> dJ{0};     // Linearized change in cost
-    std::vector<double> z{0};      // (J1 - J0) / dJ
-    std::vector<double> alpha{0};  // Feedforward scale
-    std::vector<double> J{0};      // Cost based on optimization
+    std::vector<double> rho{};    // Quu regularization
+    std::vector<double> dJ{};     // Linearized change in cost
+    std::vector<double> z{};      // (J1 - J0) / dJ
+    std::vector<double> alpha{};  // Feedforward scale
+    std::vector<double> J{};      // Cost based on optimization
   };
 
   explicit iLQR(LinearizableDynamics& dynamics,
                 DifferentiableCost& cost,
                 const std::vector<Eigen::VectorXd>& u0,
-                std::size_t max_lqr_iter = 50,
-                double cost_tol = 1e-4,
-                std::size_t max_regularization_iter = 10,
-                double regularization_init = 0,
-                double regularization_min = 1e-4,
-                double regularization_rate = 1.6,
-                std::size_t max_linesearch_iter = 10,
-                double linesearch_rate = 0.5,
-                double linesearch_tol_lb = 1e-8,
-                double linesearch_tol_ub = 10);
-
+                const Options& options = Options());
   virtual ~iLQR() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
@@ -97,16 +102,7 @@ class iLQR : public Controller {
   LinearizableDynamics& m_dynamics;
   DifferentiableCost& m_cost;
   std::size_t m_horizon;
-  std::size_t m_max_lqr_iter;
-  double m_cost_tol;
-  std::size_t m_max_regularization_iter;
-  double m_regularization_init;
-  double m_regularization_min;
-  double m_regularization_rate;
-  std::size_t m_max_linesearch_iter;
-  double m_linesearch_rate;
-  double m_linesearch_tol_lb;
-  double m_linesearch_tol_ub;
+  Options m_options;
   Metrics m_metrics;
   std::vector<Eigen::VectorXd> m_controls;
   std::vector<Eigen::VectorXd> m_states;
@@ -126,10 +122,7 @@ void backwardPass(LinearizableDynamics& dynamics,
                   std::vector<Eigen::MatrixXd>& feedback,
                   double& dJa,
                   double& dJb,
-                  std::size_t max_regularization_iter,
-                  double regularization_init,
-                  double regularization_min,
-                  double regularization_rate,
+                  const iLQR::Options& options,
                   iLQR::Metrics& metrics);
 
 // Algorithm 2 from [3]
@@ -144,10 +137,7 @@ void forwardPass(LinearizableDynamics& dynamics,
                  double dJb,
                  double& dJ,
                  double& J0,
-                 std::size_t max_linesearch_iter,
-                 double linesearch_rate,
-                 double linesearch_tol_lb,
-                 double linesearch_tol_ub,
+                 const iLQR::Options& options,
                  iLQR::Metrics& metrics);
 
 }  // namespace sia

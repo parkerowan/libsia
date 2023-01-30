@@ -203,7 +203,9 @@ TEST(Controllers, MPPI) {
   std::vector<Eigen::VectorXd> u0(horizon, zero);
   Eigen::MatrixXd sigma(1, 1);
   sigma << 1;
-  sia::MPPI mpc(dynamics, cost, u0, num_samples, sigma);
+  sia::MPPI::Options options{};
+  options.num_samples = num_samples;
+  sia::MPPI mpc(dynamics, cost, u0, sigma, options);
 
   // Simulate a step forward and check the cost is at a local minima using a
   // stencil around the optimal control

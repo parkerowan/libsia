@@ -63,6 +63,9 @@ struct EpanechnikovKernel : public SmoothingKernel {
 /// [2] Hardle et. al., "Nonparametric and Semiparametric models," 2004.
 class KernelDensity : public Particles {
  public:
+  /// Default hyperparameter values
+  static constexpr double DEFAULT_BANDWIDTH_SCALING = 1.0;
+
   /// Determines how the bandwidth is computed
   enum class BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
 
@@ -71,12 +74,12 @@ class KernelDensity : public Particles {
                          const Eigen::VectorXd& weights,
                          SmoothingKernel& kernel,
                          BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = 1.0);
+                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
   explicit KernelDensity(const Particles& particles,
                          SmoothingKernel& kernel,
                          BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = 1.0);
+                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
   virtual ~KernelDensity() = default;
 

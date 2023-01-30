@@ -131,10 +131,12 @@ int main(int argc, char* argv[]) {
 
     // Create the controllers
     sia::LQR lqr(dynamics, cost, horizon);
-    std::size_t max_lqr_iter = 1;
-    sia::iLQR ilqr(dynamics, cost, u0, max_lqr_iter);
-    Eigen::MatrixXd sigma = Eigen::MatrixXd::Identity(ncontrols, ncontrols);
-    sia::MPPI mppi(dynamics, cost, u0, mppi_samples, sigma);
+    sia::iLQR ilqr(dynamics, cost, u0);
+    sia::MPPI::Options mppi_options{};
+    mppi_options.num_samples = mppi_samples;
+    Eigen::MatrixXd sample_covariance =
+        Eigen::MatrixXd::Identity(ncontrols, ncontrols);
+    sia::MPPI mppi(dynamics, cost, u0, sample_covariance, mppi_options);
 
     // Initialize the state
     Eigen::VectorXd x = Eigen::VectorXd::Random(nstates);

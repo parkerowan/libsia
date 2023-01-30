@@ -24,8 +24,6 @@ void export_py_optimizers(py::module& m_sup) {
       .def("dimension", &sia::GradientDescent::dimension)
       .def("lower", &sia::GradientDescent::lower)
       .def("upper", &sia::GradientDescent::upper)
-      .def("options", &sia::GradientDescent::options)
-      .def("setOptions", &sia::GradientDescent::setOptions, py::arg("options"))
       .def("minimize",
            static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
                sia::GradientDescent::Cost, const Eigen::VectorXd&,
@@ -56,15 +54,19 @@ void export_py_optimizers(py::module& m_sup) {
              sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
+  py::class_<sia::BayesianOptimizer::Options>(gd, "Options")
+      .def(py::init<>())
+      .def_readwrite("acquisition",
+                     &sia::BayesianOptimizer::Options::acquisition)
+      .def_readwrite("beta", &sia::BayesianOptimizer::Options::beta)
+      .def_readwrite("gradient_descent",
+                     &sia::BayesianOptimizer::Options::gradient_descent);
+
   bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&, sia::Kernel&,
-                  std::size_t, sia::BayesianOptimizer::AcquisitionType, double,
-                  const sia::GradientDescent::Options&>(),
+                  std::size_t, const sia::BayesianOptimizer::Options&>(),
          py::arg("lower"), py::arg("upper"), py::arg("kernel"),
          py::arg("cond_inputs_dim") = 0,
-         py::arg("acquisition") =
-             sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT,
-         py::arg("beta") = 1,
-         py::arg("options") = sia::GradientDescent::Options())
+         py::arg("options") = sia::BayesianOptimizer::Options())
       .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample,
            py::arg("u") = Eigen::VectorXd{})
       .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),
@@ -73,8 +75,6 @@ void export_py_optimizers(py::module& m_sup) {
            py::arg("train") = false)
       .def("getSolution", &sia::BayesianOptimizer::getSolution,
            py::arg("u") = Eigen::VectorXd{})
-      .def("optimizer", &sia::BayesianOptimizer::optimizer,
-           py::return_value_policy::reference_internal)
       .def("objective", &sia::BayesianOptimizer::objective, py::arg("x"),
            py::arg("u") = Eigen::VectorXd{})
       .def("acquisition",

@@ -15,20 +15,16 @@ namespace sia {
 // - Acqusition: Utility function R^n -> R for selecting the next data point
 // https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
 
-BayesianOptimizer::BayesianOptimizer(
-    const Eigen::VectorXd& lower,
-    const Eigen::VectorXd& upper,
-    Kernel& kernel,
-    std::size_t cond_inputs_dim,
-    BayesianOptimizer::AcquisitionType acquisition,
-    double beta,
-    const GradientDescent::Options& options)
+BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
+                                     const Eigen::VectorXd& upper,
+                                     Kernel& kernel,
+                                     std::size_t cond_inputs_dim,
+                                     const BayesianOptimizer::Options& options)
     : m_sampler(lower, upper),
-      m_optimizer(lower, upper, options),
+      m_optimizer(lower, upper, options.gradient_descent),
       m_cond_inputs_dim(cond_inputs_dim),
-      m_acquisition_type(acquisition),
-      m_gpr(lower.size(), 1, kernel),
-      m_beta(beta) {}
+      m_options(options),
+      m_gpr(lower.size(), 1, kernel) {}
 
 Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
   // If there is no model yet, just sample uniformly
@@ -39,7 +35,7 @@ Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
   // Optimize the acquisition model
   double target = objective(getSolution(u), u).mean()(0);
   auto f = [=](const Eigen::VectorXd& x) {
-    return -acquisition(x, target, m_acquisition_type, u);
+    return -acquisition(x, target, m_options.acquisition, u);
   };
   return m_optimizer.minimize(f);
 }
@@ -106,10 +102,6 @@ Eigen::VectorXd BayesianOptimizer::getSolution(const Eigen::VectorXd& u) {
   return m_cached_solution;
 }
 
-GradientDescent& BayesianOptimizer::optimizer() {
-  return m_optimizer;
-}
-
 const Gaussian& BayesianOptimizer::objective(const Eigen::VectorXd& x,
                                              const Eigen::VectorXd& u) {
   std::size_t n_input_dim = m_sampler.dimension();
@@ -127,7 +119,7 @@ const Gaussian& BayesianOptimizer::objective(const Eigen::VectorXd& x,
 double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
                                       const Eigen::VectorXd& u) {
   double target = objective(getSolution(u), u).mean()(0);
-  return acquisition(x, target, m_acquisition_type, u);
+  return acquisition(x, target, m_options.acquisition, u);
 }
 
 double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
@@ -146,7 +138,7 @@ double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
       return (mu - target) * Gaussian::cdf((mu - target) / std) +
              std * Gaussian::pdf((mu - target) / std);
     case BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND:
-      return mu + m_beta * std;
+      return mu + m_options.beta * std;
   }
 
   SIA_ERROR("GPRSurrogateModel received unsupported AcquisitionType");

@@ -11,13 +11,11 @@ namespace sia {
 PF::PF(DynamicsModel& dynamics,
        MeasurementModel& measurement,
        const Particles& particles,
-       double resample_threshold,
-       double roughening_factor)
+       const PF::Options& options)
     : m_dynamics(dynamics),
       m_measurement(measurement),
       m_belief(particles),
-      m_resample_threshold(resample_threshold),
-      m_roughening_factor(roughening_factor) {}
+      m_options(options) {}
 
 const Particles& PF::belief() const {
   return m_belief;
@@ -43,14 +41,14 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
   } else {
     // Resample step: if particle variance is high (particles are collapsing)
     double neff = 1.0 / wp.array().pow(2).sum();
-    double nt = m_resample_threshold * static_cast<double>(wp.size());
+    double nt = m_options.resample_threshold * static_cast<double>(wp.size());
     if (neff < nt) {
       systematicResampling(wp, xp);
       m_belief.setWeights(wp);
     }
 
     // Roughening step: add some noise
-    if (m_roughening_factor > 0) {
+    if (m_options.roughening_factor > 0) {
       roughenParticles(xp);
     }
   }
@@ -111,7 +109,7 @@ void PF::roughenParticles(Eigen::MatrixXd& xp) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n);
   for (std::size_t l = 0; l < n; ++l) {
     double el = xp.row(l).maxCoeff() - xp.row(l).minCoeff();
-    J(l, l) = m_roughening_factor * el * K;
+    J(l, l) = m_options.roughening_factor * el * K;
   }
   Gaussian g(Eigen::VectorXd::Zero(n), J);
   for (std::size_t j = 0; j < N; ++j) {

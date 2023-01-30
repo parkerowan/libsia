@@ -45,7 +45,7 @@ using MeasurementJacobian =
 /// - $u$ Known control action applied to affect the state $x$.
 class DynamicsModel {
  public:
-  DynamicsModel(std::size_t state_dim, std::size_t control_dim);
+  explicit DynamicsModel(std::size_t state_dim, std::size_t control_dim);
   virtual ~DynamicsModel() = default;
   std::size_t stateDimension() const;
   std::size_t controlDimension() const;
@@ -68,7 +68,7 @@ class DynamicsModel {
 /// - $y$ Observation generated from the state $x$.
 class MeasurementModel {
  public:
-  MeasurementModel(std::size_t state_dim, std::size_t measurement_dim);
+  explicit MeasurementModel(std::size_t state_dim, std::size_t measurement_dim);
   virtual ~MeasurementModel() = default;
   std::size_t stateDimension() const;
   std::size_t measurementDimension() const;
@@ -87,7 +87,7 @@ class MeasurementModel {
 /// Linearizable dynamics model.  Default Jacobians use central difference.
 class LinearizableDynamics : public DynamicsModel {
  public:
-  LinearizableDynamics(std::size_t state_dim, std::size_t control_dim);
+  explicit LinearizableDynamics(std::size_t state_dim, std::size_t control_dim);
   virtual ~LinearizableDynamics() = default;
 
   /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
@@ -110,7 +110,8 @@ class LinearizableDynamics : public DynamicsModel {
 /// Linearizable measurement model.  Default Jacobians use central difference.
 class LinearizableMeasurement : public MeasurementModel {
  public:
-  LinearizableMeasurement(std::size_t state_dim, std::size_t measurement_dim);
+  explicit LinearizableMeasurement(std::size_t state_dim,
+                                   std::size_t measurement_dim);
   virtual ~LinearizableMeasurement() = default;
 
   /// Expected observation $E[y] = h(x)$.

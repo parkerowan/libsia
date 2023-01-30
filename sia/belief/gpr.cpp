@@ -433,7 +433,8 @@ Eigen::VectorXd GPR::negLogMarginalLikGrad() const {
 
 void GPR::train(const std::vector<std::size_t>& hp_indices,
                 double hp_min,
-                double hp_max) {
+                double hp_max,
+                const GradientDescent::Options& options) {
   SIA_THROW_IF_NOT(
       numSamples() > 0,
       "GPR cannot be trained because no training data has been provided");
@@ -452,7 +453,7 @@ void GPR::train(const std::vector<std::size_t>& hp_indices,
   // promote faster search over the hyperparameter space.  We use the chain rule
   // to compute the jacobian.  dL/d(ln(x)) = x dL/dx
   GradientDescent optm(log(hp_min) * Eigen::VectorXd::Ones(n),
-                       log(hp_max) * Eigen::VectorXd::Ones(n));
+                       log(hp_max) * Eigen::VectorXd::Ones(n), options);
   const Eigen::VectorXd x0 = hyperparameters();
   const Eigen::VectorXd ln_x0 = x0.array().log();
 

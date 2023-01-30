@@ -49,7 +49,10 @@ TEST(Estimators, PF) {
   mu << 0;
   sigma << 10;
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
-  sia::PF pf(dynamics, measurement, prior, 1.0, 0.01);
+  sia::PF::Options options{};
+  options.resample_threshold = 1.0;
+  options.roughening_factor = 0.0;
+  sia::PF pf(dynamics, measurement, prior, options);
 
   sia::Particles belief = pf.belief();
   EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));

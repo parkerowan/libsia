@@ -23,29 +23,11 @@ static unsigned get_elapsed_us(steady_clock::time_point tic,
 iLQR::iLQR(LinearizableDynamics& dynamics,
            DifferentiableCost& cost,
            const std::vector<Eigen::VectorXd>& u0,
-           std::size_t max_lqr_iter,
-           double cost_tol,
-           std::size_t max_regularization_iter,
-           double regularization_init,
-           double regularization_min,
-           double regularization_rate,
-           std::size_t max_linesearch_iter,
-           double linesearch_rate,
-           double linesearch_tol_lb,
-           double linesearch_tol_ub)
+           const iLQR::Options& options)
     : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
-      m_max_lqr_iter(max_lqr_iter),
-      m_cost_tol(cost_tol),
-      m_max_regularization_iter(max_regularization_iter),
-      m_regularization_init(regularization_init),
-      m_regularization_min(regularization_min),
-      m_regularization_rate(regularization_rate),
-      m_max_linesearch_iter(max_linesearch_iter),
-      m_linesearch_rate(linesearch_rate),
-      m_linesearch_tol_lb(linesearch_tol_lb),
-      m_linesearch_tol_ub(linesearch_tol_ub),
+      m_options(options),
       m_controls(u0) {}
 
 const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
@@ -78,18 +60,16 @@ const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
     double dJa = 0;
     double dJb = 0;
     backwardPass(m_dynamics, m_cost, m_states, m_controls, m_final_state,
-                 m_feedforward, m_feedback, dJa, dJb, m_max_regularization_iter,
-                 m_regularization_init, m_regularization_min,
-                 m_regularization_rate, m_metrics);
+                 m_feedforward, m_feedback, dJa, dJb, m_options, m_metrics);
 
     // 2. Forward pass
     forwardPass(m_dynamics, m_cost, m_states, m_controls, m_final_state,
-                m_feedforward, m_feedback, dJa, dJb, dJ, J,
-                m_max_linesearch_iter, m_linesearch_rate, m_linesearch_tol_lb,
-                m_linesearch_tol_ub, m_metrics);
+                m_feedforward, m_feedback, dJa, dJb, dJ, J, m_options,
+                m_metrics);
 
     lqr_iter++;
-  } while ((lqr_iter < m_max_lqr_iter) && (abs(dJ) > m_cost_tol));
+  } while ((lqr_iter < m_options.max_lqr_iter) &&
+           (abs(dJ) > m_options.cost_tol));
 
   // Populate metrics
   auto toc = steady_clock::now();
@@ -127,16 +107,13 @@ void backwardPass(LinearizableDynamics& dynamics,
                   std::vector<Eigen::MatrixXd>& feedback,
                   double& dJa,
                   double& dJb,
-                  std::size_t max_regularization_iter,
-                  double regularization_init,
-                  double regularization_min,
-                  double regularization_rate,
+                  const iLQR::Options& options,
                   iLQR::Metrics& metrics) {
   std::size_t T = states.size();
   std::size_t m = controls.at(T - 1).size();
 
   // Regularization parameters
-  double rho = regularization_init;
+  double rho = options.regularization_init;
   Eigen::MatrixXd Iu = Eigen::MatrixXd::Identity(m, m);
 
   // Loop until we find a regularization that yeilds pos def Quu
@@ -180,9 +157,10 @@ void backwardPass(LinearizableDynamics& dynamics,
       // Find a regularization to make Quu converge, re-run the pass
       Eigen::MatrixXd QuuReg = Quu + rho * Iu;
       while (!positiveDefinite(QuuReg) &&
-             (num_attempts < max_regularization_iter)) {
+             (num_attempts < options.max_regularization_iter)) {
         recompute_pass = true;
-        rho = std::max(rho * regularization_rate, regularization_min);
+        rho = std::max(rho * options.regularization_rate,
+                       options.regularization_min);
         SIA_INFO("Increasing Quu regularization " << rho);
         QuuReg = Quu + rho * Iu;
         k = 0;
@@ -211,10 +189,10 @@ void backwardPass(LinearizableDynamics& dynamics,
       dJa += dVa;
       dJb += dVb;
     }
-  } while (recompute_pass && (num_attempts < max_regularization_iter));
+  } while (recompute_pass && (num_attempts < options.max_regularization_iter));
 
   // If we ran out of recomputes, Quu is divergent and the solution not useful
-  SIA_THROW_IF_NOT(num_attempts < max_regularization_iter,
+  SIA_THROW_IF_NOT(num_attempts < options.max_regularization_iter,
                    "Failed to find a regularization within max iterations");
 
   // Record metrics
@@ -236,10 +214,7 @@ void forwardPass(LinearizableDynamics& dynamics,
                  double dJb,
                  double& dJ,
                  double& J0,
-                 std::size_t max_linesearch_iter,
-                 double linesearch_rate,
-                 double linesearch_tol_lb,
-                 double linesearch_tol_ub,
+                 const iLQR::Options& options,
                  iLQR::Metrics& metrics) {
   std::size_t T = states.size();
   double J1 = 0;
@@ -286,10 +261,11 @@ void forwardPass(LinearizableDynamics& dynamics,
     metrics.J.emplace_back(J1);
 
     // Backtracking iteration - shrink alpha (feedfoward contribution)
-    alpha *= linesearch_rate;
+    alpha *= options.linesearch_rate;
     backtrack_iter++;
-  } while ((backtrack_iter < max_linesearch_iter) &&
-           ((z < linesearch_tol_lb) || (z > linesearch_tol_ub)));
+  } while (
+      (backtrack_iter < options.max_linesearch_iter) &&
+      ((z < options.linesearch_tol_lb) || (z > options.linesearch_tol_ub)));
 
   // Accept and update iteration
   states = new_states;

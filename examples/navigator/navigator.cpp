@@ -168,7 +168,10 @@ sia::Controller* create_ilqr_controller(sia::LinearizableDynamics& dynamics,
   for (std::size_t i = 0; i < horizon; ++i) {
     u0.emplace_back(Eigen::VectorXd::Zero(INPUT_DIM));
   }
-  return new sia::iLQR(dynamics, cost, u0, max_lqr_iter, cost_tol);
+  sia::iLQR::Options options{};
+  options.max_lqr_iter = max_lqr_iter;
+  options.cost_tol = cost_tol;
+  return new sia::iLQR(dynamics, cost, u0, options);
 }
 
 Eigen::VectorXd init_state() {

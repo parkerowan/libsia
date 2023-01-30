@@ -66,9 +66,9 @@ TEST(Optimizers, GradientDescent) {
   // bounds active at 2 optima - 10 internal multiple starts
   lb = Eigen::Vector2d{0, -10};
   ub = Eigen::Vector2d{7, 10};
-  sia::GradientDescent::Options opt;
-  opt.n_starts = 10;
-  sia::GradientDescent c(lb, ub, opt);
+  sia::GradientDescent::Options options{};
+  options.n_starts = 10;
+  sia::GradientDescent c(lb, ub, options);
   xopt = c.minimize(branin);
   ASSERT_EQ(xopt.size(), 2);
   EXPECT_NEAR(xopt(0), M_PI, 1e-3);
@@ -82,9 +82,6 @@ TEST(Optimizers, BayesianOptimizer) {
   sia::SEKernel se_kernel = sia::SEKernel(0.1, 1.0);
   sia::CompositeKernel kernel = noise_kernel + se_kernel;
   sia::BayesianOptimizer bo(lb, ub, kernel);
-  sia::GradientDescent::Options opt = bo.optimizer().options();
-  opt.tol = 1e-2;
-  bo.optimizer().setOptions(opt);
   Eigen::VectorXd xopt = bo.getSolution();
   ASSERT_EQ(xopt.size(), 1);
 

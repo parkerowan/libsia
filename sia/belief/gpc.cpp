@@ -67,8 +67,9 @@ Eigen::VectorXd GPC::negLogMarginalLikGrad() const {
 
 void GPC::train(const std::vector<std::size_t>& hp_indices,
                 double hp_min,
-                double hp_max) {
-  return m_gpr.train(hp_indices, hp_min, hp_max);
+                double hp_max,
+                const GradientDescent::Options& options) {
+  return m_gpr.train(hp_indices, hp_min, hp_max, options);
 }
 
 std::size_t GPC::inputDimension() const {
