@@ -1,6 +1,6 @@
 # License
 
-Copyright 2018-2022 Parker Owan  
+Copyright 2018-2023 Parker Owan  
 BSD-3 Clause License
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
