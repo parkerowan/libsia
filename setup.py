@@ -36,6 +36,7 @@ ext_modules = [
         "pysia",
         [
             "python/py_belief.cpp",
+            "python/py_common.cpp",
             "python/py_controllers.cpp",
             "python/py_estimators.cpp",
             "python/py_math.cpp",
