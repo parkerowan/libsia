@@ -152,6 +152,8 @@ TEST(Models, NonlinearGaussianDynamics) {
 
   sia::NonlinearGaussianDynamics a(dynamics, Q, 1, 1);
   EXPECT_TRUE(a.Q().isApprox(Q));
+  EXPECT_EQ(a.stateDim(), 1);
+  EXPECT_EQ(a.controlDim(), 1);
 
   Q << 0.5;
   a.setQ(Q);
@@ -180,6 +182,8 @@ TEST(Models, NonlinearGaussianMeasurement) {
 
   sia::NonlinearGaussianMeasurement a(measurement, R, 1, 1);
   EXPECT_TRUE(a.R().isApprox(R));
+  EXPECT_EQ(a.stateDim(), 1);
+  EXPECT_EQ(a.measurementDim(), 1);
 
   R << 0.2;
   a.setR(R);

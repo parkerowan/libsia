@@ -73,11 +73,11 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
-std::size_t GMR::inputDimension() const {
+std::size_t GMR::inputDim() const {
   return m_input_indices.size();
 }
 
-std::size_t GMR::outputDimension() const {
+std::size_t GMR::outputDim() const {
   return m_output_indices.size();
 }
 

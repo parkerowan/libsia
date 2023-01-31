@@ -47,8 +47,8 @@ class DynamicsModel {
  public:
   explicit DynamicsModel(std::size_t state_dim, std::size_t control_dim);
   virtual ~DynamicsModel() = default;
-  std::size_t stateDimension() const;
-  std::size_t controlDimension() const;
+  std::size_t stateDim() const;
+  std::size_t controlDim() const;
 
   /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   virtual Distribution& dynamics(const Eigen::VectorXd& state,
@@ -70,8 +70,8 @@ class MeasurementModel {
  public:
   explicit MeasurementModel(std::size_t state_dim, std::size_t measurement_dim);
   virtual ~MeasurementModel() = default;
-  std::size_t stateDimension() const;
-  std::size_t measurementDimension() const;
+  std::size_t stateDim() const;
+  std::size_t measurementDim() const;
 
   /// Predicts the statistical observation $p(y | x)$.
   virtual Distribution& measurement(const Eigen::VectorXd& state) = 0;

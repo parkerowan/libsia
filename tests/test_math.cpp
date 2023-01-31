@@ -260,3 +260,11 @@ TEST(Math, FxuVectorDerivatives) {
   E = dfdu_numerical - dfdu_analytic;
   EXPECT_NEAR(E.norm(), 0.0, 1.0e-2);
 }
+
+TEST(Math, EstimateCovariance) {
+  Eigen::Vector2d mu{0, 0};
+  Eigen::Matrix2d P = Eigen::Matrix2d::Identity();
+  auto particles = sia::Particles::gaussian(mu, P, 1000);
+  Eigen::MatrixXd Pest = sia::estimateCovariance(particles.values());
+  EXPECT_NEAR(sia::frobNormSquared(Pest - P), 0, 1e-2);
+}

@@ -10,16 +10,16 @@ void export_py_models(py::module& m_sup) {
   py::class_<sia::DynamicsModel, PyDynamicsModel>(m, "DynamicsModel")
       .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
            py::arg("control_dim"))
-      .def("stateDimension", &sia::DynamicsModel::stateDimension)
-      .def("controlDimension", &sia::DynamicsModel::controlDimension)
+      .def("stateDim", &sia::DynamicsModel::stateDim)
+      .def("controlDim", &sia::DynamicsModel::controlDim)
       .def("dynamics", &sia::DynamicsModel::dynamics, py::arg("state"),
            py::arg("control"), py::return_value_policy::reference_internal);
 
   py::class_<sia::MeasurementModel, PyMeasurementModel>(m, "MeasurementModel")
       .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
            py::arg("measurement_dim"))
-      .def("stateDimension", &sia::MeasurementModel::stateDimension)
-      .def("measurementDimension", &sia::MeasurementModel::measurementDimension)
+      .def("stateDim", &sia::MeasurementModel::stateDim)
+      .def("measurementDim", &sia::MeasurementModel::measurementDim)
       .def("measurement", &sia::MeasurementModel::measurement, py::arg("state"),
            py::return_value_policy::reference_internal);
 
@@ -27,8 +27,8 @@ void export_py_models(py::module& m_sup) {
              sia::DynamicsModel>(m, "LinearizableDynamics")
       .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
            py::arg("control_dim"))
-      .def("stateDimension", &sia::LinearizableDynamics::stateDimension)
-      .def("controlDimension", &sia::LinearizableDynamics::controlDimension)
+      .def("stateDim", &sia::LinearizableDynamics::stateDim)
+      .def("controlDim", &sia::LinearizableDynamics::controlDim)
       .def("dynamics", &sia::LinearizableDynamics::dynamics, py::arg("state"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("f", &sia::LinearizableDynamics::f, py::arg("state"),
@@ -44,9 +44,8 @@ void export_py_models(py::module& m_sup) {
              sia::MeasurementModel>(m, "LinearizableMeasurement")
       .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
            py::arg("measurement_dim"))
-      .def("stateDimension", &sia::LinearizableMeasurement::stateDimension)
-      .def("measurementDimension",
-           &sia::LinearizableMeasurement::measurementDimension)
+      .def("stateDim", &sia::LinearizableMeasurement::stateDim)
+      .def("measurementDim", &sia::LinearizableMeasurement::measurementDim)
       .def("measurement", &sia::LinearizableMeasurement::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::LinearizableMeasurement::h, py::arg("state"))

@@ -348,7 +348,7 @@ void GPR::setData(const Eigen::MatrixXd& input_samples,
 const Gaussian& GPR::predict(const Eigen::VectorXd& x) {
   // Algorithm 2.1 in: http://www.gaussianprocess.org/gpml/chapters/RW.pdf
   // For each output channel
-  std::size_t m = outputDimension();
+  std::size_t m = outputDim();
   Eigen::VectorXd mean(m), var(m);
 
   if (numSamples() == 0) {
@@ -400,7 +400,7 @@ double GPR::negLogMarginalLik() const {
   // More stable
   double n = numSamples();
   double neg_log_lik = 0;
-  for (std::size_t i = 0; i < outputDimension(); ++i) {
+  for (std::size_t i = 0; i < outputDim(); ++i) {
     const auto& model = m_models.at(i);
     const Eigen::VectorXd& Y = m_output_samples.row(i);
     double log_kdet = 2 * model.cached_L.diagonal().array().log().sum();
@@ -496,11 +496,11 @@ void GPR::train(const std::vector<std::size_t>& hp_indices,
   }
 }
 
-std::size_t GPR::inputDimension() const {
+std::size_t GPR::inputDim() const {
   return m_input_dim;
 }
 
-std::size_t GPR::outputDimension() const {
+std::size_t GPR::outputDim() const {
   return m_output_dim;
 }
 
@@ -532,7 +532,7 @@ void GPR::cacheRegressionModels() {
       "GPR regression model cannot be computed because no training "
       "data has been provided");
 
-  std::size_t m = outputDimension();
+  std::size_t m = outputDim();
   const Eigen::MatrixXd& X = m_input_samples;
   m_models.clear();
   m_models.reserve(m);

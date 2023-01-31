@@ -84,13 +84,13 @@ class PyInference : public sia::Inference {
   }
 
   // Trampoline (need one for each virtual function)
-  std::size_t inputDimension() const override {
-    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, inputDimension);
+  std::size_t inputDim() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, inputDim);
   }
 
   // Trampoline (need one for each virtual function)
-  std::size_t outputDimension() const override {
-    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDimension);
+  std::size_t outputDim() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDim);
   }
 };
 

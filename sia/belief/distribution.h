@@ -58,8 +58,8 @@ class Inference {
 
   /// Performs the inference $p(y|x)$
   virtual const Distribution& predict(const Eigen::VectorXd& x) = 0;
-  virtual std::size_t inputDimension() const = 0;
-  virtual std::size_t outputDimension() const = 0;
+  virtual std::size_t inputDim() const = 0;
+  virtual std::size_t outputDim() const = 0;
 };
 
 }  // namespace sia

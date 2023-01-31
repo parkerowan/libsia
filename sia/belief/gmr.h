@@ -36,8 +36,8 @@ class GMR : public Inference {
 
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
-  std::size_t inputDimension() const override;
-  std::size_t outputDimension() const override;
+  std::size_t inputDim() const override;
+  std::size_t outputDim() const override;
 
   /// Access to the GMM
   GMM& gmm();

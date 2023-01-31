@@ -72,12 +72,12 @@ void GPC::train(const std::vector<std::size_t>& hp_indices,
   return m_gpr.train(hp_indices, hp_min, hp_max, options);
 }
 
-std::size_t GPC::inputDimension() const {
-  return m_gpr.inputDimension();
+std::size_t GPC::inputDim() const {
+  return m_gpr.inputDim();
 }
 
-std::size_t GPC::outputDimension() const {
-  return m_gpr.outputDimension();
+std::size_t GPC::outputDim() const {
+  return m_gpr.outputDim();
 }
 
 std::size_t GPC::numSamples() const {
@@ -112,7 +112,7 @@ double GPC::alpha() const {
 
 void GPC::cacheRegressionModel() {
   // Section 4 in: https://arxiv.org/pdf/1805.10915.pdf
-  Categorical c(outputDimension());
+  Categorical c(outputDim());
   const Eigen::MatrixXd A = c.oneHot(m_output_samples).array() + m_alpha;
 
   // Transform concentrations to lognormal distribution, eqn. 5

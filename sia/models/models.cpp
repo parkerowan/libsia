@@ -10,11 +10,11 @@ namespace sia {
 DynamicsModel::DynamicsModel(std::size_t state_dim, std::size_t control_dim)
     : m_state_dim(state_dim), m_control_dim(control_dim) {}
 
-std::size_t DynamicsModel::stateDimension() const {
+std::size_t DynamicsModel::stateDim() const {
   return m_state_dim;
 }
 
-std::size_t DynamicsModel::controlDimension() const {
+std::size_t DynamicsModel::controlDim() const {
   return m_control_dim;
 }
 
@@ -30,11 +30,11 @@ MeasurementModel::MeasurementModel(std::size_t state_dim,
                                    std::size_t measurement_dim)
     : m_state_dim(state_dim), m_measurement_dim(measurement_dim) {}
 
-std::size_t MeasurementModel::stateDimension() const {
+std::size_t MeasurementModel::stateDim() const {
   return m_state_dim;
 }
 
-std::size_t MeasurementModel::measurementDimension() const {
+std::size_t MeasurementModel::measurementDim() const {
   return m_measurement_dim;
 }
 

@@ -33,8 +33,8 @@ void export_py_belief(py::module& m_sup) {
   py::class_<sia::Inference, PyInference>(m, "Inference")
       .def(py::init<>())
       .def("predict", &sia::Inference::predict, py::arg("x"))
-      .def("inputDimension", &sia::Inference::inputDimension)
-      .def("outputDimension", &sia::Inference::outputDimension);
+      .def("inputDim", &sia::Inference::inputDim)
+      .def("outputDim", &sia::Inference::outputDim);
 
   m.def("logProb", &sia::logProb, py::arg("distribution"), py::arg("x"));
 
@@ -261,8 +261,8 @@ void export_py_belief(py::module& m_sup) {
       .def("vectorize", &sia::GMM::vectorize)
       .def("devectorize", &sia::GMM::devectorize, py::arg("data"))
       .def("predict", &sia::GMM::predict, py::arg("x"))
-      .def("inputDimension", &sia::GMM::inputDimension)
-      .def("outputDimension", &sia::GMM::outputDimension)
+      .def("inputDim", &sia::GMM::inputDim)
+      .def("outputDim", &sia::GMM::outputDim)
       .def("classify", &sia::GMM::classify, py::arg("x"))
       .def("numClusters", &sia::GMM::numClusters)
       .def("prior", &sia::GMM::prior, py::arg("i"))
@@ -296,8 +296,8 @@ void export_py_belief(py::module& m_sup) {
            py::arg("gmm"), py::arg("input_indices"), py::arg("output_indices"),
            py::arg("regularization") = sia::GMM::DEFAULT_REGULARIZATION)
       .def("predict", &sia::GMR::predict, py::arg("x"))
-      .def("inputDimension", &sia::GMR::inputDimension)
-      .def("outputDimension", &sia::GMR::outputDimension)
+      .def("inputDim", &sia::GMR::inputDim)
+      .def("outputDim", &sia::GMR::outputDim)
       .def("gmm", &sia::GMR::gmm, py::return_value_policy::reference_internal);
 
   py::class_<sia::Kernel, PyKernel>(m, "Kernel")
@@ -428,8 +428,8 @@ void export_py_belief(py::module& m_sup) {
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
            py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
            py::arg("options") = sia::GradientDescent::Options())
-      .def("inputDimension", &sia::GPR::inputDimension)
-      .def("outputDimension", &sia::GPR::outputDimension)
+      .def("inputDim", &sia::GPR::inputDim)
+      .def("outputDim", &sia::GPR::outputDim)
       .def("numSamples", &sia::GPR::numSamples)
       .def("kernel", &sia::GPR::kernel)
       .def("hyperparameters", &sia::GPR::hyperparameters)
@@ -459,8 +459,8 @@ void export_py_belief(py::module& m_sup) {
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
            py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
            py::arg("options") = sia::GradientDescent::Options())
-      .def("inputDimension", &sia::GPC::inputDimension)
-      .def("outputDimension", &sia::GPC::outputDimension)
+      .def("inputDim", &sia::GPC::inputDim)
+      .def("outputDim", &sia::GPC::outputDim)
       .def("numSamples", &sia::GPC::numSamples)
       .def("kernel", &sia::GPC::kernel)
       .def("hyperparameters", &sia::GPC::hyperparameters)

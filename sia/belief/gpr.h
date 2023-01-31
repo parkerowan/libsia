@@ -204,8 +204,8 @@ class GPR : public Inference {
       const GradientDescent::Options& options = GradientDescent::Options());
 
   /// Dimensions
-  std::size_t inputDimension() const override;
-  std::size_t outputDimension() const override;
+  std::size_t inputDim() const override;
+  std::size_t outputDim() const override;
   std::size_t numSamples() const;
 
   /// Access the kernel

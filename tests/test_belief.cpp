@@ -499,8 +499,8 @@ TEST(Belief, GMR) {
   std::vector<std::size_t> ix{0};
   std::vector<std::size_t> ox{1};
   sia::GMR gmr(gmm, ix, ox);
-  ASSERT_EQ(gmr.inputDimension(), 1);
-  ASSERT_EQ(gmr.outputDimension(), 1);
+  ASSERT_EQ(gmr.inputDim(), 1);
+  ASSERT_EQ(gmr.outputDim(), 1);
 
   sia::Gaussian y0 = gmr.predict(0 * Eigen::VectorXd::Ones(1));
   sia::Gaussian y1 = gmr.predict(6 * Eigen::VectorXd::Ones(1));
@@ -527,8 +527,8 @@ TEST(Belief, GPR) {
   sia::GPR gpr(X, Y, kernel);
 
   EXPECT_EQ(gpr.numSamples(), 10);
-  EXPECT_EQ(gpr.inputDimension(), 3);
-  EXPECT_EQ(gpr.outputDimension(), 2);
+  EXPECT_EQ(gpr.inputDim(), 3);
+  EXPECT_EQ(gpr.outputDim(), 2);
 
   // Check the hyperparameters are written
   Eigen::VectorXd p = Eigen::Vector3d{0.1, 1.0, 0.1};
@@ -647,8 +647,8 @@ TEST(Belief, GPC) {
   EXPECT_DOUBLE_EQ(gpc.alpha(), 0.001);
 
   EXPECT_EQ(gpc.numSamples(), 10);
-  EXPECT_EQ(gpc.inputDimension(), 3);
-  EXPECT_EQ(gpc.outputDimension(), 2);
+  EXPECT_EQ(gpc.inputDim(), 3);
+  EXPECT_EQ(gpc.outputDim(), 2);
 
   ASSERT_EQ(gpc.numHyperparameters(), 2);
   Eigen::VectorXd p = Eigen::Vector2d{0.1, 1.0};
@@ -664,7 +664,7 @@ TEST(Belief, GPC) {
   Eigen::VectorXd grad = gpc.negLogMarginalLikGrad();
   EXPECT_NEAR(grad.norm(), 0, GRAD_TOLERANCE);
 
-  sia::Categorical cat(gpc.outputDimension());
+  sia::Categorical cat(gpc.outputDim());
   Eigen::MatrixXd Yoh = cat.oneHot(Y);
   for (std::size_t i = 0; i < 10; ++i) {
     const auto& x = X.col(i);

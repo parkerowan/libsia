@@ -57,7 +57,7 @@ TEST(Estimators, PF) {
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
   sia::PF::Options options{};
   options.resample_threshold = 1.0;
-  options.roughening_factor = 0.0;
+  options.roughening_factor = 0.1;
   sia::PF pf(dynamics, measurement, prior, options);
 
   sia::Particles belief = pf.belief();

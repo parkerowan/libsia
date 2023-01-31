@@ -159,11 +159,11 @@ const Categorical& GMM::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
-std::size_t GMM::inputDimension() const {
+std::size_t GMM::inputDim() const {
   return dimension();
 }
 
-std::size_t GMM::outputDimension() const {
+std::size_t GMM::outputDim() const {
   return numClusters();
 }
 
