@@ -68,7 +68,8 @@ const Eigen::VectorXd& QuadraticCost::xd(std::size_t i) const {
   if (N == 1) {
     return m_desired_states.at(0);
   } else {
-    SIA_THROW_IF_NOT(i < N, "Quadratic cost expects i < N");
+    SIA_THROW_IF_NOT(i < N,
+                     SIA_FMT("Quadratic cost expects i=" << i << "<N=" << N));
     return m_desired_states.at(i);
   }
 }

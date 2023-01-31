@@ -68,11 +68,13 @@ def create_estimator(dynamics: sia.NonlinearGaussianDynamicsCT,
                                       weighted_stats=True)
 
     # Initialize the particle filter
+    options = sia.PF.Options()
+    options.resample_threshold=resample_threshold
+    options.roughening_factor=roughening_factor
     pf = sia.PF(dynamics=dynamics,
                 measurement=measurement,
                 particles=particles,
-                resample_threshold=resample_threshold,
-                roughening_factor=roughening_factor)
+                options=options)
 
     # Initial true state
     x = np.array([-10, 5, 20])

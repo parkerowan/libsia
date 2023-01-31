@@ -42,7 +42,7 @@ def create_cost(current_cost: float = 1e3,
 
 def create_controller(dynamics: sia.LinearGaussianDynamicsCT,
                       cost: sia.QuadraticCost,
-                      horizon: int = 31) -> sia.LQR:
+                      horizon: int) -> sia.LQR:
     """Create the controller"""
     return sia.LQR(dynamics, cost, horizon)
 
@@ -105,8 +105,9 @@ def main(num_steps: int, dt: float, voltage_noise: float, current_noise: float,
     state = sia.Gaussian(3)
     for k in range(n - 1):
         # Set the trajectory to track for the cost, append the last state when the horizon runs out of runway
-        Xd = xd[:, k:horizon + k].T.tolist()
-        [Xd.append(Xd[-1]) for i in range(horizon - (n - k))]
+        # NOTE: The trajectory should be 1 element longer than the controller horizon
+        Xd = xd[:, k:horizon + 1 + k].T.tolist()
+        [Xd.append(Xd[-1]) for i in range(horizon + 1 - (n - k))]
         cost.setTrajectory(Xd)
 
         # Compute LQR
@@ -169,7 +170,7 @@ if __name__ == "__main__":
     parser.add_argument('--horizon',
                         action="store",
                         dest="horizon",
-                        default=31,
+                        default=30,
                         type=int,
                         help="Controller horizon")
     parser.add_argument('--show_plots',
