@@ -1,24 +1,21 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/estimators/pf.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/uniform.h"
-
-#include <glog/logging.h>
+#include "sia/common/logger.h"
 
 namespace sia {
 
 PF::PF(DynamicsModel& dynamics,
        MeasurementModel& measurement,
        const Particles& particles,
-       double resample_threshold,
-       double roughening_factor)
+       const PF::Options& options)
     : m_dynamics(dynamics),
       m_measurement(measurement),
       m_belief(particles),
-      m_resample_threshold(resample_threshold),
-      m_roughening_factor(roughening_factor) {}
+      m_options(options) {}
 
 const Particles& PF::belief() const {
   return m_belief;
@@ -26,8 +23,10 @@ const Particles& PF::belief() const {
 
 const Particles& PF::estimate(const Eigen::VectorXd& observation,
                               const Eigen::VectorXd& control) {
+  m_metrics = PF::Metrics();
   m_belief = predict(control);
   m_belief = correct(observation);
+  m_metrics.clockElapsedUs();
   return m_belief;
 }
 
@@ -44,16 +43,18 @@ const Particles& PF::predict(const Eigen::VectorXd& control) {
   } else {
     // Resample step: if particle variance is high (particles are collapsing)
     double neff = 1.0 / wp.array().pow(2).sum();
-    double nt = m_resample_threshold * static_cast<double>(wp.size());
+    double nt = m_options.resample_threshold * static_cast<double>(wp.size());
+    m_metrics.ratio_effective_particles = neff;
     if (neff < nt) {
-      VLOG(1) << "Performing resampling, Neff=" << neff << " Nt=" << nt;
       systematicResampling(wp, xp);
       m_belief.setWeights(wp);
+      m_metrics.resampled = 1;
     }
 
     // Roughening step: add some noise
-    if (m_roughening_factor > 0) {
+    if (m_options.roughening_factor > 0) {
       roughenParticles(xp);
+      m_metrics.roughened = 1;
     }
   }
 
@@ -79,10 +80,13 @@ const Particles& PF::correct(const Eigen::VectorXd& observation) {
   // Correction step: update the weights using Bayes' rule
   wp = (wp.array().log() + lp.array()).exp();
   wp = wp.array() / wp.sum();
-  VLOG(2) << "lp(0): " << lp(0) << " wp(0): " << wp(0);
 
   m_belief.setWeights(wp);
   return m_belief;
+}
+
+const PF::Metrics& PF::metrics() const {
+  return m_metrics;
 }
 
 void PF::systematicResampling(Eigen::VectorXd& wp, Eigen::MatrixXd& xp) const {
@@ -114,7 +118,7 @@ void PF::roughenParticles(Eigen::MatrixXd& xp) const {
   Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n);
   for (std::size_t l = 0; l < n; ++l) {
     double el = xp.row(l).maxCoeff() - xp.row(l).minCoeff();
-    J(l, l) = m_roughening_factor * el * K;
+    J(l, l) = m_options.roughening_factor * el * K;
   }
   Gaussian g(Eigen::VectorXd::Zero(n), J);
   for (std::size_t j = 0; j < N; ++j) {

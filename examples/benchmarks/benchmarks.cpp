@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <sia/sia.h>
@@ -96,9 +96,9 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-  std::size_t nstates = 4;
-  std::size_t ncontrols = 4;
-  std::size_t nmeas = 4;
+  std::size_t nstates = 1;
+  std::size_t ncontrols = 1;
+  std::size_t nmeas = 1;
   std::size_t mppi_samples = 100;
   std::size_t pf_particles = 100;
   std::size_t dim_mult = 2;
@@ -108,12 +108,9 @@ int main(int argc, char* argv[]) {
   ofs.open(datafile, std::ofstream::out);
   write_header(ofs);
 
-  for (std::size_t i = 1; i <= max_dim_power; ++i) {
-    std::cout << "Running iter " << i << "\n";
-
-    nstates *= dim_mult;
-    ncontrols *= dim_mult;
-    nmeas *= dim_mult;
+  for (std::size_t i = 0; i <= max_dim_power; ++i) {
+    std::cout << "Running iter " << i << " nstates: " << nstates
+              << " ncontrols: " << ncontrols << " nmeas: " << nmeas << "\n";
 
     // Init the state
     sia::Gaussian state(nstates);
@@ -135,9 +132,11 @@ int main(int argc, char* argv[]) {
     // Create the controllers
     sia::LQR lqr(dynamics, cost, horizon);
     sia::iLQR ilqr(dynamics, cost, u0);
-
-    Eigen::MatrixXd sigma = Eigen::MatrixXd::Identity(ncontrols, ncontrols);
-    sia::MPPI mppi(dynamics, cost, u0, mppi_samples, sigma);
+    sia::MPPI::Options mppi_options{};
+    mppi_options.num_samples = mppi_samples;
+    Eigen::MatrixXd sample_covariance =
+        Eigen::MatrixXd::Identity(ncontrols, ncontrols);
+    sia::MPPI mppi(dynamics, cost, u0, sample_covariance, mppi_options);
 
     // Initialize the state
     Eigen::VectorXd x = Eigen::VectorXd::Random(nstates);
@@ -196,6 +195,11 @@ int main(int argc, char* argv[]) {
                double(kf_et_us) / double(num_steps),
                double(ekf_et_us) / double(num_steps),
                double(pf_et_us) / double(num_steps));
+
+    // Advance
+    nstates *= dim_mult;
+    ncontrols *= dim_mult;
+    nmeas *= dim_mult;
   }
 
   ofs.close();

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -33,42 +33,52 @@ namespace sia {
 /// the Q function computed in the backward pass.  Perform backtracking line
 /// search to find the amount of feedforward contribution.
 ///
-/// More information on parameters is available in [2].
-/// - max_iter: The maximum number of iterations for steps 2 & 3.
-/// - max_backsteps: The maximum number of iterations during line search in 3.
-/// - epsilon: The threshold of change in cost (dJ) for convergence of 2 & 3.
-/// - tau: The backstepping parameter (0 < tau <= 1) in 3.
-/// - min_z: The threshold (0 < min_z) of z (actual change in cost over linear
-///   predicted change in cost (dJ)) in backstepping in 3.
-/// - mu: The regularization (0 <= mu) placing a quadratic state cost around the
-///   previous sequence.  Note that [2] describes a regularization schedule,
-///   while this implementation uses a constant user-defined regularization
-///   parameter.
+/// More information on parameters is available in Table I from [3].
+/// - max_lqr_iter: (>0) Limit on number of iterations of steps 2 & 3.
+/// - cost_tol: (>0) Termination criteria on change in cost after 2 & 3.
+/// - max_regularization_iter: (>0) Limit on regularization increases in 2.
+/// - regularization_init: (>=0) Initial regularization value in 2.
+/// - regularization_min: (>0) Baseline value when adding regularization in 2.
+/// - regularization_rate: (>1) Growth rate when increasing regularization in 2.
+/// - max_linesearch_iter: (>0) Limit on line search iterations in 3.
+/// - linesearch_rate: (>0, <1) Attenuation rate when backstepping in 3.
+/// - linesearch_tol_lb: (>0) Limit on cost change vs linear prediction in 3.
+/// - linesearch_tol_ub: (>lb) Limit on cost change vs linear prediction in 3.
 ///
 /// References:
 /// [1] https://homes.cs.washington.edu/~todorov/papers/TassaIROS12.pdf
 /// [2] https://homes.cs.washington.edu/~todorov/papers/TassaICRA14.pdf
+/// [3] https://bjack205.github.io/papers/AL_iLQR_Tutorial.pdf
 class iLQR : public Controller {
  public:
-  struct Metrics {
-    std::size_t iter{0};
-    double dJ{0};  // Linearized change in cost
-    double J{0};   // Cost based on optimization
-    double z{0};   // (J1 - J0) / dJ
-    unsigned elapsed_us{0};
-    std::size_t backstep_iter{0};
-    std::size_t alpha{0};
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    std::size_t max_lqr_iter = 50;
+    double cost_tol = 1e-4;
+    std::size_t max_regularization_iter = 10;
+    double regularization_init = 0;
+    double regularization_min = 1e-4;
+    double regularization_rate = 1.6;
+    std::size_t max_linesearch_iter = 10;
+    double linesearch_rate = 0.5;
+    double linesearch_tol_lb = 1e-8;
+    double linesearch_tol_ub = 1;
+  };
+
+  struct Metrics : public BaseMetrics {
+    std::size_t lqr_iter{0};
+    std::vector<double> rho{};    // Quu regularization
+    std::vector<double> dJ{};     // Linearized change in cost
+    std::vector<double> z{};      // (J1 - J0) / dJ
+    std::vector<double> alpha{};  // Feedforward scale
+    std::vector<double> cost{};   // Cost based on optimization
   };
 
   explicit iLQR(LinearizableDynamics& dynamics,
                 DifferentiableCost& cost,
                 const std::vector<Eigen::VectorXd>& u0,
-                std::size_t max_iter = 1,
-                std::size_t max_backsteps = 1,
-                double epsilon = 1e-1,
-                double tau = 0.5,
-                double min_z = 1e-2,
-                double mu = 0);
+                const Options& options = Options());
   virtual ~iLQR() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
@@ -80,22 +90,53 @@ class iLQR : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
-  /// Return the metrics
-  const Metrics& metrics() const;
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
+  /// Access policy terms
+  const Trajectory<Eigen::VectorXd>& feedforward() const;
+  const Trajectory<Eigen::MatrixXd>& feedback() const;
 
  private:
   LinearizableDynamics& m_dynamics;
   DifferentiableCost& m_cost;
   std::size_t m_horizon;
-  std::size_t m_max_iter;
-  std::size_t m_max_backsteps;
-  double m_epsilon;
-  double m_tau;
-  double m_min_z;
-  double m_mu;
+  Options m_options;
   Metrics m_metrics;
   std::vector<Eigen::VectorXd> m_controls;
   std::vector<Eigen::VectorXd> m_states;
+  Eigen::VectorXd m_final_state;
+  std::vector<Eigen::VectorXd> m_feedforward;
+  std::vector<Eigen::MatrixXd> m_feedback;
+  bool m_first_pass{true};
 };
+
+// Algorithm 1 from [3]
+void backwardPass(LinearizableDynamics& dynamics,
+                  DifferentiableCost& cost,
+                  const std::vector<Eigen::VectorXd>& states,
+                  const std::vector<Eigen::VectorXd>& controls,
+                  const Eigen::VectorXd& final_state,
+                  std::vector<Eigen::VectorXd>& feedforward,
+                  std::vector<Eigen::MatrixXd>& feedback,
+                  double& dJa,
+                  double& dJb,
+                  const iLQR::Options& options,
+                  iLQR::Metrics& metrics);
+
+// Algorithm 2 from [3]
+void forwardPass(LinearizableDynamics& dynamics,
+                 DifferentiableCost& cost,
+                 std::vector<Eigen::VectorXd>& states,
+                 std::vector<Eigen::VectorXd>& controls,
+                 Eigen::VectorXd& final_state,
+                 const std::vector<Eigen::VectorXd>& feedforward,
+                 const std::vector<Eigen::MatrixXd>& feedback,
+                 double dJa,
+                 double dJb,
+                 double& dJ,
+                 double& J0,
+                 const iLQR::Options& options,
+                 iLQR::Metrics& metrics);
 
 }  // namespace sia

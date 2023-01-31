@@ -1,19 +1,28 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/optimizers/gradient_descent.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 
 GradientDescent::GradientDescent(const Eigen::VectorXd& lower,
                                  const Eigen::VectorXd& upper,
                                  const GradientDescent::Options& options)
-    : m_sampler(lower, upper) {
-  setOptions(options);
+    : m_sampler(lower, upper), m_options(options) {
+  SIA_THROW_IF_NOT(options.n_starts > 0,
+                   "GradientDescent n_starts expected to be > 0");
+  SIA_THROW_IF_NOT(options.max_iter > 0,
+                   "GradientDescent max_iter expected to be > 0");
+  SIA_THROW_IF_NOT(options.tol > 0, "GradientDescent tol expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta > 0, "GradientDescent eta expected to be > 0");
+  SIA_THROW_IF_NOT(options.eta < 1, "GradientDescent eta expected to be < 1");
+  SIA_THROW_IF_NOT(options.delta > 0,
+                   "GradientDescent delta expected to be > 0");
+  SIA_THROW_IF_NOT(options.delta < 1,
+                   "GradientDescent delta expected to be < 1");
 }
 
 std::size_t GradientDescent::dimension() const {
@@ -28,29 +37,12 @@ const Eigen::VectorXd& GradientDescent::upper() const {
   return m_sampler.upper();
 }
 
-const GradientDescent::Options& GradientDescent::options() const {
-  return m_options;
-}
-
-void GradientDescent::setOptions(const GradientDescent::Options& options) {
-  SIA_EXCEPTION(options.n_starts > 0,
-                "GradientDescent n_starts expected to be > 0");
-  SIA_EXCEPTION(options.max_iter > 0,
-                "GradientDescent max_iter expected to be > 0");
-  SIA_EXCEPTION(options.tol > 0, "GradientDescent tol expected to be > 0");
-  SIA_EXCEPTION(options.eta > 0, "GradientDescent eta expected to be > 0");
-  SIA_EXCEPTION(options.eta < 1, "GradientDescent eta expected to be < 1");
-  SIA_EXCEPTION(options.delta > 0, "GradientDescent delta expected to be > 0");
-  SIA_EXCEPTION(options.delta < 1, "GradientDescent delta expected to be < 1");
-  m_options = options;
-}
-
 Eigen::VectorXd GradientDescent::minimize(
     GradientDescent::Cost f,
     const Eigen::VectorXd& x0,
     GradientDescent::Jacobian jacobian) const {
-  SIA_EXCEPTION(dimension() == (std::size_t)x0.size(),
-                "x0 expected to be same dimension as bounds");
+  SIA_THROW_IF_NOT(dimension() == (std::size_t)x0.size(),
+                   "x0 expected to be same dimension as bounds");
 
   // Monotone Gradient Projection Algorithm
   // See: https://www.math.lsu.edu/~hozhang/papers/63522-gg.pdf
@@ -82,11 +74,11 @@ Eigen::VectorXd GradientDescent::minimize(
   } while ((abs(fref_prev - fref) > m_options.tol) && (i < m_options.max_iter));
 
   if (i >= m_options.max_iter) {
-    LOG(WARNING) << "GradientDescent reached max_iter=" << m_options.max_iter;
+    SIA_WARN("GradientDescent reached max_iter=" << m_options.max_iter);
   }
 
   return x;
-}  // namespace sia
+}
 
 Eigen::VectorXd GradientDescent::minimize(GradientDescent::Cost f,
                                           GradientDescent::Jacobian jacobian) {

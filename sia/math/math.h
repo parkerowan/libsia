@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -22,6 +22,13 @@ const Eigen::VectorXd slice(const Eigen::VectorXd& x,
 const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
                             const std::vector<std::size_t>& rows,
                             const std::vector<std::size_t>& cols);
+
+/// Replaces the input vector x by elements of u at given indices.  Note that
+/// the max element in indices cannot exceed the size of x.  The size of u and
+/// indices must be the same.
+Eigen::VectorXd replace(const Eigen::VectorXd& x,
+                        const Eigen::VectorXd& u,
+                        const std::vector<std::size_t>& indices);
 
 /// Computes the LLT decomposition of positive definite matrix A, returns true
 /// on success.
@@ -49,6 +56,12 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
 bool svdInverse(const Eigen::MatrixXd& A,
                 Eigen::MatrixXd& Ainv,
                 double tolerance = DEFAULT_SINGULAR_TOLERANCE);
+
+/// Returns if the matrix is symmetric (self-adjoint)
+bool symmetric(const Eigen::MatrixXd& A);
+
+/// Returns if the square matrix A is positive definite (using LDLT)
+bool positiveDefinite(const Eigen::MatrixXd& A);
 
 /// 4th order Runge-Kutta integrator where the prototype dynamical system has
 /// the form \dot{x} = f(x, u)

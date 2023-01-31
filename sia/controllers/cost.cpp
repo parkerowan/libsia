@@ -1,15 +1,15 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/cost.h"
+#include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 
 double CostFunction::eval(const std::vector<Eigen::VectorXd>& x,
-                          const std::vector<Eigen::VectorXd>& u) {
+                          const std::vector<Eigen::VectorXd>& u) const {
   std::size_t N = x.size();
   double J = cf(x.at(N - 1));
   for (std::size_t i = 0; i < N - 1; ++i) {
@@ -68,7 +68,8 @@ const Eigen::VectorXd& QuadraticCost::xd(std::size_t i) const {
   if (N == 1) {
     return m_desired_states.at(0);
   } else {
-    assert(i < N);
+    SIA_THROW_IF_NOT(i < N,
+                     SIA_FMT("Quadratic cost expects i=" << i << "<N=" << N));
     return m_desired_states.at(i);
   }
 }
@@ -116,7 +117,7 @@ Eigen::MatrixXd QuadraticCost::cux(const Eigen::VectorXd& x,
   (void)(x);
   (void)(u);
   (void)(i);
-  return Eigen::MatrixXd::Zero(m_state_cost.rows(), m_input_cost.rows());
+  return Eigen::MatrixXd::Zero(m_input_cost.rows(), m_state_cost.rows());
 }
 
 Eigen::MatrixXd QuadraticCost::cuu(const Eigen::VectorXd& x,

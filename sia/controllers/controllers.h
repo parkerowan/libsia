@@ -1,9 +1,10 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
 
 #include "sia/belief/distribution.h"
+#include "sia/common/metrics.h"
 #include "sia/common/trajectory.h"
 #include "sia/models/models.h"
 
@@ -29,6 +30,9 @@ class Controller {
 
   /// Returns the expected solution state trajectory $X$ over the horizon
   virtual const Trajectory<Eigen::VectorXd>& states() const = 0;
+
+  /// Return metrics from the latest step
+  virtual const BaseMetrics& metrics() const = 0;
 };
 
 }  // namespace sia

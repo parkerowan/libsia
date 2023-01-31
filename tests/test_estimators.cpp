@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "tests/helpers.h"
@@ -20,6 +20,9 @@ TEST(Estimators, KF) {
   y << 0.1;
   u << 1;
   belief = kf.estimate(y, u);
+  const auto& metrics = kf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
@@ -38,6 +41,9 @@ TEST(Estimators, EKF) {
   y << 0.1;
   u << 1;
   belief = ekf.estimate(y, u);
+  const auto& metrics = ekf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 }
@@ -49,7 +55,10 @@ TEST(Estimators, PF) {
   mu << 0;
   sigma << 10;
   sia::Particles prior = sia::Particles::gaussian(mu, sigma, 1000);
-  sia::PF pf(dynamics, measurement, prior, 1.0, 0.01);
+  sia::PF::Options options{};
+  options.resample_threshold = 1.0;
+  options.roughening_factor = 0.1;
+  sia::PF pf(dynamics, measurement, prior, options);
 
   sia::Particles belief = pf.belief();
   EXPECT_DOUBLE_EQ(prior.mean()(0), belief.mean()(0));
@@ -59,6 +68,9 @@ TEST(Estimators, PF) {
   y << 0.1;
   u << 1;
   belief = pf.estimate(y, u);
+  const auto& metrics = pf.metrics();
+  EXPECT_GT(metrics.elapsed_us, 0);
+
   EXPECT_NE(prior.mean()(0), belief.mean()(0));
   EXPECT_NE(prior.covariance()(0, 0), belief.covariance()(0, 0));
 

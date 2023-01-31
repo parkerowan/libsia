@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # Function For building a C++ library target
@@ -17,21 +17,21 @@ function(FUNCTIONS_CREATE_CPP_SHARED_LIB)
   cmake_parse_arguments(Functions "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    "${CMAKE_CURRENT_SOURCE_DIR}"
   )
 
   add_library(${Functions_TARGET} SHARED
-    ${Functions_HEADERS}
-    ${Functions_SOURCES}
+    "${Functions_HEADERS}"
+    "${Functions_SOURCES}"
   )
 
   if(Functions_DEPENDENCIES)
-    add_dependencies(${Functions_TARGET} ${Functions_DEPENDENCIES})
+    add_dependencies(${Functions_TARGET} "${Functions_DEPENDENCIES}")
   endif()
 
   target_link_libraries(${Functions_TARGET} PRIVATE
-    ${Functions_DEPENDENCIES}
-    ${Functions_LIBRARIES}
+    "${Functions_DEPENDENCIES}"
+    "${Functions_LIBRARIES}"
   )
 
   target_include_directories(${Functions_TARGET} PUBLIC 
@@ -44,50 +44,50 @@ function(FUNCTIONS_CREATE_CPP_SHARED_LIB)
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib
-    PUBLIC_HEADER ${Functions_HEADERS}
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib"
+    PUBLIC_HEADER "${Functions_HEADERS}"
   )
 
   install(TARGETS ${Functions_TARGET}
     EXPORT "${Functions_TARGET}Targets"
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${Functions_TARGET}
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${Functions_TARGET}"
   )
 
   configure_package_config_file(
-    ${PROJECT_SOURCE_DIR}/cmake/${Functions_TARGET}Config.cmake.in
-    ${CMAKE_BINARY_DIR}/cmake/${Functions_TARGET}Config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}
+    "${PROJECT_SOURCE_DIR}/cmake/${Functions_TARGET}Config.cmake.in"
+    "${CMAKE_BINARY_DIR}/cmake/${Functions_TARGET}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}"
   )
 
   install(EXPORT ${Functions_TARGET}Targets
-    FILE ${Functions_TARGET}Targets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}
+    FILE "${Functions_TARGET}Targets.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}"
   )
 
   install(FILES
-    ${CMAKE_BINARY_DIR}/cmake/${Functions_TARGET}Config.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}
+    "${CMAKE_BINARY_DIR}/cmake/${Functions_TARGET}Config.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}"
   )
 
   write_basic_package_version_file(
     "${PROJECT_SOURCE_DIR}/lib/cmake/${Functions_TARGET}ConfigVersion.cmake"
-    VERSION ${PROJ_VERSION}
+    VERSION "${PROJ_VERSION}"
     COMPATIBILITY SameMajorVersion
   )
 
   install(
     FILES "${PROJECT_SOURCE_DIR}/lib/cmake/${Functions_TARGET}ConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${Functions_TARGET}"
   )
 
   foreach(file ${Functions_HEADERS})
     get_filename_component(dir ${file} DIRECTORY)
-    install(FILES ${file} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${Functions_HEADER_DEST}/${dir})
+    install(FILES ${file} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${Functions_HEADER_DEST}/${dir}")
   endforeach()
 endfunction(FUNCTIONS_CREATE_CPP_SHARED_LIB)
 
@@ -105,26 +105,26 @@ function(FUNCTIONS_CREATE_PYBIND11_MODULE)
   cmake_parse_arguments(Functions "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    "${CMAKE_CURRENT_SOURCE_DIR}"
   )
 
   pybind11_add_module(${Functions_MODULE}
-    MODULE ${Functions_SOURCES}
+    MODULE "${Functions_SOURCES}"
   )
 
   if(Functions_DEPENDENCIES)
-    add_dependencies(${Functions_MODULE} ${Functions_DEPENDENCIES})
+    add_dependencies(${Functions_MODULE} "${Functions_DEPENDENCIES}")
   endif()
 
   target_link_libraries(${Functions_MODULE} PRIVATE
-    ${Functions_DEPENDENCIES}
-    ${Functions_LIBRARIES}
+    "${Functions_DEPENDENCIES}"
+    "${Functions_LIBRARIES}"
   )
 
   set_target_properties(${Functions_MODULE} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/lib
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG "${PROJECT_SOURCE_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE "${PROJECT_SOURCE_DIR}/lib"
   )
 
   # Find python site-packages
@@ -156,28 +156,28 @@ function(FUNCTIONS_CREATE_CPP_TEST)
   set(multiValueArgs DEPENDENCIES LIBRARIES SOURCES)
   cmake_parse_arguments(Functions "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   
-  add_executable(${Functions_TARGET} ${Functions_SOURCES})
+  add_executable(${Functions_TARGET} "${Functions_SOURCES}")
   
   if(Functions_DEPENDENCIES)
-    add_dependencies(${Functions_TARGET} ${Functions_DEPENDENCIES})
+    add_dependencies(${Functions_TARGET} "${Functions_DEPENDENCIES}")
   endif()
   
   target_link_libraries(${Functions_TARGET} PRIVATE
-    ${Functions_DEPENDENCIES}
-    ${Functions_LIBRARIES}
-    ${GTEST_LIBRARIES}
-    ${GTEST_MAIN_LIBRARIES}
+    "${Functions_DEPENDENCIES}"
+    "${Functions_LIBRARIES}"
+    "${GTEST_LIBRARIES}"
+    "${GTEST_MAIN_LIBRARIES}"
     pthread
   )
   
   set_target_properties(${Functions_TARGET} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
   )
   
   add_test(
     NAME ${Functions_TARGET}
     COMMAND ${Functions_TARGET}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
   )
 endfunction(FUNCTIONS_CREATE_CPP_TEST)
 
@@ -195,7 +195,7 @@ function(FUNCTIONS_CREATE_PYTHON_TEST)
   add_test(
     NAME ${Functions_TARGET}
     COMMAND python3 -m pytest
-    WORKING_DIRECTORY ${Functions_WORKING_DIRECTORY}
+    WORKING_DIRECTORY "${Functions_WORKING_DIRECTORY}"
   )
 endfunction(FUNCTIONS_CREATE_PYTHON_TEST)
 
@@ -216,18 +216,18 @@ function(FUNCTIONS_CREATE_CPP_EXE)
     ${CMAKE_CURRENT_SOURCE_DIR}
   )
   
-  add_executable(${Functions_TARGET} ${Functions_SOURCES})
+  add_executable(${Functions_TARGET} "${Functions_SOURCES}")
 
   add_dependencies(${Functions_TARGET}
-    ${Functions_DEPENDENCIES}
+    "${Functions_DEPENDENCIES}"
   )
 
   target_link_libraries(${Functions_TARGET} PRIVATE
-    ${Functions_DEPENDENCIES}
-    ${Functions_LIBRARIES}
+    "${Functions_DEPENDENCIES}"
+    "${Functions_LIBRARIES}"
   )
   
   set_target_properties(${Functions_TARGET} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
   )
 endfunction(FUNCTIONS_CREATE_CPP_EXE)

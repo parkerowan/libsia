@@ -2,9 +2,7 @@ from setuptools import setup
 
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from pybind11 import get_cmake_dir
 
-import sys
 import os
 import re
 
@@ -36,6 +34,7 @@ ext_modules = [
         "pysia",
         [
             "python/py_belief.cpp",
+            "python/py_common.cpp",
             "python/py_controllers.cpp",
             "python/py_estimators.cpp",
             "python/py_math.cpp",
@@ -56,7 +55,7 @@ setup(
     name="pysia",
     version=__version__,
     author="Parker Owan",
-    author_email="mrpowan10@gmail.com",
+    author_email="parker.owan@gmail.com",
     url="https://gitlab.com/parkerowan/libsia",
     description="C++/Python Statistical estimation and optimal control",
     long_description="",

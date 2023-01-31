@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -10,6 +10,7 @@ set(py_libs
 )
 set(py_sources
   py_belief.cpp
+  py_common.cpp
   py_controllers.cpp
   py_estimators.cpp
   py_math.cpp

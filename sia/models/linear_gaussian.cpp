@@ -1,29 +1,42 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/models/linear_gaussian.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <glog/logging.h>
 
 namespace sia {
 
 LinearGaussianDynamics::LinearGaussianDynamics(const Eigen::MatrixXd& F,
                                                const Eigen::MatrixXd& G,
                                                const Eigen::MatrixXd& Q)
-    : m_dynamics_matrix(F),
+    : LinearizableDynamics(F.cols(), G.cols()),
+      m_dynamics_matrix(F),
       m_input_matrix(G),
       m_process_covariance(Q),
       m_prob_dynamics(Q.rows()) {
+  SIA_THROW_IF_NOT(F.rows() == F.cols(),
+                   "Linear Gaussian F matrix is expected to be square");
+  SIA_THROW_IF_NOT(F.rows() == G.rows(),
+                   "Linear Gaussian F and G rows should be consistent");
+  SIA_THROW_IF_NOT(Q.rows() == Q.cols(),
+                   "Linear Gaussian Q matrix is expected to be square");
+  SIA_THROW_IF_NOT(F.rows() == Q.rows(),
+                   "Linear Gaussian F and Q rows should be consistent");
   cacheStateCovariance();
 }
 
-LinearGaussianDynamics::LinearGaussianDynamics(const Eigen::MatrixXd& Q)
-    : m_process_covariance(Q), m_prob_dynamics(Q.rows()) {}
+LinearGaussianDynamics::LinearGaussianDynamics(std::size_t state_dim,
+                                               std::size_t control_dim,
+                                               const Eigen::MatrixXd& Q)
+    : LinearizableDynamics(state_dim, control_dim),
+      m_process_covariance(Q),
+      m_prob_dynamics(Q.rows()) {}
 
 Gaussian& LinearGaussianDynamics::dynamics(const Eigen::VectorXd& state,
                                            const Eigen::VectorXd& control) {
+  checkDimensions(state, control);
   m_prob_dynamics.setMean(f(state, control));
   // For efficiency, the covariance is set only when Q is updated
   return m_prob_dynamics;
@@ -31,6 +44,7 @@ Gaussian& LinearGaussianDynamics::dynamics(const Eigen::VectorXd& state,
 
 Eigen::VectorXd LinearGaussianDynamics::f(const Eigen::VectorXd& state,
                                           const Eigen::VectorXd& control) {
+  checkDimensions(state, control);
   return F() * state + G() * control;
 }
 
@@ -86,19 +100,24 @@ void LinearGaussianDynamics::cacheStateCovariance() {
 
 LinearGaussianMeasurement::LinearGaussianMeasurement(const Eigen::MatrixXd& H,
                                                      const Eigen::MatrixXd& R)
-    : m_measurement_matrix(H),
+    : LinearizableMeasurement(H.cols(), H.rows()),
+      m_measurement_matrix(H),
       m_measurement_covariance(R),
       m_prob_measurement(R.rows()) {
+  SIA_THROW_IF_NOT(H.rows() == R.rows(),
+                   "Linear Gaussian H and R rows should be consistent");
   cacheMeasurementCovariance();
 }
 
 Gaussian& LinearGaussianMeasurement::measurement(const Eigen::VectorXd& state) {
+  checkDimensions(state);
   m_prob_measurement.setMean(h(state));
   // For efficiency, the covariance is set only when R matrix is updated
   return m_prob_measurement;
 }
 
 Eigen::VectorXd LinearGaussianMeasurement::h(const Eigen::VectorXd& state) {
+  checkDimensions(state);
   return H() * state;
 }
 
@@ -139,11 +158,19 @@ LinearGaussianDynamicsCT::LinearGaussianDynamicsCT(
     const Eigen::MatrixXd& Qpsd,
     double dt,
     LinearGaussianDynamicsCT::Type type)
-    : LinearGaussianDynamics(toQ(Qpsd, dt)),
+    : LinearGaussianDynamics(A.cols(), B.cols(), toQ(Qpsd, dt)),
       m_dynamics_matrix_ct(A),
       m_input_matrix_ct(B),
       m_dt(dt),
       m_type(type) {
+  SIA_THROW_IF_NOT(A.rows() == A.cols(),
+                   "Linear Gaussian A matrix is expected to be square");
+  SIA_THROW_IF_NOT(A.rows() == B.rows(),
+                   "Linear Gaussian A and B rows should be consistent");
+  SIA_THROW_IF_NOT(Qpsd.rows() == Qpsd.cols(),
+                   "Linear Gaussian Qpsd matrix is expected to be square");
+  SIA_THROW_IF_NOT(A.rows() == Qpsd.rows(),
+                   "Linear Gaussian A and Qpsd rows should be consistent");
   discretizeDynamics();
   cacheStateCovariance();
 }
@@ -202,7 +229,7 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
   switch (m_type) {
     case Type::BACKWARD_EULER: {
       bool r = svdInverse(I - m_dt * A, F);
-      SIA_EXCEPTION(r, "Failed to solve Backward euler discretization");
+      SIA_THROW_IF_NOT(r, "Failed to solve Backward euler discretization");
       G = m_dt * F * B;
       break;
     }
@@ -212,10 +239,10 @@ void LinearGaussianDynamicsCT::discretizeDynamics() {
       break;
     }
     default:
-      LOG(ERROR)
-          << "LinearGaussianDynamicsCT::discretizeDynamics not implemented "
-             "for discretization type "
-          << static_cast<int>(m_type);
+      SIA_ERROR(
+          "LinearGaussianDynamicsCT::discretizeDynamics not implemented "
+          "for discretization type "
+          << static_cast<int>(m_type));
   }
 }
 

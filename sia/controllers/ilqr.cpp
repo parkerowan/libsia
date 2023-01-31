@@ -1,199 +1,70 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/controllers/ilqr.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <chrono>
 
 #define SMALL_NUMBER 1e-12
 
 namespace sia {
 
-// TODO: Make a common function to record metrics for estimators, controllers.
-using steady_clock = std::chrono::steady_clock;
-static unsigned get_elapsed_us(steady_clock::time_point tic,
-                               steady_clock::time_point toc) {
-  return std::chrono::duration_cast<std::chrono::microseconds>(toc - tic)
-      .count();
-};
-
 iLQR::iLQR(LinearizableDynamics& dynamics,
            DifferentiableCost& cost,
            const std::vector<Eigen::VectorXd>& u0,
-           std::size_t max_iter,
-           std::size_t max_backsteps,
-           double epsilon,
-           double tau,
-           double min_z,
-           double mu)
+           const iLQR::Options& options)
     : m_dynamics(dynamics),
       m_cost(cost),
       m_horizon(u0.size()),
-      m_max_iter(max_iter),
-      m_max_backsteps(max_backsteps),
-      m_epsilon(epsilon),
-      m_tau(tau),
-      m_min_z(min_z),
-      m_mu(mu),
+      m_options(options),
       m_controls(u0) {}
 
 const Eigen::VectorXd& iLQR::policy(const Distribution& state) {
-  auto tic = steady_clock::now();
+  m_metrics = iLQR::Metrics();
   auto T = m_horizon;
 
-  // Shift the control through the buffer so that we use the previously computed
-  // cost to initialize the trajectory.
-  m_controls.erase(m_controls.begin());        // remove the first element
-  m_controls.emplace_back(m_controls.back());  // copy the last element
+  // Initialize from the previous trajectory
+  if (!m_first_pass) {
+    m_controls.erase(m_controls.begin());        // remove the first element
+    m_controls.emplace_back(m_controls.back());  // copy the last element
+  }
+  m_first_pass = false;
 
   // Rollout the dynamics for the initial control
   m_states.clear();
   m_states.reserve(T);
   m_states.emplace_back(state.mean());
-  for (std::size_t i = 0; i < T - 1; ++i) {
-    m_states.emplace_back(m_dynamics.f(m_states.at(i), m_controls.at(i)));
+  for (std::size_t k = 0; k < T - 1; ++k) {
+    m_states.emplace_back(m_dynamics.f(m_states.at(k), m_controls.at(k)));
   }
+  m_final_state = m_dynamics.f(m_states.at(T - 1), m_controls.at(T - 1));
 
-  // Loop for fixed iteration or until convergence
-  std::size_t j = 0;
-  double dJ;
-  double J0 = m_cost.eval(m_states, m_controls);
-  double J1 = 0;
-  double z = 0;
+  // Inner LQR loop for fixed iteration or until convergence
+  std::size_t lqr_iter = 0;
+  double dJ = 0;
+  double J = m_cost.eval(m_states, m_controls);
   do {
     // 1. Backward pass
-    std::vector<Eigen::VectorXd> feedforward;
-    std::vector<Eigen::MatrixXd> feedback;
-    feedforward.reserve(T);
-    feedback.reserve(T);
-
-    // Initialize terminal value function Gradient and Hessian
     double dJa = 0;
     double dJb = 0;
-    Eigen::VectorXd Vpx = m_cost.cfx(m_states.at(T - 1));
-    Eigen::MatrixXd Vpxx = m_cost.cfxx(m_states.at(T - 1));
-    std::size_t n = m_states.at(T - 1).size();
-    for (int i = T - 1; i >= 0; --i) {
-      const auto& x = m_states.at(i);
-      const auto& u = m_controls.at(i);
-
-      // Compute eqns (5) to find the Q value coefficients based on the value at
-      // the next time step (initialize above)
-      // NOTE: DDP tensor terms are currently ommited to simplify complexity.
-      const Eigen::VectorXd lx = m_cost.cx(x, u, i);
-      const Eigen::VectorXd lu = m_cost.cu(x, u, i);
-      const Eigen::MatrixXd lxx = m_cost.cxx(x, u, i);
-      const Eigen::MatrixXd lux = m_cost.cux(x, u, i);
-      const Eigen::MatrixXd luu = m_cost.cuu(x, u, i);
-      const Eigen::MatrixXd fx = m_dynamics.F(x, u);  // df/dx f(x,u)
-      const Eigen::MatrixXd fu = m_dynamics.G(x, u);  // df/du f(x,u)
-
-      const Eigen::MatrixXd muI = m_mu * Eigen::MatrixXd::Identity(n, n);
-      const Eigen::VectorXd Qx = lx + fx.transpose() * Vpx;
-      const Eigen::VectorXd Qu = lu + fu.transpose() * Vpx;
-      const Eigen::MatrixXd Qxx = lxx + fx.transpose() * Vpxx * fx;
-      const Eigen::MatrixXd Qux =
-          lux.transpose() + fu.transpose() * (Vpxx + muI) * fx;
-      const Eigen::MatrixXd Quu = luu + fu.transpose() * (Vpxx + muI) * fu;
-
-      // Check if Quu positive definite
-      Eigen::VectorXd v = Eigen::VectorXd::Ones(Quu.rows());
-      if (v.transpose() * Quu * v <= 0) {
-        LOG(WARNING) << "Quu is not positive definite, increase mu value";
-      }
-
-      // Compute the inverse of Quu
-      Eigen::MatrixXd QuuInv;
-      bool r = svdInverse(Quu, QuuInv);
-      SIA_EXCEPTION(r, "Failed to invert Quu in iLQR backward pass");
-
-      // Compute eqns (6) to find the gains k, K for the next forward pass
-      const Eigen::MatrixXd K = -QuuInv * Qux;
-      const Eigen::VectorXd k = -QuuInv * Qu;
-      feedback.emplace_back(K);
-      feedforward.emplace_back(k);
-
-      // Compute eqns (11) to update the value function (cost to go
-      // approximation) for the backward recursion
-      // dV = -Qu * QuuInv * Qu / 2
-      // Vpx = Qx - Qu * QuuInv * Qux
-      // Vpxx = Qxx - Qux.transpose() * QuuInv * Qux
-      Vpx = Qx + K.transpose() * (Quu * k + Qu) + Qux.transpose() * k;
-      Vpxx = Qxx + K.transpose() * (Quu * K + Qux) + Qux.transpose() * K;
-      Vpxx = 0.5 * (Vpxx + Vpxx.transpose());
-      double dVa = k.transpose() * Qu;
-      double dVb = 0.5 * k.transpose() * Quu * k;
-
-      // $V(x) = min_u J(x, u)$
-      // dJ = dJa + dJb
-      dJa += dVa;
-      dJb += dVb;
-    }
-
-    // Flip the gain vector/matrices order to advance forward in time
-    std::reverse(feedforward.begin(), feedforward.end());
-    std::reverse(feedback.begin(), feedback.end());
+    backwardPass(m_dynamics, m_cost, m_states, m_controls, m_final_state,
+                 m_feedforward, m_feedback, dJa, dJb, m_options, m_metrics);
 
     // 2. Forward pass
-    double alpha = 1;
-    std::size_t k = 0;
-    std::vector<Eigen::VectorXd> new_states, new_controls;
-    do {
-      new_states.clear();
-      new_controls.clear();
-      new_states.reserve(T);
-      new_controls.reserve(T);
-      Eigen::VectorXd xhat = m_states.at(0);
-      for (std::size_t i = 0; i < T; ++i) {
-        // Compute eqns (8a-b) to find the control law
-        const Eigen::VectorXd& u = m_controls.at(i);
-        const Eigen::VectorXd& x = m_states.at(i);
-        const Eigen::VectorXd& k = feedforward.at(i);
-        const Eigen::MatrixXd& K = feedback.at(i);
-        Eigen::VectorXd uhat = u + alpha * k + K * (xhat - x);
+    forwardPass(m_dynamics, m_cost, m_states, m_controls, m_final_state,
+                m_feedforward, m_feedback, dJa, dJb, dJ, J, m_options,
+                m_metrics);
 
-        // Compute eqn (8c) to integrate the control through system dynamics
-        new_controls.emplace_back(uhat);
-        new_states.emplace_back(xhat);
-        xhat = m_dynamics.f(xhat, uhat);
-      }
-
-      // From Y. Tassa et al 2012, "Section II-D Improved Line Search"
-      dJ = alpha * (dJa + alpha * dJb);
-
-      // Compute convergence
-      J1 = m_cost.eval(new_states, new_controls);
-      z = 1;
-      if (abs(dJ) > SMALL_NUMBER) {
-        z = (J1 - J0) / dJ;
-      }
-
-      // Backtracking iteration - shrink alpha (feedfoward contribution)
-      alpha *= m_tau;
-      k++;
-    } while ((k < m_max_backsteps) && (z < m_min_z));
-
-    // Debug iteration
-    m_metrics.z = z;
-    m_metrics.backstep_iter = k;
-    m_metrics.alpha = alpha / m_tau;
-
-    // Accept and update iteration
-    m_states = new_states;
-    m_controls = new_controls;
-    J0 = J1;
-    j++;
-  } while ((j < m_max_iter) && (abs(dJ) > m_epsilon));
+    lqr_iter++;
+  } while ((lqr_iter < m_options.max_lqr_iter) &&
+           (abs(dJ) > m_options.cost_tol));
 
   // Populate metrics
-  auto toc = steady_clock::now();
-  m_metrics.elapsed_us = get_elapsed_us(tic, toc);
-  m_metrics.iter = j;
-  m_metrics.dJ = dJ;
-  m_metrics.J = J1;
+  m_metrics.lqr_iter = lqr_iter;
+  m_metrics.clockElapsedUs();
   return m_controls.at(0);
 }
 
@@ -205,8 +76,191 @@ const Trajectory<Eigen::VectorXd>& iLQR::states() const {
   return m_states;
 }
 
+const Trajectory<Eigen::VectorXd>& iLQR::feedforward() const {
+  return m_feedforward;
+}
+
+const Trajectory<Eigen::MatrixXd>& iLQR::feedback() const {
+  return m_feedback;
+}
+
 const iLQR::Metrics& iLQR::metrics() const {
   return m_metrics;
+}
+
+void backwardPass(LinearizableDynamics& dynamics,
+                  DifferentiableCost& cost,
+                  const std::vector<Eigen::VectorXd>& states,
+                  const std::vector<Eigen::VectorXd>& controls,
+                  const Eigen::VectorXd& final_state,
+                  std::vector<Eigen::VectorXd>& feedforward,
+                  std::vector<Eigen::MatrixXd>& feedback,
+                  double& dJa,
+                  double& dJb,
+                  const iLQR::Options& options,
+                  iLQR::Metrics& metrics) {
+  std::size_t T = states.size();
+  std::size_t m = controls.at(T - 1).size();
+
+  // Regularization parameters
+  double rho = options.regularization_init;
+  Eigen::MatrixXd Iu = Eigen::MatrixXd::Identity(m, m);
+
+  // Loop until we find a regularization that yeilds pos def Quu
+  std::size_t num_attempts = 0;
+  bool recompute_pass = false;
+  do {
+    recompute_pass = false;
+
+    // Equations (38-39) from [3]
+    Eigen::VectorXd Vpx = cost.cfx(final_state);
+    Eigen::MatrixXd Vpxx = cost.cfxx(final_state);
+
+    // Integrate backwards from terminal goal
+    feedforward.clear();
+    feedforward.reserve(T);
+    feedback.clear();
+    feedback.reserve(T);
+
+    dJa = 0;
+    dJb = 0;
+    for (int k = T - 1; k >= 0; --k) {
+      const auto& x = states.at(k);
+      const auto& u = controls.at(k);
+
+      const Eigen::VectorXd lx = cost.cx(x, u, k);
+      const Eigen::VectorXd lu = cost.cu(x, u, k);
+      const Eigen::MatrixXd lxx = cost.cxx(x, u, k);
+      const Eigen::MatrixXd lux = cost.cux(x, u, k);
+      const Eigen::MatrixXd luu = cost.cuu(x, u, k);
+      const Eigen::MatrixXd fx = dynamics.F(x, u);  // d/dx f(x,u)
+      const Eigen::MatrixXd fu = dynamics.G(x, u);  // d/du f(x,u)
+
+      // Equations (41-45) from [3]
+      Eigen::MatrixXd Qxx = lxx + fx.transpose() * Vpxx * fx;
+      Eigen::MatrixXd Quu = luu + fu.transpose() * Vpxx * fu;
+      const Eigen::MatrixXd Qux = lux + fu.transpose() * Vpxx * fx;
+      const Eigen::VectorXd Qx = lx + fx.transpose() * Vpx;
+      const Eigen::VectorXd Qu = lu + fu.transpose() * Vpx;
+
+      // Section III-B-2) from [3]
+      // Find a regularization to make Quu converge, re-run the pass
+      Eigen::MatrixXd QuuReg = Quu + rho * Iu;
+      while (!positiveDefinite(QuuReg) &&
+             (num_attempts < options.max_regularization_iter)) {
+        recompute_pass = true;
+        rho = std::max(rho * options.regularization_rate,
+                       options.regularization_min);
+        SIA_INFO("Increasing Quu regularization " << rho);
+        QuuReg = Quu + rho * Iu;
+        k = 0;
+        num_attempts++;
+      }
+
+      // Invert Quu
+      Eigen::MatrixXd QuuInv;
+      bool r = svdInverse(QuuReg, QuuInv);
+      SIA_THROW_IF_NOT(r, "Failed to invert Quu in iLQR backward pass");
+
+      // Equation (46) from [3]
+      const Eigen::MatrixXd K = -QuuInv * Qux;
+      const Eigen::VectorXd d = -QuuInv * Qu;
+      feedback.emplace_back(K);
+      feedforward.emplace_back(d);
+
+      // Equations (47-48) from [3]
+      Vpx = Qx + K.transpose() * (Quu * d + Qu) + Qux.transpose() * d;
+      Vpxx = Qxx + K.transpose() * (Quu * K + Qux) + Qux.transpose() * K;
+      Vpxx = Vpxx.selfadjointView<Eigen::Upper>();
+
+      // Equation (49) from [3]
+      double dVa = d.transpose() * Qu;
+      double dVb = 0.5 * d.transpose() * Quu * d;
+      dJa += dVa;
+      dJb += dVb;
+    }
+  } while (recompute_pass && (num_attempts < options.max_regularization_iter));
+
+  // If we ran out of recomputes, Quu is divergent and the solution not useful
+  SIA_THROW_IF_NOT(num_attempts < options.max_regularization_iter,
+                   "Failed to find a regularization within max iterations");
+
+  // Record metrics
+  metrics.rho.emplace_back(rho);
+
+  // Flip the gain vector/matrices order to advance forward in time
+  std::reverse(feedforward.begin(), feedforward.end());
+  std::reverse(feedback.begin(), feedback.end());
+}
+
+void forwardPass(LinearizableDynamics& dynamics,
+                 DifferentiableCost& cost,
+                 std::vector<Eigen::VectorXd>& states,
+                 std::vector<Eigen::VectorXd>& controls,
+                 Eigen::VectorXd& final_state,
+                 const std::vector<Eigen::VectorXd>& feedforward,
+                 const std::vector<Eigen::MatrixXd>& feedback,
+                 double dJa,
+                 double dJb,
+                 double& dJ,
+                 double& J0,
+                 const iLQR::Options& options,
+                 iLQR::Metrics& metrics) {
+  std::size_t T = states.size();
+  double J1 = 0;
+  double z = 0;
+
+  double alpha = 1;
+  std::size_t backtrack_iter = 0;
+  std::vector<Eigen::VectorXd> new_states, new_controls;
+  do {
+    new_states.clear();
+    new_controls.clear();
+    new_states.reserve(T);
+    new_controls.reserve(T);
+    Eigen::VectorXd xhat = states.at(0);
+    for (std::size_t k = 0; k < T; ++k) {
+      // Equations (50-52) from [3]
+      const Eigen::VectorXd& u = controls.at(k);
+      const Eigen::VectorXd& x = states.at(k);
+      const Eigen::VectorXd& d = feedforward.at(k);
+      const Eigen::MatrixXd& K = feedback.at(k);
+      Eigen::VectorXd uhat = u + alpha * d + K * (xhat - x);
+
+      // Equation (53) from [3] to integrate the control through system dynamics
+      new_controls.emplace_back(uhat);
+      new_states.emplace_back(xhat);
+      xhat = dynamics.f(xhat, uhat);
+    }
+    final_state = xhat;
+
+    // Equation (55) from [3] Improved Line Search
+    dJ = alpha * (dJa + alpha * dJb);
+
+    // Equation (54) from [3] Compute convergence
+    J1 = cost.eval(new_states, new_controls);
+    z = 1;
+    if (abs(dJ) > SMALL_NUMBER) {
+      z = (J1 - J0) / dJ;
+    }
+
+    // Record metrics
+    metrics.dJ.emplace_back(dJ);
+    metrics.z.emplace_back(z);
+    metrics.alpha.emplace_back(alpha);
+    metrics.cost.emplace_back(J1);
+
+    // Backtracking iteration - shrink alpha (feedfoward contribution)
+    alpha *= options.linesearch_rate;
+    backtrack_iter++;
+  } while (
+      (backtrack_iter < options.max_linesearch_iter) &&
+      ((z < options.linesearch_tol_lb) || (z > options.linesearch_tol_ub)));
+
+  // Accept and update iteration
+  states = new_states;
+  controls = new_controls;
+  J0 = J1;
 }
 
 }  // namespace sia

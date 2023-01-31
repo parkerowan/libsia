@@ -1,9 +1,10 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/math/math.h"
+#include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <Eigen/SVD>
 
 namespace sia {
@@ -29,12 +30,26 @@ const Eigen::MatrixXd slice(const Eigen::MatrixXd& X,
   return Y;
 }
 
+Eigen::VectorXd replace(const Eigen::VectorXd& x,
+                        const Eigen::VectorXd& u,
+                        const std::vector<std::size_t>& indices) {
+  SIA_THROW_IF_NOT(indices.empty() || (u.size() == int(indices.size())),
+                   "Input vector u and indices not consistent");
+  Eigen::VectorXd y = x;
+  for (std::size_t i = 0; i < indices.size(); ++i) {
+    SIA_THROW_IF_NOT(int(indices.at(i)) < x.size(),
+                     "Index value exceeds size of input vector x");
+    y(indices.at(i)) = u(i);
+  }
+  return y;
+}
+
 bool llt(const Eigen::MatrixXd& A, Eigen::MatrixXd& L) {
   Eigen::LLT<Eigen::MatrixXd> llt(A);
   L = llt.matrixL();
   if (llt.info() != Eigen::ComputationInfo::Success) {
-    LOG(WARNING) << "LLT decomposition of matrix A = " << A << " failed with "
-                 << llt.info();
+    SIA_WARN("LLT decomposition of matrix A = " << A << " failed with "
+                                                << llt.info());
     return false;
   }
   return true;
@@ -48,8 +63,8 @@ bool ldltSqrt(const Eigen::MatrixXd& A, Eigen::MatrixXd& M) {
   const Eigen::VectorXd D = ldlt.vectorD();
   M = P.transpose() * L * D.array().sqrt().matrix().asDiagonal();
   if (ldlt.info() != Eigen::ComputationInfo::Success) {
-    LOG(WARNING) << "LDLT decomposition of matrix A = " << A << " failed with "
-                 << ldlt.info();
+    SIA_WARN("LDLT decomposition of matrix A = " << A << " failed with "
+                                                 << ldlt.info());
     return false;
   }
   return true;
@@ -70,7 +85,7 @@ bool svd(const Eigen::MatrixXd& A,
   // Check for singular condition
   for (int i = 0; i < singular_values.size(); ++i) {
     if (singular_values(i) <= tolerance) {
-      LOG(WARNING) << "Singular value is less than tolerance";
+      SIA_WARN("Singular value is less than tolerance");
       result = false;
     }
   }
@@ -86,6 +101,23 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
                                  const Eigen::VectorXd& S,
                                  const Eigen::MatrixXd& V) {
   return V * S.array().inverse().matrix().asDiagonal() * U.transpose();
+}
+
+bool symmetric(const Eigen::MatrixXd& A) {
+  SIA_THROW_IF_NOT(A.rows() == A.cols(),
+                   "A matrix must be square to test symmetric");
+  return A.isApprox(A.transpose());
+}
+
+bool positiveDefinite(const Eigen::MatrixXd& A) {
+  if (!symmetric(A)) {
+    return false;
+  }
+
+  // If A is positive definite then the diagonal elements of D are all positive
+  const auto ldlt = A.selfadjointView<Eigen::Upper>().ldlt();
+  Eigen::VectorXd d = ldlt.vectorD();
+  return d.minCoeff() > 0;
 }
 
 bool svdInverse(const Eigen::MatrixXd& A,
@@ -259,13 +291,13 @@ const Eigen::MatrixXd d2fdux(
     const Eigen::VectorXd& u) {
   std::size_t m = x.size();
   std::size_t n = u.size();
-  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(m, n);
+  Eigen::MatrixXd H = Eigen::MatrixXd::Zero(n, m);
   for (std::size_t i = 0; i < n; ++i) {
     Eigen::VectorXd du = Eigen::VectorXd::Zero(n);
     du(i) = NUMERICAL_DERIVATIVE_STEP;
     Eigen::VectorXd fp = dfdx(f, x, u + du);
     Eigen::VectorXd fn = dfdx(f, x, u - du);
-    H.col(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
+    H.row(i) = (fp - fn) / 2 / NUMERICAL_DERIVATIVE_STEP;
   }
   // Ensure that the Hessian is necessarily symmetric
   // return (H + H.transpose()) / 2.0;

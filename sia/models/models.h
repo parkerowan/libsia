@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -45,12 +45,22 @@ using MeasurementJacobian =
 /// - $u$ Known control action applied to affect the state $x$.
 class DynamicsModel {
  public:
-  DynamicsModel() = default;
+  explicit DynamicsModel(std::size_t state_dim, std::size_t control_dim);
   virtual ~DynamicsModel() = default;
+  std::size_t stateDim() const;
+  std::size_t controlDim() const;
 
   /// Predicts the statistical state transition $p(x_k+1 | x_k, u_k)$.
   virtual Distribution& dynamics(const Eigen::VectorXd& state,
                                  const Eigen::VectorXd& control) = 0;
+
+ protected:
+  void checkDimensions(const Eigen::VectorXd& state,
+                       const Eigen::VectorXd& control) const;
+
+ private:
+  std::size_t m_state_dim;
+  std::size_t m_control_dim;
 };
 
 /// A system that predicts the statistical observation $p(y | x)$.
@@ -58,17 +68,26 @@ class DynamicsModel {
 /// - $y$ Observation generated from the state $x$.
 class MeasurementModel {
  public:
-  MeasurementModel() = default;
+  explicit MeasurementModel(std::size_t state_dim, std::size_t measurement_dim);
   virtual ~MeasurementModel() = default;
+  std::size_t stateDim() const;
+  std::size_t measurementDim() const;
 
   /// Predicts the statistical observation $p(y | x)$.
   virtual Distribution& measurement(const Eigen::VectorXd& state) = 0;
+
+ protected:
+  void checkDimensions(const Eigen::VectorXd& state) const;
+
+ private:
+  std::size_t m_state_dim;
+  std::size_t m_measurement_dim;
 };
 
 /// Linearizable dynamics model.  Default Jacobians use central difference.
 class LinearizableDynamics : public DynamicsModel {
  public:
-  LinearizableDynamics() = default;
+  explicit LinearizableDynamics(std::size_t state_dim, std::size_t control_dim);
   virtual ~LinearizableDynamics() = default;
 
   /// Expected discrete time dynamics $E[x_k+1] = f(x_k, u_k)$.
@@ -91,7 +110,8 @@ class LinearizableDynamics : public DynamicsModel {
 /// Linearizable measurement model.  Default Jacobians use central difference.
 class LinearizableMeasurement : public MeasurementModel {
  public:
-  LinearizableMeasurement() = default;
+  explicit LinearizableMeasurement(std::size_t state_dim,
+                                   std::size_t measurement_dim);
   virtual ~LinearizableMeasurement() = default;
 
   /// Expected observation $E[y] = h(x)$.

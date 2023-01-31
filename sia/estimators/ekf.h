@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -19,6 +19,10 @@ namespace sia {
 /// correction.
 class EKF : public Estimator {
  public:
+  struct Metrics : public BaseMetrics {
+    double kalman_gain_norm{0};
+  };
+
   explicit EKF(LinearizableDynamics& dynamics,
                LinearizableMeasurement& measurement,
                const Gaussian& state);
@@ -35,10 +39,14 @@ class EKF : public Estimator {
   /// Corrects the belief with the measurement.
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
  private:
   LinearizableDynamics& m_dynamics;
   LinearizableMeasurement& m_measurement;
   Gaussian m_belief;
+  Metrics m_metrics;
 };
 
 }  // namespace sia

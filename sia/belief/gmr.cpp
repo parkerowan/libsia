@@ -1,11 +1,11 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmr.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <limits>
 
 namespace sia {
@@ -73,11 +73,11 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
-std::size_t GMR::inputDimension() const {
+std::size_t GMR::inputDim() const {
   return m_input_indices.size();
 }
 
-std::size_t GMR::outputDimension() const {
+std::size_t GMR::outputDim() const {
   return m_output_indices.size();
 }
 
@@ -124,7 +124,7 @@ GMR::RegressionModel::RegressionModel(const Eigen::VectorXd& mu_x,
   // Compute inverse
   Eigen::MatrixXd sigma_xx_inv;
   bool r = svdInverse(sigma_xx, sigma_xx_inv);
-  SIA_EXCEPTION(r, "Failed to compute SVD of sigma_xx");
+  SIA_THROW_IF_NOT(r, "Failed to compute SVD of sigma_xx");
 
   // Compute Gaussian conditioning
   m_sigma_yx_sigma_xx_inv = sigma_yx * sigma_xx_inv;

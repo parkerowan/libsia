@@ -1,5 +1,7 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
+
+#include "tests/helpers.h"
 
 #include <gtest/gtest.h>
 #include <sia/sia.h>
@@ -33,6 +35,44 @@ TEST(Math, SliceMatrix) {
   EXPECT_DOUBLE_EQ(Y(1, 1), 8);
 }
 
+TEST(Math, ReplaceVector) {
+  std::vector<std::size_t> indices{0, 2};
+  Eigen::Vector3d x(0, 1, 2);
+  Eigen::Vector2d u(4, 5);
+
+  Eigen::VectorXd y1 = sia::replace(x, u, indices);
+  EXPECT_EQ(y1.size(), 3);
+  EXPECT_DOUBLE_EQ(y1(0), 4);
+  EXPECT_DOUBLE_EQ(y1(1), 1);
+  EXPECT_DOUBLE_EQ(y1(2), 5);
+
+  // No change when indices are empty
+  Eigen::VectorXd y2 = sia::replace(x, u, {});
+  EXPECT_EQ(y2.size(), 3);
+  EXPECT_DOUBLE_EQ(y2(0), 0);
+  EXPECT_DOUBLE_EQ(y2(1), 1);
+  EXPECT_DOUBLE_EQ(y2(2), 2);
+}
+
+TEST(Math, Llt) {
+  Eigen::MatrixXd A(2, 2);
+  A << 10, 0.1, 0.1, 5;
+  Eigen::MatrixXd L;
+  EXPECT_TRUE(sia::llt(A, L));
+  EXPECT_TRUE(A.isApprox(L * L.transpose()));
+}
+
+TEST(Math, LdltSqrt) {
+  Eigen::MatrixXd A(2, 2);
+  A << 10, 0.1, 0.1, 5;
+  Eigen::MatrixXd M;
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
+  A << 2.1, 0, 0, 0;  // positive semi-definite
+  EXPECT_TRUE(sia::ldltSqrt(A, M));
+  EXPECT_TRUE(A.isApprox(M * M.transpose()));
+}
+
 TEST(Math, Svd) {
   Eigen::MatrixXd A(2, 2);
   A << 0, 1, 2, 3;
@@ -47,21 +87,6 @@ TEST(Math, Svd) {
   // Compute the inverse from SVD
   Eigen::MatrixXd AAinv = A * sia::svdInverse(U, S, V);
   EXPECT_TRUE(Eigen::Matrix2d::Identity().isApprox(AAinv));
-
-  // Compute the LLT decomposition
-  A << 2, 0.1, 0.1, 1;
-  Eigen::MatrixXd L;
-  EXPECT_TRUE(sia::llt(A, L));
-  EXPECT_TRUE(A.isApprox(L * L.transpose()));
-
-  // Compute sqrt using the LDLT composition
-  Eigen::MatrixXd M;
-  EXPECT_TRUE(sia::ldltSqrt(A, M));
-  EXPECT_TRUE(A.isApprox(M * M.transpose()));
-
-  A << 2.1, 0, 0, 0;  // positive semi-definite
-  EXPECT_TRUE(sia::ldltSqrt(A, M));
-  EXPECT_TRUE(A.isApprox(M * M.transpose()));
 }
 
 TEST(Math, SvdInverse) {
@@ -77,6 +102,30 @@ TEST(Math, SvdInverse) {
   ASSERT_EQ(AAinv.rows(), 2);
   ASSERT_EQ(AAinv.cols(), 2);
   EXPECT_TRUE(Eigen::Matrix2d::Identity().isApprox(AAinv));
+}
+
+TEST(Math, Symmetric) {
+  Eigen::MatrixXd A(2, 2);
+  A << 1, 0, 0, -4;
+  EXPECT_TRUE(sia::symmetric(A));
+  A << 1, 1, 0, -4;
+  EXPECT_FALSE(sia::symmetric(A));
+
+  Eigen::MatrixXd X = createPositiveDefiniteMatrix(128);
+  EXPECT_TRUE(sia::symmetric(X));
+}
+
+TEST(Math, PositiveDefinite) {
+  Eigen::MatrixXd A(2, 2);
+  A << 1, 0, 0, -4;
+  EXPECT_FALSE(sia::positiveDefinite(A));
+  A << 1, 0, 0, 0;
+  EXPECT_FALSE(sia::positiveDefinite(A));
+  A << 1, 0, 0, 2;
+  EXPECT_TRUE(sia::positiveDefinite(A));
+
+  Eigen::MatrixXd X = createPositiveDefiniteMatrix(128);
+  EXPECT_TRUE(sia::positiveDefinite(X));
 }
 
 TEST(Math, Rk4) {
@@ -210,4 +259,12 @@ TEST(Math, FxuVectorDerivatives) {
   Eigen::MatrixXd dfdu_analytic = B;
   E = dfdu_numerical - dfdu_analytic;
   EXPECT_NEAR(E.norm(), 0.0, 1.0e-2);
+}
+
+TEST(Math, EstimateCovariance) {
+  Eigen::Vector2d mu{0, 0};
+  Eigen::Matrix2d P = Eigen::Matrix2d::Identity();
+  auto particles = sia::Particles::gaussian(mu, P, 1000);
+  Eigen::MatrixXd Pest = sia::estimateCovariance(particles.values());
+  EXPECT_NEAR(sia::frobNormSquared(Pest - P), 0, 1e-2);
 }

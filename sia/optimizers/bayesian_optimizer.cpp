@@ -1,114 +1,93 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/optimizers/bayesian_optimizer.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 
-#include <glog/logging.h>
 #include <cmath>
 
 namespace sia {
-
-// ----------------------------------------------------------------------------
 
 // The surrogate model provides a statistical approximation of the objective
 // function and a corresponding acquisition function.
 // - Objective: Function R^n -> p(y) that approximates the true objective
 // - Acqusition: Utility function R^n -> R for selecting the next data point
 // https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
-class BayesianOptimizer::SurrogateModel {
- public:
-  virtual ~SurrogateModel() = default;
-  virtual bool initialized() const = 0;
-  virtual void updateModel(bool train) = 0;
-  virtual const Distribution& objective(const Eigen::VectorXd& x) = 0;
-  virtual double acquisition(const Eigen::VectorXd& x,
-                             double target,
-                             BayesianOptimizer::AcquisitionType type) = 0;
-  void addDataPoint(const Eigen::VectorXd& x, double y);
-  const std::vector<Eigen::VectorXd>& inputData() const;
-  const std::vector<double>& outputData() const;
-  static std::shared_ptr<SurrogateModel> create(
-      BayesianOptimizer::ObjectiveType type);
 
- protected:
-  std::vector<Eigen::VectorXd> m_input_data;
-  std::vector<double> m_output_data;
-};
-
-// Surrogate using a GPR to model the objective.
-class GPRSurrogateModel : public BayesianOptimizer::SurrogateModel {
- public:
-  explicit GPRSurrogateModel(double beta = 1);
-  virtual ~GPRSurrogateModel() = default;
-  bool initialized() const override;
-  void updateModel(bool train) override;
-  const Gaussian& objective(const Eigen::VectorXd& x) override;
-  double acquisition(const Eigen::VectorXd& x,
-                     double target,
-                     BayesianOptimizer::AcquisitionType type) override;
-
- private:
-  double m_beta;
-  std::shared_ptr<GPR> m_gpr{nullptr};
-};
-
-// TODO: Add support for Binary classification objective
-
-// ----------------------------------------------------------------------------
-
-static double pdf(double x) {
-  return 1 / sqrt(2 * M_PI) * exp(-pow(x, 2) / 2);
-}
-
-static double cdf(double x) {
-  return (1 + erf(x / sqrt(2))) / 2;
-}
-
-// ----------------------------------------------------------------------------
-
-BayesianOptimizer::BayesianOptimizer(
-    const Eigen::VectorXd& lower,
-    const Eigen::VectorXd& upper,
-    BayesianOptimizer::ObjectiveType objective,
-    BayesianOptimizer::AcquisitionType acquisition,
-    std::size_t n_starts)
+BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
+                                     const Eigen::VectorXd& upper,
+                                     Kernel& kernel,
+                                     std::size_t cond_inputs_dim,
+                                     const BayesianOptimizer::Options& options)
     : m_sampler(lower, upper),
-      m_optimizer(lower, upper),
-      m_acquisition_type(acquisition) {
-  m_surrogate = SurrogateModel::create(objective);
-  assert(m_surrogate != nullptr);
+      m_optimizer(lower, upper, options.gradient_descent),
+      m_cond_inputs_dim(cond_inputs_dim),
+      m_options(options),
+      m_gpr(lower.size(), 1, kernel) {}
 
-  GradientDescent::Options opts = m_optimizer.options();
-  opts.n_starts = n_starts;
-  m_optimizer.setOptions(opts);
-}
-
-Eigen::VectorXd BayesianOptimizer::selectNextSample() {
+Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
   // If there is no model yet, just sample uniformly
-  if (!m_surrogate->initialized()) {
+  if (m_gpr.numSamples() == 0) {
     return m_sampler.sample();
   }
 
   // Optimize the acquisition model
-  double target = m_surrogate->objective(getSolution()).mean()(0);
+  double target = objective(getSolution(u), u).mean()(0);
   auto f = [=](const Eigen::VectorXd& x) {
-    return -m_surrogate->acquisition(x, target, m_acquisition_type);
+    return -acquisition(x, target, m_options.acquisition, u);
   };
   return m_optimizer.minimize(f);
 }
 
-void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x, double y) {
-  m_surrogate->addDataPoint(x, y);
+void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x,
+                                     double y,
+                                     const Eigen::VectorXd& u) {
+  SIA_THROW_IF_NOT(
+      x.size() == int(m_sampler.dimension()),
+      "BayesianOptimizer expects input data to have same dimension as bounds");
+  SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
+                   "BayesianOptimizer expects u to have size cond_inputs_dim");
+  m_input_data.emplace_back(x);
+  m_output_data.emplace_back(y);
+  m_cond_input_data.emplace_back(u);
 }
 
 void BayesianOptimizer::updateModel(bool train) {
-  m_surrogate->updateModel(train);
+  SIA_THROW_IF_NOT(m_input_data.size() > 0,
+                   "BayesianOptimizer expects data points to be added before "
+                   "calling updateModel()");
+  assert(m_input_data.size() == m_output_data.size());
+  assert(m_input_data.size() == m_cond_input_data.size());
+
+  // TODO: Add efficient incremental update to the GPR class
+  std::size_t n_input_dim = m_sampler.dimension();
+  std::size_t n_samples = m_input_data.size();
+  Eigen::MatrixXd X =
+      Eigen::MatrixXd(n_input_dim + m_cond_inputs_dim, n_samples);
+  for (std::size_t i = 0; i < n_samples; ++i) {
+    Eigen::VectorXd xu = Eigen::VectorXd(n_input_dim + m_cond_inputs_dim);
+    xu.head(n_input_dim) = m_input_data[i];
+    xu.tail(m_cond_inputs_dim) = m_cond_input_data[i];
+    X.col(i) = xu;
+  }
+  Eigen::MatrixXd y = Eigen::Map<Eigen::MatrixXd>(m_output_data.data(), 1,
+                                                  m_output_data.size());
+
+  // Update the GPR data
+  m_gpr.setData(X, y);
+
+  // Optionally train the GPR hyperparameters
+  if (train) {
+    m_gpr.train();
+  }
+
+  // Notify getSolution() that it needs to optimize the new model
   m_dirty_solution = true;
 }
 
-Eigen::VectorXd BayesianOptimizer::getSolution() {
-  if (!m_surrogate->initialized()) {
+Eigen::VectorXd BayesianOptimizer::getSolution(const Eigen::VectorXd& u) {
+  if (m_gpr.numSamples() == 0) {
     return m_sampler.sample();
   }
 
@@ -117,121 +96,52 @@ Eigen::VectorXd BayesianOptimizer::getSolution() {
   }
 
   // Optimize the objective function model
-  auto f = [=](const Eigen::VectorXd& x) {
-    return -m_surrogate->objective(x).mean()(0);
-  };
+  auto f = [=](const Eigen::VectorXd& x) { return -objective(x, u).mean()(0); };
   m_cached_solution = m_optimizer.minimize(f);
   m_dirty_solution = false;
   return m_cached_solution;
 }
 
-GradientDescent& BayesianOptimizer::optimizer() {
-  return m_optimizer;
+const Gaussian& BayesianOptimizer::objective(const Eigen::VectorXd& x,
+                                             const Eigen::VectorXd& u) {
+  std::size_t n_input_dim = m_sampler.dimension();
+  SIA_THROW_IF_NOT(
+      x.size() == int(n_input_dim),
+      "BayesianOptimizer expects input data to have same dimension as bounds");
+  SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
+                   "BayesianOptimizer expects u to have size cond_inputs_dim");
+  Eigen::VectorXd xu = Eigen::VectorXd(n_input_dim + m_cond_inputs_dim);
+  xu.head(n_input_dim) = x;
+  xu.tail(m_cond_inputs_dim) = u;
+  return m_gpr.predict(xu);
 }
 
-const Distribution& BayesianOptimizer::objective(const Eigen::VectorXd& x) {
-  return m_surrogate->objective(x);
+double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
+                                      const Eigen::VectorXd& u) {
+  double target = objective(getSolution(u), u).mean()(0);
+  return acquisition(x, target, m_options.acquisition, u);
 }
 
-double BayesianOptimizer::acquisition(const Eigen::VectorXd& x) {
-  double target = m_surrogate->objective(getSolution()).mean()(0);
-  return m_surrogate->acquisition(x, target, m_acquisition_type);
-}
-
-// ----------------------------------------------------------------------------
-
-void BayesianOptimizer::SurrogateModel::addDataPoint(const Eigen::VectorXd& x,
-                                                     double y) {
-  m_input_data.emplace_back(x);
-  m_output_data.emplace_back(y);
-}
-
-const std::vector<Eigen::VectorXd>&
-BayesianOptimizer::SurrogateModel::inputData() const {
-  return m_input_data;
-}
-
-const std::vector<double>& BayesianOptimizer::SurrogateModel::outputData()
-    const {
-  return m_output_data;
-}
-
-std::shared_ptr<BayesianOptimizer::SurrogateModel>
-BayesianOptimizer::SurrogateModel::create(
-    BayesianOptimizer::ObjectiveType type) {
-  switch (type) {
-    case BayesianOptimizer::ObjectiveType::GPR_OBJECTIVE:
-      return std::make_shared<GPRSurrogateModel>();
-    default:
-      SIA_EXCEPTION(false,
-                    "BayesianOptimizer::SurrogateModel encountered unsupported "
-                    "BayesianOptimizer::ObjectiveType");
-  }
-}
-
-GPRSurrogateModel::GPRSurrogateModel(double beta) : m_beta(beta) {}
-
-bool GPRSurrogateModel::initialized() const {
-  return m_gpr != nullptr;
-}
-
-void GPRSurrogateModel::updateModel(bool train) {
-  SIA_EXCEPTION(m_input_data.size() > 0,
-                "GPRSurrogateModel expects data points to be added before "
-                "calling updateModel()");
-  assert(m_input_data.size() == m_output_data.size());
-
-  // TODO: Add efficient incremental update to the GPR class
-  std::size_t ndim = m_input_data[0].size();
-  std::size_t nsamples = m_input_data.size();
-  Eigen::MatrixXd X = Eigen::MatrixXd(ndim, nsamples);
-  for (std::size_t i = 0; i < nsamples; ++i) {
-    X.col(i) = m_input_data[i];
-  }
-  Eigen::MatrixXd y = Eigen::Map<Eigen::MatrixXd>(m_output_data.data(), 1,
-                                                  m_output_data.size());
-
-  // Update the GPR instance
-  if (m_gpr == nullptr) {
-    m_gpr = std::make_shared<GPR>(X, y);
-  } else {
-    m_gpr->setData(X, y);
-  }
-
-  // Optionally train the GPR hyperparameters
-  if (train) {
-    m_gpr->train();
-  }
-}
-
-const Gaussian& GPRSurrogateModel::objective(const Eigen::VectorXd& x) {
-  SIA_EXCEPTION(initialized(),
-                "GPRSurrogateModel has not be initialized, call updateModel()");
-  return m_gpr->predict(x);
-}
-
-double GPRSurrogateModel::acquisition(const Eigen::VectorXd& x,
+double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
                                       double target,
-                                      BayesianOptimizer::AcquisitionType type) {
-  SIA_EXCEPTION(initialized(),
-                "GPRSurrogateModel has not be initialized, call updateModel()");
-
+                                      BayesianOptimizer::AcquisitionType type,
+                                      const Eigen::VectorXd& u) {
   // Evaluate the acquisition function
-  const auto& p = objective(x);
+  const auto& p = objective(x, u);
   double mu = p.mean()(0);
   double std = sqrt(p.covariance()(0, 0));
 
   switch (type) {
     case BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT:
-      return cdf((mu - target) / std);
+      return Gaussian::cdf((mu - target) / std);
     case BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT:
-      return (mu - target) * cdf((mu - target) / std) +
-             std * pdf((mu - target) / std);
+      return (mu - target) * Gaussian::cdf((mu - target) / std) +
+             std * Gaussian::pdf((mu - target) / std);
     case BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND:
-      return mu + m_beta * std;
+      return mu + m_options.beta * std;
   }
 
-  LOG(ERROR) << "GPRSurrogateModel received unsupported AcquisitionType";
+  SIA_ERROR("GPRSurrogateModel received unsupported AcquisitionType");
   return 0;
 }
 

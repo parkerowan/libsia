@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "tests/helpers.h"
@@ -32,4 +32,15 @@ sia::QuadraticCost createTestCost() {
   Qf << 10;
   R << 0.1;
   return sia::QuadraticCost(Qf, Q, R);
+}
+
+Eigen::MatrixXd createPositiveDefiniteMatrix(std::size_t n) {
+  Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, n);
+
+  // Enforce the matrix to symmetric
+  X = X.selfadjointView<Eigen::Upper>();
+
+  // since A(i,j) < 1 by construction and a symmetric diagonally dominant matrix
+  // is symmetric positive definite, which can be ensured by adding nI
+  return X + double(n) * Eigen::MatrixXd::Identity(n, n);
 }

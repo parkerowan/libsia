@@ -1,10 +1,9 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
-
-#include <glog/logging.h>
+#include "sia/common/logger.h"
 
 namespace sia {
 
@@ -77,8 +76,8 @@ bool Uniform::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t d = data.size();
   if (d != 2 * n) {
-    LOG(WARNING) << "Devectorization failed, expected vector size " << 2 * n
-                 << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << 2 * n << ", received " << d);
     return false;
   }
   setLower(data.head(n));
@@ -109,7 +108,7 @@ void Uniform::checkDimensions(const Eigen::VectorXd& lower,
   std::size_t n = lower.size();
   std::size_t m = upper.size();
   bool r = n == m;
-  SIA_EXCEPTION(r, "Inconsistent dimensions between lower and upper");
+  SIA_THROW_IF_NOT(r, "Inconsistent dimensions between lower and upper");
 }
 
 }  // namespace sia

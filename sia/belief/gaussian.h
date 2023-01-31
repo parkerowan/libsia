@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -45,6 +45,10 @@ class Gaussian : public Distribution {
 
   /// Returns the log probability when $x = \mu$.
   double maxLogProb() const;
+
+  /// Returns the 1D standard probability and cumulative densities
+  static double pdf(double x);
+  static double cdf(double x);
 
  protected:
   /// Computes the Cholesky (LLT) decomposition of the covariance matrix and

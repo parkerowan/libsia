@@ -1,11 +1,12 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gaussian.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
+#include <cmath>
 
 namespace sia {
 
@@ -78,8 +79,8 @@ bool Gaussian::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t d = data.size();
   if (d != n * (n + 1)) {
-    LOG(WARNING) << "Devectorization failed, expected vector size "
-                 << n * (n + 1) << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << n * (n + 1) << ", received " << d);
     return false;
   }
   setMean(data.head(n));
@@ -118,18 +119,26 @@ double Gaussian::maxLogProb() const {
   return -0.5 * (rank * log_2_pi + log_det);
 }
 
+double Gaussian::pdf(double x) {
+  return 1 / sqrt(2 * M_PI) * exp(-pow(x, 2) / 2);
+}
+
+double Gaussian::cdf(double x) {
+  return (1 + erf(x / sqrt(2))) / 2;
+}
+
 void Gaussian::checkDimensions(const Eigen::VectorXd& mu,
                                const Eigen::MatrixXd& sigma) const {
   std::size_t n = mu.size();
   std::size_t m = sigma.rows();
   std::size_t p = sigma.cols();
   bool r = (n == m) && (n == p);
-  SIA_EXCEPTION(r, "Inconsistent dimensions between mu and sigma");
+  SIA_THROW_IF_NOT(r, "Inconsistent dimensions between mu and sigma");
 }
 
 void Gaussian::cacheSigmaChol() {
   bool r = llt(m_sigma, m_cached_sigma_L);
-  SIA_EXCEPTION(r, "Failed to compute cholesky decomposition of covariance");
+  SIA_THROW_IF_NOT(r, "Failed to compute cholesky decomposition of covariance");
 
   m_cached_sigma_L_inv = m_cached_sigma_L.triangularView<Eigen::Lower>().solve(
       Eigen::MatrixXd::Identity(dimension(), dimension()));

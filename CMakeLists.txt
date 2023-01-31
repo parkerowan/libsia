@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -73,14 +73,12 @@ endif()
 # Find depdendencies
 # ------------------------------------------------------------------------------
 find_package(Eigen3 3.3.4 REQUIRED)
-find_package(Glog 0.3.5 REQUIRED)
 find_package(GTest REQUIRED)
 
 # Dependency include directories
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${EIGEN3_INCLUDE_DIR}
-  ${GLOG_INCLUDE_DIR}
 )
 
 # ------------------------------------------------------------------------------

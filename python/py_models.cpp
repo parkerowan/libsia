@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_models.h"
@@ -8,15 +8,27 @@ void export_py_models(py::module& m_sup) {
   py::module m = m_sup;
 
   py::class_<sia::DynamicsModel, PyDynamicsModel>(m, "DynamicsModel")
+      .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
+           py::arg("control_dim"))
+      .def("stateDim", &sia::DynamicsModel::stateDim)
+      .def("controlDim", &sia::DynamicsModel::controlDim)
       .def("dynamics", &sia::DynamicsModel::dynamics, py::arg("state"),
            py::arg("control"), py::return_value_policy::reference_internal);
 
   py::class_<sia::MeasurementModel, PyMeasurementModel>(m, "MeasurementModel")
+      .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
+           py::arg("measurement_dim"))
+      .def("stateDim", &sia::MeasurementModel::stateDim)
+      .def("measurementDim", &sia::MeasurementModel::measurementDim)
       .def("measurement", &sia::MeasurementModel::measurement, py::arg("state"),
            py::return_value_policy::reference_internal);
 
   py::class_<sia::LinearizableDynamics, PyLinearizableDynamics,
              sia::DynamicsModel>(m, "LinearizableDynamics")
+      .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
+           py::arg("control_dim"))
+      .def("stateDim", &sia::LinearizableDynamics::stateDim)
+      .def("controlDim", &sia::LinearizableDynamics::controlDim)
       .def("dynamics", &sia::LinearizableDynamics::dynamics, py::arg("state"),
            py::arg("control"), py::return_value_policy::reference_internal)
       .def("f", &sia::LinearizableDynamics::f, py::arg("state"),
@@ -30,6 +42,10 @@ void export_py_models(py::module& m_sup) {
 
   py::class_<sia::LinearizableMeasurement, PyLinearizableMeasurement,
              sia::MeasurementModel>(m, "LinearizableMeasurement")
+      .def(py::init<std::size_t, std::size_t>(), py::arg("state_dim"),
+           py::arg("measurement_dim"))
+      .def("stateDim", &sia::LinearizableMeasurement::stateDim)
+      .def("measurementDim", &sia::LinearizableMeasurement::measurementDim)
       .def("measurement", &sia::LinearizableMeasurement::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::LinearizableMeasurement::h, py::arg("state"))
@@ -38,8 +54,10 @@ void export_py_models(py::module& m_sup) {
 
   py::class_<sia::NonlinearGaussianDynamics, sia::LinearizableDynamics,
              sia::DynamicsModel>(m, "NonlinearGaussianDynamics")
-      .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&>(),
-           py::arg("dynamics"), py::arg("Q"))
+      .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&, std::size_t,
+                    std::size_t>(),
+           py::arg("dynamics"), py::arg("Q"), py::arg("state_dim"),
+           py::arg("control_dim"))
       .def("dynamics", &sia::NonlinearGaussianDynamics::dynamics,
            py::arg("state"), py::arg("control"),
            py::return_value_policy::reference_internal)
@@ -61,8 +79,10 @@ void export_py_models(py::module& m_sup) {
 
   py::class_<sia::NonlinearGaussianMeasurement, sia::LinearizableMeasurement,
              sia::MeasurementModel>(m, "NonlinearGaussianMeasurement")
-      .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&>(),
-           py::arg("measurement"), py::arg("R"))
+      .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&,
+                    std::size_t, std::size_t>(),
+           py::arg("measurement"), py::arg("R"), py::arg("state_dim"),
+           py::arg("measurement_dim"))
       .def("measurement", &sia::NonlinearGaussianMeasurement::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::NonlinearGaussianMeasurement::h, py::arg("state"))
@@ -79,8 +99,10 @@ void export_py_models(py::module& m_sup) {
   py::class_<sia::NonlinearGaussianDynamicsCT, sia::NonlinearGaussianDynamics,
              sia::LinearizableDynamics, sia::DynamicsModel>(
       m, "NonlinearGaussianDynamicsCT")
-      .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&, double>(),
-           py::arg("dynamics"), py::arg("Qpsd"), py::arg("dt"))
+      .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&, double,
+                    std::size_t, std::size_t>(),
+           py::arg("dynamics"), py::arg("Qpsd"), py::arg("dt"),
+           py::arg("state_dim"), py::arg("control_dim"))
       .def("dynamics", &sia::NonlinearGaussianDynamicsCT::dynamics,
            py::arg("state"), py::arg("control"),
            py::return_value_policy::reference_internal)
@@ -108,8 +130,10 @@ void export_py_models(py::module& m_sup) {
   py::class_<sia::NonlinearGaussianMeasurementCT,
              sia::NonlinearGaussianMeasurement, sia::LinearizableMeasurement,
              sia::MeasurementModel>(m, "NonlinearGaussianMeasurementCT")
-      .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&, double>(),
-           py::arg("measurement"), py::arg("Rpsd"), py::arg("dt"))
+      .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&, double,
+                    std::size_t, std::size_t>(),
+           py::arg("measurement"), py::arg("Rpsd"), py::arg("dt"),
+           py::arg("state_dim"), py::arg("measurement_dim"))
       .def("measurement", &sia::NonlinearGaussianMeasurementCT::measurement,
            py::arg("state"), py::return_value_policy::reference_internal)
       .def("h", &sia::NonlinearGaussianMeasurementCT::h, py::arg("state"))

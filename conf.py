@@ -33,7 +33,7 @@ def get_version() -> str:
 # -- Project information -----------------------------------------------------
 
 project = 'libSIA'
-copyright = '2018-2022, Parker Owan'
+copyright = '2018-2023, Parker Owan'
 author = 'Parker Owan'
 
 # The full version, including alpha/beta/rc tags

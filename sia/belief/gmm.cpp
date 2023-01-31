@@ -1,11 +1,11 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmm.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
 #include "sia/math/math.h"
 
-#include <glog/logging.h>
 #include <algorithm>
 
 namespace sia {
@@ -29,9 +29,9 @@ GMM::GMM(const std::vector<Gaussian>& gaussians,
       m_priors(priors) {
   bool r1 = m_gaussians.size() == m_priors.size();
   bool r2 = m_gaussians.size() > 0;
-  SIA_EXCEPTION(
+  SIA_THROW_IF_NOT(
       r1, "Number of clusters and priors in GMM constructor do not match");
-  SIA_EXCEPTION(r2, "GMM constructor needs one or more clusters");
+  SIA_THROW_IF_NOT(r2, "GMM constructor needs one or more clusters");
   m_num_clusters = gaussians.size();
   m_dimension = gaussians[0].dimension();
 }
@@ -135,8 +135,8 @@ bool GMM::devectorize(const Eigen::VectorXd& data) {
   auto n = dimension();
   std::size_t d = data.size();
   if (d != K * (n * (n + 1) + 1)) {
-    LOG(WARNING) << "Devectorization failed, expected vector size "
-                 << K * (n * (n + 1) + 1) << ", received " << d;
+    SIA_WARN("Devectorization failed, expected vector size "
+             << K * (n * (n + 1) + 1) << ", received " << d);
     return false;
   }
 
@@ -159,11 +159,11 @@ const Categorical& GMM::predict(const Eigen::VectorXd& x) {
   return m_belief;
 }
 
-std::size_t GMM::inputDimension() const {
+std::size_t GMM::inputDim() const {
   return dimension();
 }
 
-std::size_t GMM::outputDimension() const {
+std::size_t GMM::outputDim() const {
   return numClusters();
 }
 
@@ -266,8 +266,8 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       priors.emplace_back(1.0 / double(K));
     }
   } else {
-    LOG(ERROR) << "Unsupported initialization method "
-               << static_cast<int>(init_method);
+    SIA_ERROR("Unsupported initialization method "
+              << static_cast<int>(init_method));
     return 0;
   }
 
@@ -295,8 +295,7 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
         } else if (fit_method == GMM::FitMethod::GAUSSIAN_LIKELIHOOD) {
           weights(k, i) = priors[k] * exp(gaussians[k].logProb(samples.col(i)));
         } else {
-          LOG(ERROR) << "Unsupported fit method "
-                     << static_cast<int>(fit_method);
+          SIA_ERROR("Unsupported fit method " << static_cast<int>(fit_method));
           return 0;
         }
       }
@@ -313,7 +312,7 @@ std::size_t GMM::fit(const Eigen::MatrixXd& samples,
       const Eigen::MatrixXd samples_k =
           extractClusteredSamples(samples, classes, k);
       if (samples_k.cols() == 0) {
-        LOG(WARNING) << "No samples found for cluster " << k;
+        SIA_WARN("No samples found for cluster " << k);
       } else {
         double nk = double(samples_k.cols());
         const Eigen::VectorXd mu = samples_k.rowwise().sum() / nk;

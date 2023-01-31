@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -29,6 +29,10 @@ namespace sia {
 /// [1] https://web.mst.edu/~bohner/papers/tlqtots.pdf
 class LQR : public Controller {
  public:
+  struct Metrics : public BaseMetrics {
+    double cost{0};
+  };
+
   explicit LQR(LinearGaussianDynamics& dynamics,
                QuadraticCost& cost,
                std::size_t horizon);
@@ -43,12 +47,22 @@ class LQR : public Controller {
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
+  /// Access policy terms
+  const Trajectory<Eigen::VectorXd>& feedforward() const;
+  const Trajectory<Eigen::MatrixXd>& feedback() const;
+
  private:
   LinearGaussianDynamics& m_dynamics;
   QuadraticCost& m_cost;
+  std::size_t m_horizon;
+  Metrics m_metrics;
   Trajectory<Eigen::VectorXd> m_controls;
   Trajectory<Eigen::VectorXd> m_states;
-  std::size_t m_horizon;
+  std::vector<Eigen::VectorXd> m_feedforward;
+  std::vector<Eigen::MatrixXd> m_feedback;
 };
 
 }  // namespace sia

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -58,8 +58,8 @@ class Inference {
 
   /// Performs the inference $p(y|x)$
   virtual const Distribution& predict(const Eigen::VectorXd& x) = 0;
-  virtual std::size_t inputDimension() const = 0;
-  virtual std::size_t outputDimension() const = 0;
+  virtual std::size_t inputDim() const = 0;
+  virtual std::size_t outputDim() const = 0;
 };
 
 }  // namespace sia

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -125,6 +125,11 @@ class PyController : public sia::Controller {
   const sia::Trajectory<Eigen::VectorXd>& states() const override {
     PYBIND11_OVERRIDE_PURE(const sia::Trajectory<Eigen::VectorXd>&,
                            sia::Controller, states);
+  }
+
+  // Trampoline (need one for each virtual function)
+  const sia::BaseMetrics& metrics() const override {
+    PYBIND11_OVERRIDE_PURE(const sia::BaseMetrics&, sia::Controller, metrics);
   }
 };
 

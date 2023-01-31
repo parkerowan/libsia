@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2023-01-30
+### Added
+- Adds metrics for controllers and estimators
+- Custom logging interface
+- Access to control gain terms for LQR/iLQR
+- Regularization schedule to iLQR for robust Hessian computation
+- Explicit dimensions to dynamics and measurement models
+- GPR kernel classes for more transparency into hyperparameters
+- KDE smoothing kernel classes for more transparency into bandwidths
+- GPR support for evaluating prior
+- BayesianOptimizer support for conditioning on input vectors
+- GPR edge case test coverage
+### Changed
+- Moved algorithm parameters to options structs
+- Removed GLOG dependency
+- Refactored iLQR code for readability
+- Changed iLQR and MPPI parameter names to be readable
+- Improved numerical stability of iLQR algorithm
+- Fixed several bugs in LQR related to tracking formulation
+- Fixed a bug in GPR that resulted in singular covariances when evaluating at training points
+- Improved GPR/GPC hyperparameter training time and control over search space
+- Removed all uses of dynamic memory allocation
+- Updated python docs to show usage
+
 ## [0.3.3] - 2022-08-03
 ### Changes
 - CMake install bug fixes

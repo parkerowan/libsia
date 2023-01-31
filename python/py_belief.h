@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -84,13 +84,68 @@ class PyInference : public sia::Inference {
   }
 
   // Trampoline (need one for each virtual function)
-  std::size_t inputDimension() const override {
-    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, inputDimension);
+  std::size_t inputDim() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, inputDim);
   }
 
   // Trampoline (need one for each virtual function)
-  std::size_t outputDimension() const override {
-    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDimension);
+  std::size_t outputDim() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Inference, outputDim);
+  }
+};
+
+/// SmoothingKernel trampoline class
+class PySmoothingKernel : public sia::SmoothingKernel {
+ public:
+  // Inherit the constructors
+  using sia::SmoothingKernel::SmoothingKernel;
+
+  // Trampoline (need one for each virtual function)
+  double evaluate(const Eigen::VectorXd& x) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::SmoothingKernel, evaluate, x);
+  }
+};
+
+/// Kernel trampoline class
+class PyKernel : public sia::Kernel {
+ public:
+  // Inherit the constructors
+  using sia::Kernel::Kernel;
+
+  // Trampoline (need one for each virtual function)
+  double eval(const Eigen::VectorXd& x,
+              std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::Kernel, eval, x, output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  double eval(const Eigen::VectorXd& x,
+              const Eigen::VectorXd& y,
+              std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(double, sia::Kernel, eval, x, y, output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  Eigen::VectorXd grad(const Eigen::VectorXd& a,
+                       const Eigen::VectorXd& b,
+                       std::size_t output_index) const override {
+    PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, sia::Kernel, grad, a, b,
+                           output_index);
+  }
+
+  // Trampoline (need one for each virtual function)
+  Eigen::VectorXd hyperparameters() const override {
+    PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, sia::Kernel, hyperparameters);
+  }
+
+  // Trampoline (need one for each virtual function)
+  void setHyperparameters(const Eigen::VectorXd& p) override {
+    PYBIND11_OVERRIDE_PURE(void, sia::Kernel, setHyperparameters, p);
+  }
+
+  // Trampoline (need one for each virtual function)
+  std::size_t numHyperparameters() const override {
+    PYBIND11_OVERRIDE_PURE(std::size_t, sia::Kernel, numHyperparameters);
   }
 };
 

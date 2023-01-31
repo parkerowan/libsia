@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -16,6 +16,10 @@ namespace sia {
 /// prediction and correction.
 class KF : public Estimator {
  public:
+  struct Metrics : public BaseMetrics {
+    double kalman_gain_norm{0};
+  };
+
   explicit KF(LinearGaussianDynamics& dynamics,
               LinearGaussianMeasurement& measurement,
               const Gaussian& state);
@@ -32,10 +36,14 @@ class KF : public Estimator {
   /// Corrects the belief with the measurement.
   const Gaussian& correct(const Eigen::VectorXd& observation) override;
 
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
+
  private:
   LinearGaussianDynamics& m_dynamics;
   LinearGaussianMeasurement& m_measurement;
   Gaussian m_belief;
+  Metrics m_metrics;
 };
 
 }  // namespace sia

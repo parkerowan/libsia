@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "python/py_math.h"
@@ -24,6 +24,9 @@ void export_py_math(py::module& m_sup) {
             const Eigen::MatrixXd&, const std::vector<std::size_t>&,
             const std::vector<std::size_t>&)>(&sia::slice),
         py::arg("X"), py::arg("rows"), py::arg("cols"));
+
+  m.def("replace", &sia::replace, py::arg("x"), py::arg("u"),
+        py::arg("indices"));
 
   m.def("rk4", &sia::rk4, py::arg("dynamical_system"), py::arg("x"),
         py::arg("u"), py::arg("dt"));

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -16,6 +16,8 @@
 #include "sia/belief/particles.h"
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
+#include "sia/common/logger.h"
+#include "sia/common/metrics.h"
 #include "sia/common/trajectory.h"
 #include "sia/controllers/controllers.h"
 #include "sia/controllers/ilqr.h"

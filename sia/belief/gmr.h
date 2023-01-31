@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -36,8 +36,8 @@ class GMR : public Inference {
 
   /// Performs the inference $p(y|x)$
   const Gaussian& predict(const Eigen::VectorXd& x) override;
-  std::size_t inputDimension() const override;
-  std::size_t outputDimension() const override;
+  std::size_t inputDim() const override;
+  std::size_t outputDim() const override;
 
   /// Access to the GMM
   GMM& gmm();

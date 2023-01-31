@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -28,21 +28,32 @@ namespace sia {
 /// algorithms or do not implement control cost in custom cost functions.
 ///
 /// More information on parameters is available in [1].
-/// - num_samples: The number of sample trajectories to rollout
-/// - sigma: The covariance matrix from which to sample control perturbations
-/// - lambda: The temperature which penalizes the perturbation magnitude
+/// - sample_covariance: (>0) Covariance matrix to sample control perturbations.
+///   Must be a square matrix with the same dimension as the control.
+/// - num_samples: (>0) Number of sample trajectories to rollout.
+/// - temperature: (>0) Penalizes the perturbation magnitude.
 ///
 /// References:
 /// [1]
 /// https://homes.cs.washington.edu/~bboots/files/InformationTheoreticMPC.pdf
 class MPPI : public Controller {
  public:
+  struct Metrics : public BaseMetrics {
+    double cost{0};
+  };
+
+  /// Algorithm options
+  struct Options {
+    explicit Options() {}
+    std::size_t num_samples = 10;
+    double temperature = 1.0;
+  };
+
   explicit MPPI(DynamicsModel& dynamics,
                 CostFunction& cost,
                 const std::vector<Eigen::VectorXd>& u0,
-                std::size_t num_samples,
-                const Eigen::MatrixXd& sigma,
-                double lam = 1.0);
+                const Eigen::MatrixXd& sample_covariance,
+                const Options& options = Options());
   virtual ~MPPI() = default;
 
   /// Performs a single step of the MPC $u = \pi(p(x))$.
@@ -53,6 +64,9 @@ class MPPI : public Controller {
 
   /// Returns the expected solution state trajectory $X$ over the horizon
   const Trajectory<Eigen::VectorXd>& states() const override;
+
+  /// Return metrics from the latest step
+  const Metrics& metrics() const override;
 
   /// Returns the sampled state trajectories $X$ over the horizon
   const std::vector<Trajectory<Eigen::VectorXd>>& rolloutStates() const;
@@ -66,14 +80,15 @@ class MPPI : public Controller {
   DynamicsModel& m_dynamics;
   CostFunction& m_cost;
   std::size_t m_horizon;
-  std::size_t m_num_samples;
+  Options m_options;
+  Metrics m_metrics;
   Gaussian m_sigma;
   Eigen::MatrixXd m_sigma_inv;
-  double m_lambda;
   Trajectory<Eigen::VectorXd> m_controls;
   Trajectory<Eigen::VectorXd> m_states;
   std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;
   Eigen::VectorXd m_rollout_weights;
+  bool m_first_pass{true};
 };
 
 }  // namespace sia

@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -10,7 +10,51 @@
 
 namespace sia {
 
-/// SmoothingKernel density estimator to smooth a weighted particle density.  If
+/// SmoothingKernel base class.  See:
+/// https://vision.in.tum.de/_media/teaching/ss2013/ml_ss13/ml4cv_vi.pdf
+/// A kernel function maps a vector to a (semi)-positive scalar, is symmetric
+/// about x=0, and whose integral is 1.  See: Hansen, Lecture notes on
+/// nonparametrics, 2009.
+///
+/// References:
+/// [1] https://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
+/// [2] W. Hardle et. al., "Nonparametric and Semiparametric models," 2004.
+struct SmoothingKernel {
+  SmoothingKernel() = default;
+  virtual ~SmoothingKernel() = default;
+  virtual double evaluate(const Eigen::VectorXd& x) const = 0;
+};
+
+/// Multivariate uniform kernel, domain |x| <= 1.
+struct UniformKernel : public SmoothingKernel {
+  explicit UniformKernel(std::size_t dimension);
+  double evaluate(const Eigen::VectorXd& x) const override;
+
+ private:
+  double m_constant;
+};
+
+/// Multivariate standard normal kernel, domain is infinite.
+struct GaussianKernel : public SmoothingKernel {
+  explicit GaussianKernel(std::size_t dimension);
+  double evaluate(const Eigen::VectorXd& x) const override;
+
+ private:
+  double m_constant;
+};
+
+/// Multivariate spherical Epanechnikov kernel, domain L2(x)^2 <= 1.
+struct EpanechnikovKernel : public SmoothingKernel {
+  explicit EpanechnikovKernel(std::size_t dimension);
+  double evaluate(const Eigen::VectorXd& x) const override;
+
+ private:
+  double m_constant;
+};
+
+// ----------------------------------------------------------------------------
+
+/// Kernel density estimator to smooth a weighted particle density.  If
 /// bandwidth mode is USER_SPECIFIED, kernel bandwidth is initialized using
 /// Scott's rule.
 ///
@@ -19,27 +63,23 @@ namespace sia {
 /// [2] Hardle et. al., "Nonparametric and Semiparametric models," 2004.
 class KernelDensity : public Particles {
  public:
+  /// Default hyperparameter values
+  static constexpr double DEFAULT_BANDWIDTH_SCALING = 1.0;
+
   /// Determines how the bandwidth is computed
   enum class BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
-
-  /// Smoothing kernel function
-  enum class KernelType {
-    UNIFORM,
-    GAUSSIAN,
-    EPANECHNIKOV,
-  };
 
   /// Each column of values is a sample.
   explicit KernelDensity(const Eigen::MatrixXd& values,
                          const Eigen::VectorXd& weights,
-                         KernelType type = KernelType::EPANECHNIKOV,
+                         SmoothingKernel& kernel,
                          BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = 1.0);
+                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
   explicit KernelDensity(const Particles& particles,
-                         KernelType type = KernelType::EPANECHNIKOV,
+                         SmoothingKernel& kernel,
                          BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = 1.0);
+                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
   virtual ~KernelDensity() = default;
 
@@ -74,18 +114,15 @@ class KernelDensity : public Particles {
   void setBandwidthMode(BandwidthMode mode);
   BandwidthMode getBandwidthMode() const;
 
-  void setKernelType(KernelType type);
-  KernelType getKernelType() const;
-
-  // Forward declarations
-  struct SmoothingKernel;
+  /// Access the kernel
+  SmoothingKernel& kernel();
 
  protected:
   void setBandwidthMatrix(const Eigen::MatrixXd& H);
   void autoUpdateBandwidth();
   void bandwidthScottRule(const Eigen::MatrixXd& Sigma);
 
-  std::shared_ptr<SmoothingKernel> m_kernel;
+  SmoothingKernel& m_kernel;
   Eigen::MatrixXd m_bandwidth;
   Eigen::MatrixXd m_bandwidth_inv;
   double m_bandwidth_det;

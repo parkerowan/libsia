@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+# Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 # Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 # ------------------------------------------------------------------------------
@@ -6,11 +6,12 @@
 # ------------------------------------------------------------------------------
 set(test_target "test-sia")
 set(test_deps "sia")
-set(test_libs ${GLOG_LIBRARIES})
+set(test_libs "")
 set(test_source
   helpers.h
   helpers.cpp
   test_belief.cpp
+  test_common.cpp
   test_controllers.cpp
   test_estimators.cpp
   test_math.cpp

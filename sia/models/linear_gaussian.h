@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -51,7 +51,9 @@ class LinearGaussianDynamics : public LinearizableDynamics {
   void setG(const Eigen::MatrixXd& G);
 
  protected:
-  LinearGaussianDynamics(const Eigen::MatrixXd& Q);
+  LinearGaussianDynamics(std::size_t state_dim,
+                         std::size_t control_dim,
+                         const Eigen::MatrixXd& Q);
   void cacheStateCovariance();
 
   Eigen::MatrixXd m_dynamics_matrix;

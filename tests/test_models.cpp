@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include <gtest/gtest.h>
@@ -150,8 +150,10 @@ TEST(Models, NonlinearGaussianDynamics) {
     return F * x + G * u;
   };
 
-  sia::NonlinearGaussianDynamics a(dynamics, Q);
+  sia::NonlinearGaussianDynamics a(dynamics, Q, 1, 1);
   EXPECT_TRUE(a.Q().isApprox(Q));
+  EXPECT_EQ(a.stateDim(), 1);
+  EXPECT_EQ(a.controlDim(), 1);
 
   Q << 0.5;
   a.setQ(Q);
@@ -178,8 +180,10 @@ TEST(Models, NonlinearGaussianMeasurement) {
   // Try out the linear case
   auto measurement = [H](const Eigen::VectorXd& x) { return H * x; };
 
-  sia::NonlinearGaussianMeasurement a(measurement, R);
+  sia::NonlinearGaussianMeasurement a(measurement, R, 1, 1);
   EXPECT_TRUE(a.R().isApprox(R));
+  EXPECT_EQ(a.stateDim(), 1);
+  EXPECT_EQ(a.measurementDim(), 1);
 
   R << 0.2;
   a.setR(R);
@@ -208,7 +212,7 @@ TEST(Models, NonlinearGaussianDynamicsCT) {
   };
 
   double dt = 0.1;
-  sia::NonlinearGaussianDynamicsCT a(dynamics, Qpsd, dt);
+  sia::NonlinearGaussianDynamicsCT a(dynamics, Qpsd, dt, 1, 1);
   EXPECT_TRUE(a.Q().isApprox(Qpsd * dt));
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 
@@ -245,7 +249,7 @@ TEST(Models, NonlinearGaussianMeasurementCT) {
   auto measurement = [H](const Eigen::VectorXd& x) { return H * x; };
 
   double dt = 0.1;
-  sia::NonlinearGaussianMeasurementCT a(measurement, Rpsd, dt);
+  sia::NonlinearGaussianMeasurementCT a(measurement, Rpsd, dt, 1, 1);
   EXPECT_TRUE(a.R().isApprox(Rpsd / dt));
   EXPECT_DOUBLE_EQ(a.getTimeStep(), dt);
 

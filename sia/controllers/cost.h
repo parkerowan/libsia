@@ -1,4 +1,4 @@
-/// Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+/// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #pragma once
@@ -28,7 +28,7 @@ class CostFunction {
   // Total cost.  Assume that length of states $x$ is $N$, length of controls
   // $u$ is $N-1$.
   double eval(const std::vector<Eigen::VectorXd>& x,
-              const std::vector<Eigen::VectorXd>& u);
+              const std::vector<Eigen::VectorXd>& u) const;
 };
 
 /// Defines a differentiable cost function, exposing gradients and Hessians of

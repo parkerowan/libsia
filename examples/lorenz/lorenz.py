@@ -1,5 +1,5 @@
 """
-Copyright (c) 2018-2022, Parker Owan.  All rights reserved.
+Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 """
 
@@ -37,7 +37,7 @@ def create_dynamics(q: float, dt: float) -> sia.NonlinearGaussianDynamicsCT:
     Q = q * np.identity(3)
 
     # Create the system
-    return sia.NonlinearGaussianDynamicsCT(f, Q, dt)
+    return sia.NonlinearGaussianDynamicsCT(f, Q, dt, 3, 0)
 
 
 def create_measurement(r: float, dt: float) -> sia.NonlinearGaussianMeasurementCT:
@@ -52,7 +52,7 @@ def create_measurement(r: float, dt: float) -> sia.NonlinearGaussianMeasurementC
     R = r * np.identity(2)
 
     # Create the system
-    return sia.NonlinearGaussianMeasurementCT(h, R, dt)
+    return sia.NonlinearGaussianMeasurementCT(h, R, dt, 3, 2)
 
 
 def create_estimator(dynamics: sia.NonlinearGaussianDynamicsCT,
@@ -68,11 +68,13 @@ def create_estimator(dynamics: sia.NonlinearGaussianDynamicsCT,
                                       weighted_stats=True)
 
     # Initialize the particle filter
+    options = sia.PF.Options()
+    options.resample_threshold=resample_threshold
+    options.roughening_factor=roughening_factor
     pf = sia.PF(dynamics=dynamics,
                 measurement=measurement,
                 particles=particles,
-                resample_threshold=resample_threshold,
-                roughening_factor=roughening_factor)
+                options=options)
 
     # Initial true state
     x = np.array([-10, 5, 20])
@@ -127,8 +129,8 @@ def step_animate_3d_sim(i, dynamics, measurement, state, pf, scatter,
     particles = pf.belief()
 
     if i > 0:
-        # There is not forcing term to the system so we just assign zeros
-        u = np.zeros(3)
+        # There is no forcing term so we pass an empty vector
+        u = np.array([])
         x = state.mean()
 
         # Step the system states, takes a measurement
@@ -137,7 +139,7 @@ def step_animate_3d_sim(i, dynamics, measurement, state, pf, scatter,
         state.setMean(x)
 
         # Step the estimator
-        particles = pf.estimate(y, x)
+        particles = pf.estimate(y, u)
 
         # Update the state point
         point.set_data(x[:2])
