@@ -8,7 +8,7 @@ set(lib_target "sia")
 
 set(lib_libs "")
 
-file (GLOB lib_headers
+file (GLOB lib_headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "*.h"
   "belief/*.h"
   "common/*.h"
@@ -19,7 +19,7 @@ file (GLOB lib_headers
   "optimizers/*.h"
 )
 
-file (GLOB lib_sources
+file (GLOB lib_sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "belief/*.cpp"
   "common/*.cpp"
   "controllers/*.cpp"
