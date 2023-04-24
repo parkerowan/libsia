@@ -74,6 +74,7 @@ bool svd(const Eigen::MatrixXd& A,
          Eigen::MatrixXd& U,
          Eigen::VectorXd& S,
          Eigen::MatrixXd& V,
+         double damping,
          double tolerance) {
   bool result = true;
 
@@ -82,9 +83,13 @@ bool svd(const Eigen::MatrixXd& A,
       A, Eigen::ComputeThinU | Eigen::ComputeThinV);
   const Eigen::VectorXd& singular_values = svd.singularValues();
 
+  // Apply damping to singular values
+  Eigen::VectorXd sigma = (singular_values.array().square() + pow(damping, 2)) /
+                          singular_values.array();
+
   // Check for singular condition
-  for (int i = 0; i < singular_values.size(); ++i) {
-    if (singular_values(i) <= tolerance) {
+  for (int i = 0; i < sigma.size(); ++i) {
+    if (sigma(i) <= tolerance) {
       SIA_WARN("Singular value is less than tolerance");
       result = false;
     }
@@ -92,7 +97,7 @@ bool svd(const Eigen::MatrixXd& A,
 
   // Return SVD matrices
   U = svd.matrixU();
-  S = singular_values.array();
+  S = sigma.array();
   V = svd.matrixV();
   return result;
 }
@@ -101,6 +106,19 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
                                  const Eigen::VectorXd& S,
                                  const Eigen::MatrixXd& V) {
   return V * S.array().inverse().matrix().asDiagonal() * U.transpose();
+}
+
+bool svdInverse(const Eigen::MatrixXd& A,
+                Eigen::MatrixXd& Ainv,
+                double damping,
+                double tolerance) {
+  Eigen::MatrixXd U, V;
+  Eigen::VectorXd S;
+  bool result = svd(A, U, S, V, tolerance);
+
+  // Compute the generalized inverse using SVD
+  Ainv = svdInverse(U, S, V);
+  return result;
 }
 
 bool symmetric(const Eigen::MatrixXd& A) {
@@ -118,18 +136,6 @@ bool positiveDefinite(const Eigen::MatrixXd& A) {
   const auto ldlt = A.selfadjointView<Eigen::Upper>().ldlt();
   Eigen::VectorXd d = ldlt.vectorD();
   return d.minCoeff() > 0;
-}
-
-bool svdInverse(const Eigen::MatrixXd& A,
-                Eigen::MatrixXd& Ainv,
-                double tolerance) {
-  Eigen::MatrixXd U, V;
-  Eigen::VectorXd S;
-  bool result = svd(A, U, S, V, tolerance);
-
-  // Compute the generalized inverse using SVD
-  Ainv = svdInverse(U, S, V);
-  return result;
 }
 
 const Eigen::MatrixXd lltSqrt(const Eigen::MatrixXd& A) {
