@@ -114,7 +114,7 @@ bool svdInverse(const Eigen::MatrixXd& A,
                 double tolerance) {
   Eigen::MatrixXd U, V;
   Eigen::VectorXd S;
-  bool result = svd(A, U, S, V, tolerance);
+  bool result = svd(A, U, S, V, damping, tolerance);
 
   // Compute the generalized inverse using SVD
   Ainv = svdInverse(U, S, V);
