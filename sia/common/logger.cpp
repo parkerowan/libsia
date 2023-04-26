@@ -7,44 +7,29 @@
 
 namespace sia {
 
-class DefaultInterface : public LoggerInterface {
- public:
-  DefaultInterface() = default;
-  virtual ~DefaultInterface() = default;
-  virtual void debug(const std::string& msg) const;
-  virtual void info(const std::string& msg) const;
-  virtual void warn(const std::string& msg) const;
-  virtual void error(const std::string& msg) const;
-  virtual void critical(const std::string& msg) const;
-};
-
-void DefaultInterface::debug(const std::string& msg) const {
+void DefaultLogger::debug(const std::string& msg) const {
   std::cout << "SIA [DEBUG] " << msg << "\n";
 }
 
-void DefaultInterface::info(const std::string& msg) const {
+void DefaultLogger::info(const std::string& msg) const {
   std::cout << "SIA [INFO] " << msg << "\n";
 }
 
-void DefaultInterface::warn(const std::string& msg) const {
+void DefaultLogger::warn(const std::string& msg) const {
   std::cout << "SIA [WARN] " << msg << "\n";
 }
 
-void DefaultInterface::error(const std::string& msg) const {
+void DefaultLogger::error(const std::string& msg) const {
   std::cout << "SIA [ERROR] " << msg << "\n";
 }
 
-void DefaultInterface::critical(const std::string& msg) const {
+void DefaultLogger::critical(const std::string& msg) const {
   std::cout << "SIA [CRITICAL] " << msg << "\n";
 }
 
 Logger& Logger::instance() {
   static Logger logger;
   return logger;
-}
-
-void Logger::setCustomLogger(LoggerInterface& interface) {
-  instance().m_interface = &interface;
 }
 
 void Logger::debug(const std::string& msg) {
@@ -77,8 +62,6 @@ void Logger::critical(const std::string& msg) {
   instance().m_interface->critical(msg);
 }
 
-DefaultInterface default_interface{};
-
-Logger::Logger() : m_interface(&default_interface) {}
+Logger::Logger() : m_interface(std::make_shared<DefaultLogger>()) {}
 
 }  // namespace sia
