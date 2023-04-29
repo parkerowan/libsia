@@ -37,14 +37,37 @@ TEST(Common, Logger) {
 }
 
 TEST(Common, LoggerInterface) {
-  MyCustomLogger custom_logger{};
-  sia::Logger::setCustomLogger(custom_logger);
+  sia::Logger::init<MyCustomLogger>();
 
   sia::Logger::debug("My debug");
   sia::Logger::info("My info");
   sia::Logger::warn("My warn");
   sia::Logger::error("My error");
   sia::Logger::critical("My critical");
+}
+
+TEST(Common, LoggerMacros) {
+  // Format an expression in place
+  std::string msg = SIA_FMT("My message" << 0);
+
+  // Make sure the convenience logging works
+  SIA_DEBUG("My debug " << 0);
+  SIA_INFO("My info " << 0);
+  SIA_WARN("My warn " << 0);
+  SIA_ERROR("My error " << 0);
+  SIA_CRITICAL("My critical " << 0);
+}
+
+TEST(Common, DefaultInterface) {
+  // Now reset the logger to use the default interface
+  sia::Logger::init();
+
+  // Make sure the convenience logging still works
+  SIA_DEBUG("My debug " << 0);
+  SIA_INFO("My info " << 0);
+  SIA_WARN("My warn " << 0);
+  SIA_ERROR("My error " << 0);
+  SIA_CRITICAL("My critical " << 0);
 }
 
 TEST(Common, Metrics) {

@@ -9,6 +9,7 @@
 #include <pybind11/stl.h>
 
 #include "sia/optimizers/bayesian_optimizer.h"
+#include "sia/optimizers/covariance_adaptation.h"
 #include "sia/optimizers/gradient_descent.h"
 
 namespace py = pybind11;

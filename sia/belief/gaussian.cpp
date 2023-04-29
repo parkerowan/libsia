@@ -119,6 +119,14 @@ double Gaussian::maxLogProb() const {
   return -0.5 * (rank * log_2_pi + log_det);
 }
 
+const Eigen::MatrixXd& Gaussian::L() const {
+  return m_cached_sigma_L;
+}
+
+const Eigen::MatrixXd& Gaussian::Linv() const {
+  return m_cached_sigma_L_inv;
+}
+
 double Gaussian::pdf(double x) {
   return 1 / sqrt(2 * M_PI) * exp(-pow(x, 2) / 2);
 }

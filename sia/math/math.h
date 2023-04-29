@@ -44,6 +44,7 @@ bool svd(const Eigen::MatrixXd& A,
          Eigen::MatrixXd& U,
          Eigen::VectorXd& S,
          Eigen::MatrixXd& V,
+         double damping = 0,
          double tolerance = DEFAULT_SINGULAR_TOLERANCE);
 
 /// Computes the matrix inverse from SVD matrices
@@ -52,9 +53,11 @@ const Eigen::MatrixXd svdInverse(const Eigen::MatrixXd& U,
                                  const Eigen::MatrixXd& V);
 
 /// Computes the SVD-based inverse of matrix A.  If the singular values are
-/// less than the tolerance, returns false.  Otherwise returns true.
+/// less than the tolerance, returns false.  Otherwise returns true.  Add
+/// damping to avoid encountering singular values in ill-conditioned matrices.
 bool svdInverse(const Eigen::MatrixXd& A,
                 Eigen::MatrixXd& Ainv,
+                double damping = 0,
                 double tolerance = DEFAULT_SINGULAR_TOLERANCE);
 
 /// Returns if the matrix is symmetric (self-adjoint)

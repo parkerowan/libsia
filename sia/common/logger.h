@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -20,10 +21,25 @@ class LoggerInterface {
   virtual void critical(const std::string& msg) const = 0;
 };
 
+/// The default logging interface unless a custom one is initialized.
+class DefaultLogger : public LoggerInterface {
+ public:
+  DefaultLogger() = default;
+  virtual ~DefaultLogger() = default;
+  virtual void debug(const std::string& msg) const;
+  virtual void info(const std::string& msg) const;
+  virtual void warn(const std::string& msg) const;
+  virtual void error(const std::string& msg) const;
+  virtual void critical(const std::string& msg) const;
+};
+
 class Logger {
  public:
   /// Set the inherited LoggerInterface to use a custom logger
-  static void setCustomLogger(LoggerInterface& interface);
+  template <typename T = DefaultLogger>
+  static void init() {
+    instance().m_interface = std::make_shared<T>();
+  }
 
   // Sia classes should use the following routines internally
   static void debug(const std::string& msg);
@@ -35,26 +51,25 @@ class Logger {
  private:
   static Logger& instance();
   Logger();
-  LoggerInterface* m_interface;
+  std::shared_ptr<LoggerInterface> m_interface;
 };
 
-/// Formats an expression inplace using stringstream
 #define SIA_FMT(expression) \
-  ((std::ostringstream&)(std::ostringstream() << expression)).str()
+  static_cast<const std::stringstream&>(std::stringstream() << expression).str()
 
 /// Logs an expression
-#define SIA_DEBUG(expression) Logger::debug(SIA_FMT(expression))
+#define SIA_DEBUG(expression) sia::Logger::debug(SIA_FMT(expression));
 
 /// Logs an expression
-#define SIA_INFO(expression) Logger::info(SIA_FMT(expression))
+#define SIA_INFO(expression) sia::Logger::info(SIA_FMT(expression));
 
 /// Logs an expression
-#define SIA_WARN(expression) Logger::warn(SIA_FMT(expression))
+#define SIA_WARN(expression) sia::Logger::warn(SIA_FMT(expression));
 
 /// Logs an expression
-#define SIA_ERROR(expression) Logger::error(SIA_FMT(expression))
+#define SIA_ERROR(expression) sia::Logger::error(SIA_FMT(expression));
 
 /// Logs an expression
-#define SIA_CRITICAL(expression) Logger::critical(SIA_FMT(expression))
+#define SIA_CRITICAL(expression) sia::Logger::critical(SIA_FMT(expression));
 
 }  // namespace sia
