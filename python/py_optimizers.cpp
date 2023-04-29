@@ -90,4 +90,27 @@ void export_py_optimizers(py::module& m_sup) {
               &sia::BayesianOptimizer::acquisition),
           py::arg("x"), py::arg("target"), py::arg("type"),
           py::arg("u") = Eigen::VectorXd{});
+
+  auto cma = py::class_<sia::CovarianceAdaptation>(m, "CovarianceAdaptation");
+
+  py::class_<sia::CovarianceAdaptation::Options>(cma, "Options")
+      .def(py::init<>())
+      .def_readwrite("n_samples",
+                     &sia::CovarianceAdaptation::Options::n_samples)
+      .def_readwrite("init_stdev",
+                     &sia::CovarianceAdaptation::Options::init_stdev)
+      .def_readwrite("max_iter", &sia::CovarianceAdaptation::Options::max_iter)
+      .def_readwrite("tol", &sia::CovarianceAdaptation::Options::tol)
+      .def_readwrite("max_cov_norm",
+                     &sia::CovarianceAdaptation::Options::max_cov_norm);
+
+  cma.def(py::init<std::size_t, const sia::CovarianceAdaptation::Options&>(),
+          py::arg("dimension"),
+          py::arg("options") = sia::CovarianceAdaptation::Options())
+      .def("dimension", &sia::CovarianceAdaptation::dimension)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::CovarianceAdaptation::*)(
+               sia::CovarianceAdaptation::Cost, const Eigen::VectorXd&) const>(
+               &sia::CovarianceAdaptation::minimize),
+           py::arg("f"), py::arg("x0"));
 }

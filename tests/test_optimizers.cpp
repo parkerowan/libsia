@@ -152,3 +152,12 @@ TEST(Optimizers, BayesianOptimizer) {
   ASSERT_EQ(xopt.size(), 1);
   EXPECT_NEAR(xopt(0), 2.275, 2e-2);
 }
+
+TEST(Optimizers, CovarianceAdaptation) {
+  sia::CovarianceAdaptation optm(2);
+  Eigen::VectorXd xopt = optm.minimize(quadratic, Eigen::Vector2d{1.2, -2.5});
+  ASSERT_EQ(xopt.size(), 2);
+  EXPECT_NEAR(xopt(0), 0, 1e-3);
+  EXPECT_NEAR(xopt(1), 0, 1e-3);
+  EXPECT_EQ(optm.dimension(), 2);
+}

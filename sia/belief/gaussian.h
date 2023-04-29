@@ -46,6 +46,10 @@ class Gaussian : public Distribution {
   /// Returns the log probability when $x = \mu$.
   double maxLogProb() const;
 
+  /// Returns the cholesky decomposition (and inverse) of the covariance matrix
+  const Eigen::MatrixXd& L() const;
+  const Eigen::MatrixXd& Linv() const;
+
   /// Returns the 1D standard probability and cumulative densities
   static double pdf(double x);
   static double cdf(double x);
