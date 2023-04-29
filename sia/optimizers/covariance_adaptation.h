@@ -45,11 +45,41 @@ class CovarianceAdaptation {
   using Cost = std::function<double(const Eigen::VectorXd&)>;
 
   /// Finds the minima of f given an initial guess x0
-  Eigen::VectorXd minimize(Cost f, const Eigen::VectorXd& x0) const;
+  Eigen::VectorXd minimize(Cost f, const Eigen::VectorXd& x0);
+
+  /// Run a single step and access internals for more customization
+  Eigen::VectorXd minimizeSingleStep(Cost f, const Eigen::VectorXd& x0);
+  const std::vector<std::pair<double, Eigen::VectorXd>>& getSamples() const;
+  void reset();
 
  private:
+  // Computed once at the beginning of the algorithm
+  struct Constants {
+    double lambda;
+    std::size_t mu;
+    Eigen::VectorXd weights;
+    double mueff;
+    double N;
+    double cc;
+    double cs;
+    double c1;
+    double cmu;
+    double damps;
+  } _c;
+
+  // Recomputed every iteration
+  struct States {
+    std::size_t iter;
+    double sigma;
+    double chiN;
+    Eigen::MatrixXd C;
+    Eigen::VectorXd pc;
+    Eigen::VectorXd ps;
+  } _s;
+
   std::size_t m_dimension;
   Options m_options;
+  std::vector<std::pair<double, Eigen::VectorXd>> m_samples{};
 };
 
 }  // namespace sia

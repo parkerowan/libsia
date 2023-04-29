@@ -108,9 +108,10 @@ void export_py_optimizers(py::module& m_sup) {
           py::arg("dimension"),
           py::arg("options") = sia::CovarianceAdaptation::Options())
       .def("dimension", &sia::CovarianceAdaptation::dimension)
-      .def("minimize",
-           static_cast<Eigen::VectorXd (sia::CovarianceAdaptation::*)(
-               sia::CovarianceAdaptation::Cost, const Eigen::VectorXd&) const>(
-               &sia::CovarianceAdaptation::minimize),
-           py::arg("f"), py::arg("x0"));
+      .def("minimize", &sia::CovarianceAdaptation::minimize, py::arg("f"),
+           py::arg("x0"))
+      .def("minimizeSingleStep", &sia::CovarianceAdaptation::minimizeSingleStep,
+           py::arg("f"), py::arg("x0"))
+      .def("getSamples", &sia::CovarianceAdaptation::getSamples)
+      .def("reset", &sia::CovarianceAdaptation::reset);
 }
