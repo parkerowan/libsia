@@ -2,11 +2,10 @@
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
 #include "sia/belief/gmr.h"
+#include <limits>
 #include "sia/common/exception.h"
 #include "sia/common/logger.h"
 #include "sia/math/math.h"
-
-#include <limits>
 
 namespace sia {
 
@@ -42,29 +41,34 @@ const Gaussian& GMR::predict(const Eigen::VectorXd& x) {
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(d);
   Eigen::MatrixXd sig = Eigen::MatrixXd::Zero(d, d);
 
-  // Initialize cumulative priors to smallest double to avoid divide by zero
-  double cweight = std::numeric_limits<double>::epsilon();
-
-  // For each Gaussian dist
+  // Compute the weights
+  Eigen::VectorXd log_weights = Eigen::VectorXd::Zero(m_gmm.numClusters());
   const auto& priors = m_gmm.priors();
   for (std::size_t k = 0; k < m_gmm.numClusters(); ++k) {
     const auto& model = m_models[k];
-
-    // Compute the weight based on proximity of input to input mean
-    double weight = priors[k] * exp(model.m_gx.logProb(x));
-    cweight += weight;
-
-    // Compute the weighted local mean & covariance
-    mu += weight *
-          (model.m_mu_y + model.m_sigma_yx_sigma_xx_inv * (x - model.m_mu_x));
-    sig += pow(weight, 2.0) * model.m_sigma;
+    log_weights(k) = log(priors[k]) + model.m_gx.logProb(x);
   }
 
-  // Normalize
-  mu = mu / cweight;
-  sig = sig / pow(cweight, 2.0);
+  // Normalize the weights, add a small value to avoid divide by zero
+  Eigen::VectorXd weights = log_weights.array().exp();
+  double eps = std::numeric_limits<double>::epsilon();
+  if (weights.sum() < eps) {
+    int i;
+    log_weights.maxCoeff(&i);
+    weights[i] = eps;
+  }
+  weights = weights / weights.sum();
 
-  // enforce symmetry of covariance and add regularization for positive definite
+  // Compute the weighted local mean & covariance
+  for (std::size_t k = 0; k < m_gmm.numClusters(); ++k) {
+    const auto& model = m_models[k];
+    mu += weights(k) *
+          (model.m_mu_y + model.m_sigma_yx_sigma_xx_inv * (x - model.m_mu_x));
+    sig += pow(weights(k), 2.0) * model.m_sigma;
+  }
+
+  // enforce symmetry of covariance and add regularization for positive
+  // definite
   sig = (sig + sig.transpose()) / 2.0;
   sig += m_regularization * Eigen::MatrixXd::Identity(d, d);
 

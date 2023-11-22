@@ -534,6 +534,12 @@ TEST(Belief, GMR) {
   EXPECT_NEAR(y1.mean()(0), -1.0, 1e-3);
   EXPECT_NEAR(y0.covariance()(0, 0), 1.0, 1e-3);
   EXPECT_NEAR(y1.covariance()(0, 0), 2.0, 1e-3);
+
+  // Well outside the demonstration
+  sia::Gaussian y2 = gmr.predict(100 * Eigen::VectorXd::Ones(1));
+  ASSERT_EQ(y2.dimension(), 1);
+  EXPECT_NEAR(y2.mean()(0), -1.0, 1e-3);
+  EXPECT_NEAR(y2.covariance()(0, 0), 2.0, 1e-3);
 }
 
 TEST(Belief, GPR) {
