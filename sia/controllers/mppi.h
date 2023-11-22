@@ -68,10 +68,16 @@ class MPPI : public Controller {
   /// Return metrics from the latest step
   const Metrics& metrics() const override;
 
+  /// Returns the sampled control trajectories $X$ over the horizon
+  const std::vector<Trajectory<Eigen::VectorXd>>& rolloutControls() const;
+
   /// Returns the sampled state trajectories $X$ over the horizon
   const std::vector<Trajectory<Eigen::VectorXd>>& rolloutStates() const;
 
-  /// Returns the weight vector for each sampled rollout
+  /// Returns the cost for each sampled rollout
+  const Eigen::VectorXd& rolloutCosts() const;
+
+  /// Returns the weights for each sampled rollout
   const Eigen::VectorXd& rolloutWeights() const;
 
  private:
@@ -86,7 +92,9 @@ class MPPI : public Controller {
   Eigen::MatrixXd m_sigma_inv;
   Trajectory<Eigen::VectorXd> m_controls;
   Trajectory<Eigen::VectorXd> m_states;
+  std::vector<Trajectory<Eigen::VectorXd>> m_rollout_controls;
   std::vector<Trajectory<Eigen::VectorXd>> m_rollout_states;
+  Eigen::VectorXd m_rollout_costs;
   Eigen::VectorXd m_rollout_weights;
   bool m_first_pass{true};
 };

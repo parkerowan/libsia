@@ -144,7 +144,7 @@ using RunningCostFunction =
 /// - $c$ is the differentiable running cost
 /// - $c_f$ is the differentiable terminal cost
 /// The user must ensure that the provided cost functions can be differentiated.
-/// Gradients are implemented with central difference.
+/// Gradients are by default implemented with central difference.
 class FunctionalCost : public DifferentiableCost {
  public:
   explicit FunctionalCost(TerminalCostFunction terminal_cost,

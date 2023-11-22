@@ -200,7 +200,11 @@ void export_py_controllers(py::module& m_sup) {
            py::return_value_policy::reference_internal)
       .def("metrics", &sia::MPPI::metrics,
            py::return_value_policy::reference_internal)
+      .def("rolloutControls", &sia::MPPI::rolloutControls,
+           py::return_value_policy::reference_internal)
       .def("rolloutStates", &sia::MPPI::rolloutStates,
+           py::return_value_policy::reference_internal)
+      .def("rolloutCosts", &sia::MPPI::rolloutCosts,
            py::return_value_policy::reference_internal)
       .def("rolloutWeights", &sia::MPPI::rolloutWeights,
            py::return_value_policy::reference_internal);

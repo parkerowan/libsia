@@ -18,6 +18,7 @@ MPPI::MPPI(DynamicsModel& dynamics,
       m_sigma(Gaussian(Eigen::VectorXd::Zero(sample_covariance.rows()),
                        sample_covariance)),
       m_controls(u0),
+      m_rollout_costs(Eigen::VectorXd::Zero(options.num_samples)),
       m_rollout_weights(Eigen::VectorXd::Zero(options.num_samples)) {
   cacheSigmaInv();
 }
@@ -36,14 +37,18 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
   m_first_pass = false;
 
   // Reset the rollout history
+  m_rollout_controls.clear();
+  m_rollout_controls.reserve(N);
   m_rollout_states.clear();
   m_rollout_states.reserve(N);
 
   // Rollout a perturbation around the nominal control for each sample
   std::vector<Trajectory<Eigen::VectorXd>> eps;
   eps.reserve(N);
-  Eigen::VectorXd S = Eigen::VectorXd::Zero(N);
+  m_rollout_costs = Eigen::VectorXd::Zero(N);
   for (std::size_t j = 0; j < N; ++j) {
+    Trajectory<Eigen::VectorXd> control_rollout;
+    control_rollout.reserve(T - 1);
     Trajectory<Eigen::VectorXd> state_rollout;
     state_rollout.reserve(T);
 
@@ -57,18 +62,22 @@ const Eigen::VectorXd& MPPI::policy(const Distribution& state) {
       const auto& u = m_controls.at(i);
       const auto& e = samples.at(i);
       const auto uhat = u + e;
-      S(j) += m_cost.c(x, uhat, i) +
-              m_options.temperature * u.transpose() * m_sigma_inv * e;
+      control_rollout.emplace_back(uhat);
+      m_rollout_costs(j) += m_cost.c(x, uhat, i) + m_options.temperature *
+                                                       u.transpose() *
+                                                       m_sigma_inv * e;
       x = m_dynamics.dynamics(x, uhat).mean();  // TODO: Add option to sample
       state_rollout.emplace_back(x);
     }
-    S(j) += m_cost.cf(x);
+    m_rollout_costs(j) += m_cost.cf(x);
+    m_rollout_controls.emplace_back(control_rollout);
     m_rollout_states.emplace_back(state_rollout);
   }
 
   // Compute weights
-  double beta = S.minCoeff();
-  m_rollout_weights = exp(-(S.array() - beta) / m_options.temperature);
+  double beta = m_rollout_costs.minCoeff();
+  m_rollout_weights =
+      exp(-(m_rollout_costs.array() - beta) / m_options.temperature);
   m_rollout_weights /= m_rollout_weights.sum();
 
   // Clear the states
@@ -102,16 +111,24 @@ const Trajectory<Eigen::VectorXd>& MPPI::states() const {
   return m_states;
 }
 
+const MPPI::Metrics& MPPI::metrics() const {
+  return m_metrics;
+}
+
+const std::vector<Trajectory<Eigen::VectorXd>>& MPPI::rolloutControls() const {
+  return m_rollout_controls;
+}
+
 const std::vector<Trajectory<Eigen::VectorXd>>& MPPI::rolloutStates() const {
   return m_rollout_states;
 }
 
-const Eigen::VectorXd& MPPI::rolloutWeights() const {
-  return m_rollout_weights;
+const Eigen::VectorXd& MPPI::rolloutCosts() const {
+  return m_rollout_costs;
 }
 
-const MPPI::Metrics& MPPI::metrics() const {
-  return m_metrics;
+const Eigen::VectorXd& MPPI::rolloutWeights() const {
+  return m_rollout_weights;
 }
 
 void MPPI::cacheSigmaInv() {
