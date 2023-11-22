@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include "sia/belief/uniform.h"
-
 #include <Eigen/Dense>
+#include "sia/belief/uniform.h"
 
 namespace sia {
 

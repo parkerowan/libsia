@@ -14,7 +14,7 @@ namespace sia {
 
 /// Kernel function base class.  Kernels are symmetric and positive definite.
 /// The gradient function returns the Jacobian w.r.t. to the kernel
-/// hyperarameters.  For details on how to choose kernels, see The Kernel
+/// hyperparameters.  For details on how to choose kernels, see The Kernel
 /// Cookbook https://www.cs.toronto.edu/~duvenaud/cookbook/
 struct Kernel {
   Kernel() = default;
