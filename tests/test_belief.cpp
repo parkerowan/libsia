@@ -35,6 +35,30 @@ TEST(Belief, Generator) {
   }
 }
 
+TEST(Belief, Deterministic) {
+  sia::Deterministic a(1);
+  ASSERT_EQ(a.dimension(), 1);
+  EXPECT_DOUBLE_EQ(a.mean()(0), 1);
+  EXPECT_DOUBLE_EQ(a.mode()(0), 1);
+
+  a.setValue(-2 * Eigen::VectorXd::Ones(1));
+  EXPECT_DOUBLE_EQ(a.mean()(0), -2);
+  EXPECT_DOUBLE_EQ(a.mode()(0), -2);
+
+  Eigen::Vector2d value{1, 2};
+  sia::Deterministic b(value);
+  ASSERT_EQ(b.dimension(), 2);
+  EXPECT_DOUBLE_EQ(b.mean()(0), 1);
+  EXPECT_DOUBLE_EQ(b.mean()(1), 2);
+  EXPECT_TRUE(b.sample().isApprox(value));
+  EXPECT_DOUBLE_EQ(b.logProb(value), 0);
+  EXPECT_EQ(b.logProb(1.01 * value), -INFINITY);
+  EXPECT_DOUBLE_EQ(b.covariance()(0, 0), 0);
+  EXPECT_DOUBLE_EQ(b.covariance()(0, 1), 0);
+  EXPECT_DOUBLE_EQ(b.covariance()(1, 0), 0);
+  EXPECT_DOUBLE_EQ(b.covariance()(1, 1), 0);
+}
+
 TEST(Belief, Gaussian) {
   sia::Gaussian a(1);
   ASSERT_EQ(a.dimension(), 1);

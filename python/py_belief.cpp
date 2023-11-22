@@ -43,6 +43,19 @@ void export_py_belief(py::module& m_sup) {
   m.def("logProb2d", &sia::logProb2d, py::arg("distribution"), py::arg("x"),
         py::arg("y"));
 
+  py::class_<sia::Deterministic, sia::Distribution>(m, "Deterministic")
+      .def(py::init<double>(), py::arg("value"))
+      .def(py::init<const Eigen::VectorXd&>(), py::arg("value"))
+      .def("dimension", &sia::Deterministic::dimension)
+      .def("sample", &sia::Deterministic::sample)
+      .def("logProb", &sia::Deterministic::logProb, py::arg("x"))
+      .def("mean", &sia::Deterministic::mean)
+      .def("mode", &sia::Deterministic::mode)
+      .def("covariance", &sia::Deterministic::covariance)
+      .def("vectorize", &sia::Deterministic::vectorize)
+      .def("devectorize", &sia::Deterministic::devectorize, py::arg("data"))
+      .def("setValue", &sia::Deterministic::setValue, py::arg("value"));
+
   py::class_<sia::Gaussian, sia::Distribution>(m, "Gaussian")
       .def(py::init<std::size_t>(), py::arg("dimension"))
       .def(py::init<double, double>(), py::arg("mean"), py::arg("variance"))
