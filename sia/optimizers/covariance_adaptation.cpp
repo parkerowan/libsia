@@ -12,7 +12,7 @@ namespace sia {
 CovarianceAdaptation::CovarianceAdaptation(
     std::size_t dimension,
     const CovarianceAdaptation::Options& options)
-    : m_dimension(dimension) {
+    : m_dimension(dimension), m_options(options) {
   SIA_THROW_IF_NOT(m_dimension > 0,
                    "CovarianceAdaptation dimension expected to be > 0");
   SIA_THROW_IF_NOT(options.n_samples > 1,
