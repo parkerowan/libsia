@@ -62,11 +62,10 @@ class GPC : public Inference {
   /// Train the hyperparameters.  A list of trainable hyperparameter indices can
   /// be provided.  If the list is empty (default), all hyperparameters are
   /// optimized.
-  void train(
-      const std::vector<std::size_t>& hp_indices = {},
-      double hp_min = GPR::DEFAULT_HP_MIN,
-      double hp_max = GPR::DEFAULT_HP_MAX,
-      const GradientDescent::Options& options = GradientDescent::Options());
+  void train(const std::vector<std::size_t>& hp_indices = {},
+             double hp_min = GPR::DEFAULT_HP_MIN,
+             double hp_max = GPR::DEFAULT_HP_MAX,
+             const GD::Options& options = GD::Options());
 
   /// Dimensions
   std::size_t inputDim() const override;

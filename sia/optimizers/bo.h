@@ -3,16 +3,16 @@
 
 #pragma once
 
+#include <Eigen/Dense>
 #include "sia/belief/gaussian.h"
 #include "sia/belief/gpr.h"
 #include "sia/belief/uniform.h"
-#include "sia/optimizers/gradient_descent.h"
-
-#include <Eigen/Dense>
+#include "sia/optimizers/gd.h"
+#include "sia/optimizers/optimizers.h"
 
 namespace sia {
 
-/// Bayesian Optimization is an active learning procedure for global joint
+/// Bayesian Optimization (BO) is an active learning procedure for global joint
 /// optimization of expensive-to-evaluate objective functions.  It is useful for
 /// applications such as parameter tuning and continuous-action space Bandit
 /// learning problems. The method solves the optimization problem
@@ -41,14 +41,17 @@ namespace sia {
 ///
 /// More information on the parameters is available in [1].
 /// - cond_inputs_dim: (>=0) number of dimensions of the conditioning input u
+/// - max_iter: (>0) maximum number of iterations
+/// - ftol: (>0) termination based on relative change in f(x)
 /// - acquisition: Acquisition method
 /// - beta: (>0) Confidence interval for the UPPER_CONFIDENCE_BOUND acquisition
+/// - n_starts: (>0) Multi starts to optimize the acquisition and objective
 /// - gradient_descent: Parameters for the optimizer
 ///
 /// References:
 /// [1] B. Shahriari et. al., "Taking the Human Out of the Loop: A Review of
 /// Bayesian Optimization," Proceedings of the IEEE, 104(1), 2016.
-class BayesianOptimizer {
+class BO : public Optimizer {
  public:
   /// Type of acquisition model
   enum class AcquisitionType {
@@ -60,19 +63,21 @@ class BayesianOptimizer {
   /// Algorithm options
   struct Options {
     explicit Options() {}
+    std::size_t max_iter = 100;
+    double ftol = 1e-3;
     AcquisitionType acquisition = AcquisitionType::EXPECTED_IMPROVEMENT;
     double beta = 1;
-    GradientDescent::Options gradient_descent = GradientDescent::Options();
+    std::size_t n_starts = 10;
+    GD::Options gradient_descent = GD::Options();
   };
 
   /// Initialize the optimizer with lower and upper bounds on the parameters
-  explicit BayesianOptimizer(const Eigen::VectorXd& lower,
-                             const Eigen::VectorXd& upper,
-                             Kernel& kernel,
-                             std::size_t cond_inputs_dim = 0,
-                             const Options& options = Options());
-  virtual ~BayesianOptimizer() = default;
-
+  explicit BO(const Eigen::VectorXd& lower,
+              const Eigen::VectorXd& upper,
+              Kernel& kernel,
+              std::size_t cond_inputs_dim = 0,
+              const Options& options = Options());
+  virtual ~BO() = default;
   Eigen::VectorXd selectNextSample(
       const Eigen::VectorXd& u = Eigen::VectorXd{});
   void addDataPoint(const Eigen::VectorXd& x,
@@ -86,12 +91,19 @@ class BayesianOptimizer {
                      const Eigen::VectorXd& u = Eigen::VectorXd{});
   double acquisition(const Eigen::VectorXd& x,
                      double target,
-                     BayesianOptimizer::AcquisitionType type,
+                     BO::AcquisitionType type,
                      const Eigen::VectorXd& u = Eigen::VectorXd{});
+
+  /// Performs a single iteration of the optimizer to minimize the cost
+  /// function.  Note that reset() must be called prior to running step().
+  /// Note that this interface is invalid when the condition inputs dim > 0.
+  Eigen::VectorXd step(Cost f,
+                       const Eigen::VectorXd& x0,
+                       Gradient gradient = nullptr) override;
 
  private:
   Uniform m_sampler;
-  GradientDescent m_optimizer;
+  GD m_optimizer;
   std::size_t m_cond_inputs_dim;
   Options m_options;
   Eigen::VectorXd m_cached_solution{0};

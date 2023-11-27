@@ -34,11 +34,11 @@ TEST(Optimizers, CheckTestFunctions) {
   EXPECT_NEAR(0.397887, branin(xopt2), SMALL_NUMBER);
 }
 
-TEST(Optimizers, GradientDescent) {
-  // bounds inactive at optimimum
+TEST(Optimizers, GD) {
+  // bounds inactive at optimum
   Eigen::VectorXd lb = Eigen::Vector2d{-10, -10};
   Eigen::VectorXd ub = Eigen::Vector2d{10, 10};
-  sia::GradientDescent a(lb, ub);
+  sia::GD a(lb, ub);
   Eigen::VectorXd xopt = a.minimize(quadratic, Eigen::Vector2d{1.2, -2.5});
   ASSERT_EQ(xopt.size(), 2);
   EXPECT_NEAR(xopt(0), 0, 1e-6);
@@ -57,32 +57,34 @@ TEST(Optimizers, GradientDescent) {
   // bounds active at optimum
   lb = Eigen::Vector2d{-5, -5};
   ub = Eigen::Vector2d{5, -2};
-  sia::GradientDescent b(lb, ub);
+  sia::GD b(lb, ub);
   xopt = b.minimize(quadratic, Eigen::Vector2d{1.2, -6});
   ASSERT_EQ(xopt.size(), 2);
   EXPECT_NEAR(xopt(0), 0, 1e-6);
   EXPECT_NEAR(xopt(1), -2, 1e-6);
 
-  // bounds active at 2 optima - 10 internal multiple starts
+  // bounds active at 2 optima - 10 multiple starts
   lb = Eigen::Vector2d{0, -10};
   ub = Eigen::Vector2d{7, 10};
-  sia::GradientDescent::Options options{};
-  options.n_starts = 10;
-  sia::GradientDescent c(lb, ub, options);
-  xopt = c.minimize(branin);
+  sia::GD::Options options{};
+  sia::GD c(lb, ub, options);
+  sia::Uniform sampler(lb, ub);
+  const auto x0 = sampler.samples(10);
+  xopt = c.minimize(branin, x0);
   ASSERT_EQ(xopt.size(), 2);
   EXPECT_NEAR(xopt(0), M_PI, 1e-3);
   EXPECT_NEAR(xopt(1), 2.275, 1e-3);
 }
 
-TEST(Optimizers, BayesianOptimizer) {
+TEST(Optimizers, BO) {
   Eigen::VectorXd lb = -Eigen::VectorXd::Ones(1);
   Eigen::VectorXd ub = Eigen::VectorXd::Ones(1);
   sia::NoiseKernel noise_kernel = sia::NoiseKernel(1e-2);
   sia::SEKernel se_kernel = sia::SEKernel(0.1, 1.0);
   sia::CompositeKernel kernel = noise_kernel + se_kernel;
-  sia::BayesianOptimizer bo(lb, ub, kernel);
+  sia::BO bo(lb, ub, kernel);
   Eigen::VectorXd xopt = bo.getSolution();
+  ASSERT_EQ(bo.dimension(), 1);
   ASSERT_EQ(xopt.size(), 1);
 
   std::size_t NUM_STEPS = 50;
@@ -103,7 +105,7 @@ TEST(Optimizers, BayesianOptimizer) {
   Eigen::VectorXd xopt2 = bo.getSolution();
   EXPECT_TRUE(xopt2.isApprox(xopt));
 
-  // Check acqusition functions
+  // Check acquisition functions
   Eigen::VectorXd xtest = xopt;
   double acq = bo.acquisition(xtest);
   xtest(0) = xopt(0) + 1e-2;
@@ -113,20 +115,15 @@ TEST(Optimizers, BayesianOptimizer) {
   EXPECT_LT(acq_pos, acq);
   EXPECT_LT(acq_neg, acq);
 
-  EXPECT_NE(
-      bo.acquisition(
-          xtest, 0,
-          sia::BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT),
-      0);
-  EXPECT_NE(bo.acquisition(
-                xtest, 0,
-                sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT),
+  EXPECT_NE(bo.acquisition(xtest, 0,
+                           sia::BO::AcquisitionType::PROBABILITY_IMPROVEMENT),
             0);
   EXPECT_NE(
-      bo.acquisition(
-          xtest, 0,
-          sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND),
+      bo.acquisition(xtest, 0, sia::BO::AcquisitionType::EXPECTED_IMPROVEMENT),
       0);
+  EXPECT_NE(bo.acquisition(xtest, 0,
+                           sia::BO::AcquisitionType::UPPER_CONFIDENCE_BOUND),
+            0);
 
   // Test for 1D of branin free and 1D given (pi)
   Eigen::VectorXd u(1);
@@ -136,7 +133,7 @@ TEST(Optimizers, BayesianOptimizer) {
   noise_kernel = sia::NoiseKernel(1e-2);
   se_kernel = sia::SEKernel(1.0, 1.0);
   sia::CompositeKernel kernel2 = noise_kernel + se_kernel;
-  sia::BayesianOptimizer bo2(lb, ub, kernel2, 1);
+  sia::BO bo2(lb, ub, kernel2, 1);
   NUM_STEPS = 50;
   for (std::size_t i = 0; i < NUM_STEPS; ++i) {
     Eigen::VectorXd x = bo2.selectNextSample(u);
@@ -153,12 +150,12 @@ TEST(Optimizers, BayesianOptimizer) {
   EXPECT_NEAR(xopt(0), 2.275, 2e-2);
 }
 
-TEST(Optimizers, CovarianceAdaptation) {
-  sia::CovarianceAdaptation optm(2);
+TEST(Optimizers, CMAES) {
+  sia::CMAES cmaes(2);
   Eigen::VectorXd x = Eigen::Vector2d{1.2, -2.5};
-  x = optm.minimize(quadratic, x);
+  x = cmaes.minimize(quadratic, x);
   ASSERT_EQ(x.size(), 2);
   EXPECT_NEAR(x(0), 0, 1e-3);
   EXPECT_NEAR(x(1), 0, 1e-3);
-  EXPECT_EQ(optm.dimension(), 2);
+  EXPECT_EQ(cmaes.dimension(), 2);
 }

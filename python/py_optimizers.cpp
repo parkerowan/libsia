@@ -7,111 +7,155 @@
 void export_py_optimizers(py::module& m_sup) {
   py::module m = m_sup;
 
-  auto gd = py::class_<sia::GradientDescent>(m, "GradientDescent");
+  py::class_<sia::Optimizer, PyOptimizer>(m, "Optimizer")
+      .def(py::init<std::size_t, double, std::size_t>(), py::arg("dimension"),
+           py::arg("ftol"), py::arg("max_iter"))
+      .def("dimension", &sia::Optimizer::dimension)
+      .def("reset", &sia::Optimizer::reset)
+      .def("step", &sia::Optimizer::step, py::arg("f"), py::arg("x0"),
+           py::arg("gradient") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::Optimizer::*)(
+               sia::Optimizer::Cost, const Eigen::VectorXd&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::Optimizer::*)(
+               sia::Optimizer::Cost, const std::vector<Eigen::VectorXd>&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr);
 
-  py::class_<sia::GradientDescent::Options>(gd, "Options")
+  auto gd = py::class_<sia::GD, sia::Optimizer>(m, "GD");
+
+  py::class_<sia::GD::Options>(gd, "Options")
       .def(py::init<>())
-      .def_readwrite("n_starts", &sia::GradientDescent::Options::n_starts)
-      .def_readwrite("max_iter", &sia::GradientDescent::Options::max_iter)
-      .def_readwrite("tol", &sia::GradientDescent::Options::tol)
-      .def_readwrite("eta", &sia::GradientDescent::Options::eta)
-      .def_readwrite("delta", &sia::GradientDescent::Options::delta);
+      .def_readwrite("max_iter", &sia::GD::Options::max_iter)
+      .def_readwrite("ftol", &sia::GD::Options::ftol)
+      .def_readwrite("eta", &sia::GD::Options::eta)
+      .def_readwrite("delta", &sia::GD::Options::delta);
 
   gd.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&,
-                  const sia::GradientDescent::Options&>(),
+                  const sia::GD::Options&>(),
          py::arg("lower"), py::arg("upper"),
-         py::arg("options") = sia::GradientDescent::Options())
-      .def("dimension", &sia::GradientDescent::dimension)
-      .def("lower", &sia::GradientDescent::lower)
-      .def("upper", &sia::GradientDescent::upper)
+         py::arg("options") = sia::GD::Options())
+      .def("lower", &sia::GD::lower)
+      .def("upper", &sia::GD::upper)
+      .def("dimension", &sia::GD::dimension)
+      .def("reset", &sia::GD::reset)
+      .def("step", &sia::GD::step, py::arg("f"), py::arg("x0"),
+           py::arg("gradient") = nullptr)
       .def("minimize",
-           static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
-               sia::GradientDescent::Cost, const Eigen::VectorXd&,
-               sia::GradientDescent::Jacobian) const>(
-               &sia::GradientDescent::minimize),
-           py::arg("f"), py::arg("x0"), py::arg("jacobian") = nullptr)
+           static_cast<Eigen::VectorXd (sia::GD::*)(
+               sia::Optimizer::Cost, const Eigen::VectorXd&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr)
       .def("minimize",
-           static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
-               sia::GradientDescent::Cost, sia::GradientDescent::Jacobian)>(
-               &sia::GradientDescent::minimize),
-           py::arg("f"), py::arg("jacobian") = nullptr)
-      .def("minimize",
-           static_cast<Eigen::VectorXd (sia::GradientDescent::*)(
-               sia::GradientDescent::Cost,
-               const std::vector<Eigen::VectorXd>& x0,
-               sia::GradientDescent::Jacobian) const>(
-               &sia::GradientDescent::minimize),
-           py::arg("f"), py::arg("x0"), py::arg("jacobian") = nullptr);
+           static_cast<Eigen::VectorXd (sia::GD::*)(
+               sia::Optimizer::Cost, const std::vector<Eigen::VectorXd>&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr);
 
-  auto bo = py::class_<sia::BayesianOptimizer>(m, "BayesianOptimizer");
+  auto bo = py::class_<sia::BO, sia::Optimizer>(m, "BO");
 
-  py::enum_<sia::BayesianOptimizer::AcquisitionType>(bo, "AcquisitionType")
+  py::enum_<sia::BO::AcquisitionType>(bo, "AcquisitionType")
       .value("PROBABILITY_IMPROVEMENT",
-             sia::BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT)
+             sia::BO::AcquisitionType::PROBABILITY_IMPROVEMENT)
       .value("EXPECTED_IMPROVEMENT",
-             sia::BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT)
+             sia::BO::AcquisitionType::EXPECTED_IMPROVEMENT)
       .value("UPPER_CONFIDENCE_BOUND",
-             sia::BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND)
+             sia::BO::AcquisitionType::UPPER_CONFIDENCE_BOUND)
       .export_values();
 
-  py::class_<sia::BayesianOptimizer::Options>(bo, "Options")
+  py::class_<sia::BO::Options>(bo, "Options")
       .def(py::init<>())
-      .def_readwrite("acquisition",
-                     &sia::BayesianOptimizer::Options::acquisition)
-      .def_readwrite("beta", &sia::BayesianOptimizer::Options::beta)
-      .def_readwrite("gradient_descent",
-                     &sia::BayesianOptimizer::Options::gradient_descent);
+      .def_readwrite("max_iter", &sia::BO::Options::max_iter)
+      .def_readwrite("ftol", &sia::BO::Options::ftol)
+      .def_readwrite("acquisition", &sia::BO::Options::acquisition)
+      .def_readwrite("beta", &sia::BO::Options::beta)
+      .def_readwrite("n_starts", &sia::BO::Options::ftol)
+      .def_readwrite("gradient_descent", &sia::BO::Options::gradient_descent);
 
   bo.def(py::init<const Eigen::VectorXd&, const Eigen::VectorXd&, sia::Kernel&,
-                  std::size_t, const sia::BayesianOptimizer::Options&>(),
+                  std::size_t, const sia::BO::Options&>(),
          py::arg("lower"), py::arg("upper"), py::arg("kernel"),
          py::arg("cond_inputs_dim") = 0,
-         py::arg("options") = sia::BayesianOptimizer::Options())
-      .def("selectNextSample", &sia::BayesianOptimizer::selectNextSample,
+         py::arg("options") = sia::BO::Options())
+      .def("selectNextSample", &sia::BO::selectNextSample,
            py::arg("u") = Eigen::VectorXd{})
-      .def("addDataPoint", &sia::BayesianOptimizer::addDataPoint, py::arg("x"),
-           py::arg("y"), py::arg("u") = Eigen::VectorXd{})
-      .def("updateModel", &sia::BayesianOptimizer::updateModel,
-           py::arg("train") = false)
-      .def("getSolution", &sia::BayesianOptimizer::getSolution,
+      .def("addDataPoint", &sia::BO::addDataPoint, py::arg("x"), py::arg("y"),
            py::arg("u") = Eigen::VectorXd{})
-      .def("objective", &sia::BayesianOptimizer::objective, py::arg("x"),
+      .def("updateModel", &sia::BO::updateModel, py::arg("train") = false)
+      .def("getSolution", &sia::BO::getSolution,
+           py::arg("u") = Eigen::VectorXd{})
+      .def("objective", &sia::BO::objective, py::arg("x"),
            py::arg("u") = Eigen::VectorXd{})
       .def("acquisition",
-           static_cast<double (sia::BayesianOptimizer::*)(
-               const Eigen::VectorXd&, const Eigen::VectorXd&)>(
-               &sia::BayesianOptimizer::acquisition),
+           static_cast<double (sia::BO::*)(const Eigen::VectorXd&,
+                                           const Eigen::VectorXd&)>(
+               &sia::BO::acquisition),
            py::arg("x"), py::arg("u") = Eigen::VectorXd{})
-      .def(
-          "acquisition",
-          static_cast<double (sia::BayesianOptimizer::*)(
-              const Eigen::VectorXd&, double,
-              sia::BayesianOptimizer::AcquisitionType, const Eigen::VectorXd&)>(
-              &sia::BayesianOptimizer::acquisition),
-          py::arg("x"), py::arg("target"), py::arg("type"),
-          py::arg("u") = Eigen::VectorXd{});
+      .def("acquisition",
+           static_cast<double (sia::BO::*)(
+               const Eigen::VectorXd&, double, sia::BO::AcquisitionType,
+               const Eigen::VectorXd&)>(&sia::BO::acquisition),
+           py::arg("x"), py::arg("target"), py::arg("type"),
+           py::arg("u") = Eigen::VectorXd{})
+      .def("dimension", &sia::BO::dimension)
+      .def("reset", &sia::BO::reset)
+      .def("step", &sia::BO::step, py::arg("f"), py::arg("x0"),
+           py::arg("gradient") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::BO::*)(
+               sia::Optimizer::Cost, const Eigen::VectorXd&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::BO::*)(
+               sia::Optimizer::Cost, const std::vector<Eigen::VectorXd>&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr);
 
-  auto cma = py::class_<sia::CovarianceAdaptation>(m, "CovarianceAdaptation");
+  auto cma = py::class_<sia::CMAES, sia::Optimizer>(m, "CMAES");
 
-  py::class_<sia::CovarianceAdaptation::Options>(cma, "Options")
+  py::class_<sia::CMAES::Options>(cma, "Options")
       .def(py::init<>())
-      .def_readwrite("n_samples",
-                     &sia::CovarianceAdaptation::Options::n_samples)
-      .def_readwrite("init_stdev",
-                     &sia::CovarianceAdaptation::Options::init_stdev)
-      .def_readwrite("max_iter", &sia::CovarianceAdaptation::Options::max_iter)
-      .def_readwrite("tol", &sia::CovarianceAdaptation::Options::tol)
-      .def_readwrite("max_cov_norm",
-                     &sia::CovarianceAdaptation::Options::max_cov_norm);
+      .def_readwrite("max_iter", &sia::CMAES::Options::max_iter)
+      .def_readwrite("ftol", &sia::CMAES::Options::ftol)
+      .def_readwrite("n_samples", &sia::CMAES::Options::n_samples)
+      .def_readwrite("init_stdev", &sia::CMAES::Options::init_stdev)
+      .def_readwrite("max_cov_norm", &sia::CMAES::Options::max_cov_norm);
 
-  cma.def(py::init<std::size_t, const sia::CovarianceAdaptation::Options&>(),
-          py::arg("dimension"),
-          py::arg("options") = sia::CovarianceAdaptation::Options())
-      .def("dimension", &sia::CovarianceAdaptation::dimension)
-      .def("minimize", &sia::CovarianceAdaptation::minimize, py::arg("f"),
-           py::arg("x0"))
-      .def("minimizeSingleStep", &sia::CovarianceAdaptation::minimizeSingleStep,
-           py::arg("f"), py::arg("x0"))
-      .def("getSamples", &sia::CovarianceAdaptation::getSamples)
-      .def("reset", &sia::CovarianceAdaptation::reset);
+  cma.def(py::init<std::size_t, const sia::CMAES::Options&>(),
+          py::arg("dimension"), py::arg("options") = sia::CMAES::Options())
+      .def("getSamples", &sia::CMAES::getSamples)
+      .def("dimension", &sia::CMAES::dimension)
+      .def("reset", &sia::CMAES::reset)
+      .def("step", &sia::CMAES::step, py::arg("f"), py::arg("x0"),
+           py::arg("gradient") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::CMAES::*)(
+               sia::Optimizer::Cost, const Eigen::VectorXd&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr)
+      .def("minimize",
+           static_cast<Eigen::VectorXd (sia::CMAES::*)(
+               sia::Optimizer::Cost, const std::vector<Eigen::VectorXd>&,
+               sia::Optimizer::Gradient, sia::Optimizer::Convergence)>(
+               &sia::Optimizer::minimize),
+           py::arg("f"), py::arg("x0"), py::arg("gradient") = nullptr,
+           py::arg("convergence") = nullptr);
 }

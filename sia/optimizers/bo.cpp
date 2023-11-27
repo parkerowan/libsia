@@ -1,7 +1,7 @@
 /// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
-#include "sia/optimizers/bayesian_optimizer.h"
+#include "sia/optimizers/bo.h"
 #include "sia/common/exception.h"
 #include "sia/common/logger.h"
 
@@ -12,21 +12,35 @@ namespace sia {
 // The surrogate model provides a statistical approximation of the objective
 // function and a corresponding acquisition function.
 // - Objective: Function R^n -> p(y) that approximates the true objective
-// - Acqusition: Utility function R^n -> R for selecting the next data point
+// - Acquisition: Utility function R^n -> R for selecting the next data point
 // https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
 
-BayesianOptimizer::BayesianOptimizer(const Eigen::VectorXd& lower,
-                                     const Eigen::VectorXd& upper,
-                                     Kernel& kernel,
-                                     std::size_t cond_inputs_dim,
-                                     const BayesianOptimizer::Options& options)
-    : m_sampler(lower, upper),
+BO::BO(const Eigen::VectorXd& lower,
+       const Eigen::VectorXd& upper,
+       Kernel& kernel,
+       std::size_t cond_inputs_dim,
+       const BO::Options& options)
+    : Optimizer(lower.size(), options.ftol, options.max_iter),
+      m_sampler(lower, upper),
       m_optimizer(lower, upper, options.gradient_descent),
       m_cond_inputs_dim(cond_inputs_dim),
       m_options(options),
       m_gpr(lower.size(), 1, kernel) {}
 
-Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
+Eigen::VectorXd BO::step(Cost f, const Eigen::VectorXd& x0, Gradient gradient) {
+  // Gradient-free
+  (void)gradient;
+
+  SIA_THROW_IF_NOT(dimension() == (std::size_t)x0.size(),
+                   "BO x expected to match dimension");
+
+  Eigen::VectorXd x = selectNextSample();
+  addDataPoint(x, f(x));
+  updateModel();
+  return x;
+}
+
+Eigen::VectorXd BO::selectNextSample(const Eigen::VectorXd& u) {
   // If there is no model yet, just sample uniformly
   if (m_gpr.numSamples() == 0) {
     return m_sampler.sample();
@@ -37,25 +51,27 @@ Eigen::VectorXd BayesianOptimizer::selectNextSample(const Eigen::VectorXd& u) {
   auto f = [=](const Eigen::VectorXd& x) {
     return -acquisition(x, target, m_options.acquisition, u);
   };
-  return m_optimizer.minimize(f);
+
+  // Optimize with multi-starts
+  const auto x0 = m_sampler.samples(m_options.n_starts);
+  return m_optimizer.minimize(f, x0);
 }
 
-void BayesianOptimizer::addDataPoint(const Eigen::VectorXd& x,
-                                     double y,
-                                     const Eigen::VectorXd& u) {
-  SIA_THROW_IF_NOT(
-      x.size() == int(m_sampler.dimension()),
-      "BayesianOptimizer expects input data to have same dimension as bounds");
+void BO::addDataPoint(const Eigen::VectorXd& x,
+                      double y,
+                      const Eigen::VectorXd& u) {
+  SIA_THROW_IF_NOT(x.size() == int(m_sampler.dimension()),
+                   "BO expects input data to have same dimension as bounds");
   SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
-                   "BayesianOptimizer expects u to have size cond_inputs_dim");
+                   "BO expects u to have size cond_inputs_dim");
   m_input_data.emplace_back(x);
   m_output_data.emplace_back(y);
   m_cond_input_data.emplace_back(u);
 }
 
-void BayesianOptimizer::updateModel(bool train) {
+void BO::updateModel(bool train) {
   SIA_THROW_IF_NOT(m_input_data.size() > 0,
-                   "BayesianOptimizer expects data points to be added before "
+                   "BO expects data points to be added before "
                    "calling updateModel()");
   assert(m_input_data.size() == m_output_data.size());
   assert(m_input_data.size() == m_cond_input_data.size());
@@ -86,7 +102,7 @@ void BayesianOptimizer::updateModel(bool train) {
   m_dirty_solution = true;
 }
 
-Eigen::VectorXd BayesianOptimizer::getSolution(const Eigen::VectorXd& u) {
+Eigen::VectorXd BO::getSolution(const Eigen::VectorXd& u) {
   if (m_gpr.numSamples() == 0) {
     return m_sampler.sample();
   }
@@ -97,47 +113,46 @@ Eigen::VectorXd BayesianOptimizer::getSolution(const Eigen::VectorXd& u) {
 
   // Optimize the objective function model
   auto f = [=](const Eigen::VectorXd& x) { return -objective(x, u).mean()(0); };
-  m_cached_solution = m_optimizer.minimize(f);
+  const auto x0 = m_sampler.samples(m_options.n_starts);
+  m_cached_solution = m_optimizer.minimize(f, x0);
   m_dirty_solution = false;
   return m_cached_solution;
 }
 
-const Gaussian& BayesianOptimizer::objective(const Eigen::VectorXd& x,
-                                             const Eigen::VectorXd& u) {
+const Gaussian& BO::objective(const Eigen::VectorXd& x,
+                              const Eigen::VectorXd& u) {
   std::size_t n_input_dim = m_sampler.dimension();
-  SIA_THROW_IF_NOT(
-      x.size() == int(n_input_dim),
-      "BayesianOptimizer expects input data to have same dimension as bounds");
+  SIA_THROW_IF_NOT(x.size() == int(n_input_dim),
+                   "BO expects input data to have same dimension as bounds");
   SIA_THROW_IF_NOT(u.size() == int(m_cond_inputs_dim),
-                   "BayesianOptimizer expects u to have size cond_inputs_dim");
+                   "BO expects u to have size cond_inputs_dim");
   Eigen::VectorXd xu = Eigen::VectorXd(n_input_dim + m_cond_inputs_dim);
   xu.head(n_input_dim) = x;
   xu.tail(m_cond_inputs_dim) = u;
   return m_gpr.predict(xu);
 }
 
-double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
-                                      const Eigen::VectorXd& u) {
+double BO::acquisition(const Eigen::VectorXd& x, const Eigen::VectorXd& u) {
   double target = objective(getSolution(u), u).mean()(0);
   return acquisition(x, target, m_options.acquisition, u);
 }
 
-double BayesianOptimizer::acquisition(const Eigen::VectorXd& x,
-                                      double target,
-                                      BayesianOptimizer::AcquisitionType type,
-                                      const Eigen::VectorXd& u) {
+double BO::acquisition(const Eigen::VectorXd& x,
+                       double target,
+                       BO::AcquisitionType type,
+                       const Eigen::VectorXd& u) {
   // Evaluate the acquisition function
   const auto& p = objective(x, u);
   double mu = p.mean()(0);
   double std = sqrt(p.covariance()(0, 0));
 
   switch (type) {
-    case BayesianOptimizer::AcquisitionType::PROBABILITY_IMPROVEMENT:
+    case BO::AcquisitionType::PROBABILITY_IMPROVEMENT:
       return Gaussian::cdf((mu - target) / std);
-    case BayesianOptimizer::AcquisitionType::EXPECTED_IMPROVEMENT:
+    case BO::AcquisitionType::EXPECTED_IMPROVEMENT:
       return (mu - target) * Gaussian::cdf((mu - target) / std) +
              std * Gaussian::pdf((mu - target) / std);
-    case BayesianOptimizer::AcquisitionType::UPPER_CONFIDENCE_BOUND:
+    case BO::AcquisitionType::UPPER_CONFIDENCE_BOUND:
       return mu + m_options.beta * std;
   }
 
