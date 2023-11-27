@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include "sia/common/format.h"
 
 namespace sia {
 
@@ -53,9 +54,6 @@ class Logger {
   Logger();
   std::shared_ptr<LoggerInterface> m_interface;
 };
-
-#define SIA_FMT(expression) \
-  static_cast<const std::stringstream&>(std::stringstream() << expression).str()
 
 /// Logs an expression
 #define SIA_DEBUG(expression) sia::Logger::debug(SIA_FMT(expression));

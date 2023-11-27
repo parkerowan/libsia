@@ -17,6 +17,7 @@
 #include "sia/belief/particles.h"
 #include "sia/belief/uniform.h"
 #include "sia/common/exception.h"
+#include "sia/common/format.h"
 #include "sia/common/logger.h"
 #include "sia/common/metrics.h"
 #include "sia/common/trajectory.h"

@@ -46,6 +46,13 @@ TEST(Common, LoggerInterface) {
   sia::Logger::critical("My critical");
 }
 
+TEST(Common, Format) {
+  // Format an expression in place
+  std::string msg = SIA_FMT("My message" << 0);
+
+  EXPECT_EQ(msg, "My message0");
+}
+
 TEST(Common, LoggerMacros) {
   // Format an expression in place
   std::string msg = SIA_FMT("My message" << 0);

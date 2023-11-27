@@ -3,6 +3,7 @@
 
 #include "sia/controllers/cost.h"
 #include "sia/common/exception.h"
+#include "sia/common/format.h"
 #include "sia/common/logger.h"
 #include "sia/math/math.h"
 
