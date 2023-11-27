@@ -18,7 +18,7 @@
 #include "sia/belief/gpc.h"
 #include "sia/belief/gpr.h"
 #include "sia/belief/helpers.h"
-#include "sia/belief/kernel_density.h"
+#include "sia/belief/kde.h"
 #include "sia/belief/particles.h"
 #include "sia/belief/uniform.h"
 

@@ -353,12 +353,12 @@ TEST(Belief, Particles) {
   EXPECT_NEAR(d.covariance()(0, 0), u.covariance()(0, 0), 5e-2);
 }
 
-TEST(Belief, KernelDensity) {
+TEST(Belief, KDE) {
   auto samples = sia::Particles::uniform(Eigen::Vector2d(-1, -2),
                                          Eigen::Vector2d(3, 4), 100);
 
   sia::EpanechnikovKernel epan_kernel(2);
-  sia::KernelDensity a(samples.values(), samples.weights(), epan_kernel);
+  sia::KDE a(samples.values(), samples.weights(), epan_kernel);
   EXPECT_GT(a.probability(samples.value(0)), 0);
   ASSERT_EQ(a.dimension(), 2);
   EXPECT_EQ(a.numParticles(), 100);
@@ -370,8 +370,7 @@ TEST(Belief, KernelDensity) {
 
   const auto h = a.bandwidth();
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
-  EXPECT_EQ(a.getBandwidthMode(),
-            sia::KernelDensity::BandwidthMode::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KDE::BandwidthMode::SCOTT_RULE);
   a.setValues(a.values());
   EXPECT_TRUE(a.bandwidth().isApprox(h));
 
@@ -381,22 +380,18 @@ TEST(Belief, KernelDensity) {
 
   a.setBandwidth(1.0);
   EXPECT_TRUE(a.bandwidth().isApprox(Eigen::Matrix2d::Identity()));
-  EXPECT_EQ(a.getBandwidthMode(),
-            sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KDE::BandwidthMode::USER_SPECIFIED);
   EXPECT_DOUBLE_EQ(a.getBandwidthScaling(), 1.0);
   EXPECT_GT(a.probability(samples.value(0)), 0);
 
-  a.setBandwidthMode(sia::KernelDensity::BandwidthMode::SCOTT_RULE);
-  EXPECT_EQ(a.getBandwidthMode(),
-            sia::KernelDensity::BandwidthMode::SCOTT_RULE);
+  a.setBandwidthMode(sia::KDE::BandwidthMode::SCOTT_RULE);
+  EXPECT_EQ(a.getBandwidthMode(), sia::KDE::BandwidthMode::SCOTT_RULE);
 
   // Expect if user specified that silverman is used as initialize bandwidth
   sia::GaussianKernel gaussian_kernel(2);
-  sia::KernelDensity c(samples, gaussian_kernel,
-                       sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
+  sia::KDE c(samples, gaussian_kernel, sia::KDE::BandwidthMode::USER_SPECIFIED);
   EXPECT_GT(c.probability(samples.value(0)), 0);
-  EXPECT_EQ(c.getBandwidthMode(),
-            sia::KernelDensity::BandwidthMode::USER_SPECIFIED);
+  EXPECT_EQ(c.getBandwidthMode(), sia::KDE::BandwidthMode::USER_SPECIFIED);
   EXPECT_TRUE(c.bandwidth().isApprox(h));
   EXPECT_DOUBLE_EQ(c.getBandwidthScaling(), 1.0);
 

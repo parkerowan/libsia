@@ -54,14 +54,14 @@ struct EpanechnikovKernel : public SmoothingKernel {
 
 // ----------------------------------------------------------------------------
 
-/// Kernel density estimator to smooth a weighted particle density.  If
+/// Kernel density estimator (KDE) to smooth a weighted particle density.  If
 /// bandwidth mode is USER_SPECIFIED, kernel bandwidth is initialized using
 /// Scott's rule.
 ///
 /// References:
 /// [1] https://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
 /// [2] Hardle et. al., "Nonparametric and Semiparametric models," 2004.
-class KernelDensity : public Particles {
+class KDE : public Particles {
  public:
   /// Default hyperparameter values
   static constexpr double DEFAULT_BANDWIDTH_SCALING = 1.0;
@@ -70,18 +70,18 @@ class KernelDensity : public Particles {
   enum class BandwidthMode { SCOTT_RULE, USER_SPECIFIED };
 
   /// Each column of values is a sample.
-  explicit KernelDensity(const Eigen::MatrixXd& values,
-                         const Eigen::VectorXd& weights,
-                         SmoothingKernel& kernel,
-                         BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
+  explicit KDE(const Eigen::MatrixXd& values,
+               const Eigen::VectorXd& weights,
+               SmoothingKernel& kernel,
+               BandwidthMode mode = BandwidthMode::SCOTT_RULE,
+               double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
-  explicit KernelDensity(const Particles& particles,
-                         SmoothingKernel& kernel,
-                         BandwidthMode mode = BandwidthMode::SCOTT_RULE,
-                         double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
+  explicit KDE(const Particles& particles,
+               SmoothingKernel& kernel,
+               BandwidthMode mode = BandwidthMode::SCOTT_RULE,
+               double bandwidth_scaling = DEFAULT_BANDWIDTH_SCALING);
 
-  virtual ~KernelDensity() = default;
+  virtual ~KDE() = default;
 
   /// Evaluate the kernel density function (pdf)
   double probability(const Eigen::VectorXd& x) const;

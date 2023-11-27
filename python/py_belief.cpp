@@ -194,64 +194,56 @@ void export_py_belief(py::module& m_sup) {
       .def(py::init<std::size_t>(), py::arg("dimension"))
       .def("evaluate", &sia::EpanechnikovKernel::evaluate, py::arg("x"));
 
-  py::class_<sia::KernelDensity, sia::Particles> kernel_density(
-      m, "KernelDensity");
+  py::class_<sia::KDE, sia::Particles> kde(m, "KDE");
 
-  py::enum_<sia::KernelDensity::BandwidthMode>(kernel_density, "BandwidthMode")
-      .value("SCOTT_RULE", sia::KernelDensity::BandwidthMode::SCOTT_RULE)
-      .value("USER_SPECIFIED",
-             sia::KernelDensity::BandwidthMode::USER_SPECIFIED)
+  py::enum_<sia::KDE::BandwidthMode>(kde, "BandwidthMode")
+      .value("SCOTT_RULE", sia::KDE::BandwidthMode::SCOTT_RULE)
+      .value("USER_SPECIFIED", sia::KDE::BandwidthMode::USER_SPECIFIED)
       .export_values();
 
-  kernel_density
-      .def("DEFAULT_BANDWIDTH_SCALING",
-           []() { return sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING; })
+  kde.def("DEFAULT_BANDWIDTH_SCALING",
+          []() { return sia::KDE::DEFAULT_BANDWIDTH_SCALING; })
       .def(py::init<const Eigen::MatrixXd&, const Eigen::VectorXd&,
-                    sia::SmoothingKernel&, sia::KernelDensity::BandwidthMode,
-                    double>(),
+                    sia::SmoothingKernel&, sia::KDE::BandwidthMode, double>(),
            py::arg("values"), py::arg("weights"), py::arg("kernel"),
-           py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
-           py::arg("bandwidth_scaling") =
-               sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING)
+           py::arg("mode") = sia::KDE::BandwidthMode::SCOTT_RULE,
+           py::arg("bandwidth_scaling") = sia::KDE::DEFAULT_BANDWIDTH_SCALING)
       .def(py::init<const sia::Particles&, sia::SmoothingKernel&,
-                    sia::KernelDensity::BandwidthMode, double>(),
+                    sia::KDE::BandwidthMode, double>(),
            py::arg("particles"), py::arg("kernel"),
-           py::arg("mode") = sia::KernelDensity::BandwidthMode::SCOTT_RULE,
-           py::arg("bandwidth_scaling") =
-               sia::KernelDensity::DEFAULT_BANDWIDTH_SCALING)
-      .def("probability", &sia::KernelDensity::probability, py::arg("x"))
-      .def("dimension", &sia::KernelDensity::dimension)
-      .def("sample", &sia::KernelDensity::sample)
-      .def("logProb", &sia::KernelDensity::logProb, py::arg("x"))
-      .def("mean", &sia::KernelDensity::mean)
-      .def("mode", &sia::KernelDensity::mode)
-      .def("covariance", &sia::KernelDensity::covariance)
-      .def("vectorize", &sia::KernelDensity::vectorize)
-      .def("devectorize", &sia::KernelDensity::devectorize, py::arg("data"))
-      .def("samples", &sia::KernelDensity::samples, py::arg("num_samples"))
-      .def("numParticles", &sia::KernelDensity::numParticles)
-      .def("setValues", &sia::KernelDensity::setValues, py::arg("values"))
-      .def("values", &sia::KernelDensity::values)
-      .def("value", &sia::KernelDensity::value, py::arg("i"))
-      .def("setWeights", &sia::KernelDensity::setWeights, py::arg("weights"))
-      .def("weights", &sia::KernelDensity::weights)
-      .def("weight", &sia::KernelDensity::weight, py::arg("i"))
+           py::arg("mode") = sia::KDE::BandwidthMode::SCOTT_RULE,
+           py::arg("bandwidth_scaling") = sia::KDE::DEFAULT_BANDWIDTH_SCALING)
+      .def("probability", &sia::KDE::probability, py::arg("x"))
+      .def("dimension", &sia::KDE::dimension)
+      .def("sample", &sia::KDE::sample)
+      .def("logProb", &sia::KDE::logProb, py::arg("x"))
+      .def("mean", &sia::KDE::mean)
+      .def("mode", &sia::KDE::mode)
+      .def("covariance", &sia::KDE::covariance)
+      .def("vectorize", &sia::KDE::vectorize)
+      .def("devectorize", &sia::KDE::devectorize, py::arg("data"))
+      .def("samples", &sia::KDE::samples, py::arg("num_samples"))
+      .def("numParticles", &sia::KDE::numParticles)
+      .def("setValues", &sia::KDE::setValues, py::arg("values"))
+      .def("values", &sia::KDE::values)
+      .def("value", &sia::KDE::value, py::arg("i"))
+      .def("setWeights", &sia::KDE::setWeights, py::arg("weights"))
+      .def("weights", &sia::KDE::weights)
+      .def("weight", &sia::KDE::weight, py::arg("i"))
       .def("setBandwidth",
-           static_cast<void (sia::KernelDensity::*)(double)>(
-               &sia::KernelDensity::setBandwidth),
+           static_cast<void (sia::KDE::*)(double)>(&sia::KDE::setBandwidth),
            py::arg("h"))
       .def("setBandwidth",
-           static_cast<void (sia::KernelDensity::*)(const Eigen::VectorXd&)>(
-               &sia::KernelDensity::setBandwidth),
+           static_cast<void (sia::KDE::*)(const Eigen::VectorXd&)>(
+               &sia::KDE::setBandwidth),
            py::arg("h"))
-      .def("bandwidth", &sia::KernelDensity::bandwidth)
-      .def("setBandwidthScaling", &sia::KernelDensity::setBandwidthScaling,
+      .def("bandwidth", &sia::KDE::bandwidth)
+      .def("setBandwidthScaling", &sia::KDE::setBandwidthScaling,
            py::arg("scaling"))
-      .def("getBandwidthScaling", &sia::KernelDensity::getBandwidthScaling)
-      .def("setBandwidthMode", &sia::KernelDensity::setBandwidthMode,
-           py::arg("mode"))
-      .def("getBandwidthMode", &sia::KernelDensity::getBandwidthMode)
-      .def("kernel", &sia::KernelDensity::kernel);
+      .def("getBandwidthScaling", &sia::KDE::getBandwidthScaling)
+      .def("setBandwidthMode", &sia::KDE::setBandwidthMode, py::arg("mode"))
+      .def("getBandwidthMode", &sia::KDE::getBandwidthMode)
+      .def("kernel", &sia::KDE::kernel);
 
   py::class_<sia::GMM, sia::Distribution, sia::Inference> gmm(m, "GMM");
 

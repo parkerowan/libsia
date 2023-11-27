@@ -1,7 +1,7 @@
 /// Copyright (c) 2018-2023, Parker Owan.  All rights reserved.
 /// Licensed under BSD-3 Clause, https://opensource.org/licenses/BSD-3-Clause
 
-#include "sia/belief/kernel_density.h"
+#include "sia/belief/kde.h"
 #include "sia/belief/gaussian.h"
 #include "sia/belief/helpers.h"
 #include "sia/common/exception.h"
@@ -49,11 +49,11 @@ double EpanechnikovKernel::evaluate(const Eigen::VectorXd& x) const {
 
 // ----------------------------------------------------------------------------
 
-KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
-                             const Eigen::VectorXd& weights,
-                             SmoothingKernel& kernel,
-                             KernelDensity::BandwidthMode mode,
-                             double bandwidth_scaling)
+KDE::KDE(const Eigen::MatrixXd& values,
+         const Eigen::VectorXd& weights,
+         SmoothingKernel& kernel,
+         KDE::BandwidthMode mode,
+         double bandwidth_scaling)
     : Particles(values, weights),
       m_kernel(kernel),
       m_mode(mode),
@@ -67,17 +67,17 @@ KernelDensity::KernelDensity(const Eigen::MatrixXd& values,
   m_mode = mode;
 }
 
-KernelDensity::KernelDensity(const Particles& particles,
-                             SmoothingKernel& kernel,
-                             BandwidthMode mode,
-                             double bandwidth_scaling)
-    : KernelDensity(particles.values(),
-                    particles.weights(),
-                    kernel,
-                    mode,
-                    bandwidth_scaling) {}
+KDE::KDE(const Particles& particles,
+         SmoothingKernel& kernel,
+         BandwidthMode mode,
+         double bandwidth_scaling)
+    : KDE(particles.values(),
+          particles.weights(),
+          kernel,
+          mode,
+          bandwidth_scaling) {}
 
-double KernelDensity::probability(const Eigen::VectorXd& x) const {
+double KDE::probability(const Eigen::VectorXd& x) const {
   double p = 0;
   std::size_t n = m_weights.size();
   for (std::size_t i = 0; i < n; ++i) {
@@ -88,11 +88,11 @@ double KernelDensity::probability(const Eigen::VectorXd& x) const {
   return p / m_bandwidth_det;
 }
 
-std::size_t KernelDensity::dimension() const {
+std::size_t KDE::dimension() const {
   return m_values.rows();
 }
 
-const Eigen::VectorXd KernelDensity::sample() {
+const Eigen::VectorXd KDE::sample() {
   std::size_t i = sampleInverseCdf();
 
   // TODO: Should sample from the kernel and project via the bandwidth
@@ -100,11 +100,11 @@ const Eigen::VectorXd KernelDensity::sample() {
   return g.sample();
 }
 
-double KernelDensity::logProb(const Eigen::VectorXd& x) const {
+double KDE::logProb(const Eigen::VectorXd& x) const {
   return log(probability(x));
 }
 
-const Eigen::VectorXd KernelDensity::mean() const {
+const Eigen::VectorXd KDE::mean() const {
   Eigen::VectorXd p = Eigen::VectorXd::Zero(numParticles());
   for (std::size_t i = 0; i < numParticles(); ++i) {
     p(i) = probability(value(i));
@@ -112,7 +112,7 @@ const Eigen::VectorXd KernelDensity::mean() const {
   return values() * p / p.sum();
 }
 
-const Eigen::VectorXd KernelDensity::mode() const {
+const Eigen::VectorXd KDE::mode() const {
   Eigen::VectorXd p = Eigen::VectorXd::Zero(numParticles());
   for (std::size_t i = 0; i < numParticles(); ++i) {
     p(i) = probability(value(i));
@@ -122,7 +122,7 @@ const Eigen::VectorXd KernelDensity::mode() const {
   return m_values.col(r);
 }
 
-const Eigen::MatrixXd KernelDensity::covariance() const {
+const Eigen::MatrixXd KDE::covariance() const {
   const Eigen::MatrixXd e =
       (m_values.array().colwise() - mean().array()).matrix();
   Eigen::VectorXd p = Eigen::VectorXd::Zero(numParticles());
@@ -133,7 +133,7 @@ const Eigen::MatrixXd KernelDensity::covariance() const {
   return ewe / (1 - p.array().square().sum());
 }
 
-const Eigen::VectorXd KernelDensity::vectorize() const {
+const Eigen::VectorXd KDE::vectorize() const {
   std::size_t n = dimension();
   std::size_t p = numParticles();
   Eigen::VectorXd data = Eigen::VectorXd::Zero(p * (n + 1) + n * n);
@@ -143,7 +143,7 @@ const Eigen::VectorXd KernelDensity::vectorize() const {
   return data;
 }
 
-bool KernelDensity::devectorize(const Eigen::VectorXd& data) {
+bool KDE::devectorize(const Eigen::VectorXd& data) {
   std::size_t n = dimension();
   std::size_t p = numParticles();
   std::size_t d = data.size();
@@ -158,16 +158,16 @@ bool KernelDensity::devectorize(const Eigen::VectorXd& data) {
   return true;
 }
 
-void KernelDensity::setValues(const Eigen::MatrixXd& values) {
+void KDE::setValues(const Eigen::MatrixXd& values) {
   m_values = values;
   autoUpdateBandwidth();
 }
 
-void KernelDensity::setBandwidth(double h) {
+void KDE::setBandwidth(double h) {
   setBandwidth(h * Eigen::VectorXd::Ones(dimension()));
 }
 
-void KernelDensity::setBandwidth(const Eigen::VectorXd& h) {
+void KDE::setBandwidth(const Eigen::VectorXd& h) {
   m_bandwidth = h.asDiagonal();
   m_bandwidth_inv = h.array().inverse().matrix().asDiagonal();
   m_bandwidth_det = h.prod();
@@ -175,40 +175,40 @@ void KernelDensity::setBandwidth(const Eigen::VectorXd& h) {
   m_mode = BandwidthMode::USER_SPECIFIED;
 }
 
-const Eigen::MatrixXd& KernelDensity::bandwidth() const {
+const Eigen::MatrixXd& KDE::bandwidth() const {
   return m_bandwidth;
 }
 
-void KernelDensity::setBandwidthScaling(double scaling) {
+void KDE::setBandwidthScaling(double scaling) {
   m_bandwidth_scaling = scaling;
   autoUpdateBandwidth();
 }
 
-double KernelDensity::getBandwidthScaling() const {
+double KDE::getBandwidthScaling() const {
   return m_bandwidth_scaling;
 }
 
-void KernelDensity::setBandwidthMode(KernelDensity::BandwidthMode mode) {
+void KDE::setBandwidthMode(KDE::BandwidthMode mode) {
   m_mode = mode;
   autoUpdateBandwidth();
 }
 
-KernelDensity::BandwidthMode KernelDensity::getBandwidthMode() const {
+KDE::BandwidthMode KDE::getBandwidthMode() const {
   return m_mode;
 }
 
-SmoothingKernel& KernelDensity::kernel() {
+SmoothingKernel& KDE::kernel() {
   return m_kernel;
 }
 
-void KernelDensity::setBandwidthMatrix(const Eigen::MatrixXd& H) {
+void KDE::setBandwidthMatrix(const Eigen::MatrixXd& H) {
   m_bandwidth = H;
   bool r = svdInverse(m_bandwidth, m_bandwidth_inv);
   SIA_THROW_IF_NOT(r, "Failed to compute inverse of bandwidth matrix");
   m_bandwidth_det = m_bandwidth.determinant();
 }
 
-void KernelDensity::autoUpdateBandwidth() {
+void KDE::autoUpdateBandwidth() {
   switch (m_mode) {
     case BandwidthMode::USER_SPECIFIED:
       break;
@@ -220,7 +220,7 @@ void KernelDensity::autoUpdateBandwidth() {
 }
 
 // From eqn. 3.71 Hardle et. al., 2004.
-void KernelDensity::bandwidthScottRule(const Eigen::MatrixXd& Sigma) {
+void KDE::bandwidthScottRule(const Eigen::MatrixXd& Sigma) {
   double d = static_cast<double>(Sigma.rows());
   double n = static_cast<double>(numParticles());
   double c = m_bandwidth_scaling * pow(n, -1.0 / (d + 4));
