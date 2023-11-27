@@ -52,8 +52,8 @@ void export_py_models(py::module& m_sup) {
       .def("R", &sia::LinearizableMeasurement::R, py::arg("state"))
       .def("H", &sia::LinearizableMeasurement::H, py::arg("state"));
 
-  py::class_<sia::NonlinearGaussianDynamics, sia::LinearizableDynamics,
-             sia::DynamicsModel>(m, "NonlinearGaussianDynamics")
+  py::class_<sia::NonlinearGaussianDynamics, sia::LinearizableDynamics>(
+      m, "NonlinearGaussianDynamics")
       .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&, std::size_t,
                     std::size_t>(),
            py::arg("dynamics"), py::arg("Q"), py::arg("state_dim"),
@@ -77,8 +77,8 @@ void export_py_models(py::module& m_sup) {
                     &sia::NonlinearGaussianDynamics::Q))
       .def("setQ", &sia::NonlinearGaussianDynamics::setQ, py::arg("Q"));
 
-  py::class_<sia::NonlinearGaussianMeasurement, sia::LinearizableMeasurement,
-             sia::MeasurementModel>(m, "NonlinearGaussianMeasurement")
+  py::class_<sia::NonlinearGaussianMeasurement, sia::LinearizableMeasurement>(
+      m, "NonlinearGaussianMeasurement")
       .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&,
                     std::size_t, std::size_t>(),
            py::arg("measurement"), py::arg("R"), py::arg("state_dim"),
@@ -96,8 +96,7 @@ void export_py_models(py::module& m_sup) {
                     &sia::NonlinearGaussianMeasurement::R))
       .def("setR", &sia::NonlinearGaussianMeasurement::setR, py::arg("R"));
 
-  py::class_<sia::NonlinearGaussianDynamicsCT, sia::NonlinearGaussianDynamics,
-             sia::LinearizableDynamics, sia::DynamicsModel>(
+  py::class_<sia::NonlinearGaussianDynamicsCT, sia::NonlinearGaussianDynamics>(
       m, "NonlinearGaussianDynamicsCT")
       .def(py::init<sia::DynamicsEquation, const Eigen::MatrixXd&, double,
                     std::size_t, std::size_t>(),
@@ -128,8 +127,8 @@ void export_py_models(py::module& m_sup) {
            py::arg("dt"));
 
   py::class_<sia::NonlinearGaussianMeasurementCT,
-             sia::NonlinearGaussianMeasurement, sia::LinearizableMeasurement,
-             sia::MeasurementModel>(m, "NonlinearGaussianMeasurementCT")
+             sia::NonlinearGaussianMeasurement>(
+      m, "NonlinearGaussianMeasurementCT")
       .def(py::init<sia::MeasurementEquation, const Eigen::MatrixXd&, double,
                     std::size_t, std::size_t>(),
            py::arg("measurement"), py::arg("Rpsd"), py::arg("dt"),
@@ -153,8 +152,8 @@ void export_py_models(py::module& m_sup) {
       .def("setTimeStep", &sia::NonlinearGaussianMeasurementCT::setTimeStep,
            py::arg("dt"));
 
-  py::class_<sia::LinearGaussianDynamics, sia::LinearizableDynamics,
-             sia::DynamicsModel>(m, "LinearGaussianDynamics")
+  py::class_<sia::LinearGaussianDynamics, sia::LinearizableDynamics>(
+      m, "LinearGaussianDynamics")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     const Eigen::MatrixXd&>(),
            py::arg("F"), py::arg("G"), py::arg("Q"))
@@ -190,8 +189,8 @@ void export_py_models(py::module& m_sup) {
       .def("setF", &sia::LinearGaussianDynamics::setF, py::arg("F"))
       .def("setG", &sia::LinearGaussianDynamics::setG, py::arg("G"));
 
-  py::class_<sia::LinearGaussianMeasurement, sia::LinearizableMeasurement,
-             sia::MeasurementModel>(m, "LinearGaussianMeasurement")
+  py::class_<sia::LinearGaussianMeasurement, sia::LinearizableMeasurement>(
+      m, "LinearGaussianMeasurement")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>(),
            py::arg("H"), py::arg("R"))
       .def("measurement", &sia::LinearGaussianMeasurement::measurement,
@@ -214,9 +213,8 @@ void export_py_models(py::module& m_sup) {
       .def("setR", &sia::LinearGaussianMeasurement::setR, py::arg("R"))
       .def("setH", &sia::LinearGaussianMeasurement::setH, py::arg("H"));
 
-  py::class_<sia::LinearGaussianDynamicsCT, sia::LinearGaussianDynamics,
-             sia::LinearizableDynamics, sia::DynamicsModel>
-      lgdct(m, "LinearGaussianDynamicsCT");
+  py::class_<sia::LinearGaussianDynamicsCT, sia::LinearGaussianDynamics> lgdct(
+      m, "LinearGaussianDynamicsCT");
 
   py::enum_<sia::LinearGaussianDynamicsCT::Type>(lgdct, "Type")
       .value("FORWARD_EULER",
@@ -275,8 +273,7 @@ void export_py_models(py::module& m_sup) {
       .def("setTimeStep", &sia::LinearGaussianDynamicsCT::setTimeStep,
            py::arg("dt"));
 
-  py::class_<sia::LinearGaussianMeasurementCT, sia::LinearGaussianMeasurement,
-             sia::LinearizableMeasurement, sia::MeasurementModel>(
+  py::class_<sia::LinearGaussianMeasurementCT, sia::LinearGaussianMeasurement>(
       m, "LinearGaussianMeasurementCT")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, double>(),
            py::arg("H"), py::arg("Rpsd"), py::arg("dt"))

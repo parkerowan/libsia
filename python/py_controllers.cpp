@@ -46,8 +46,7 @@ void export_py_controllers(py::module& m_sup) {
       .def("cfx", &sia::DifferentiableCost::cfx, py::arg("x"))
       .def("cfxx", &sia::DifferentiableCost::cfxx, py::arg("x"));
 
-  py::class_<sia::QuadraticCost, sia::DifferentiableCost, sia::CostFunction>(
-      m, "QuadraticCost")
+  py::class_<sia::QuadraticCost, sia::DifferentiableCost>(m, "QuadraticCost")
       .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&,
                     const Eigen::MatrixXd&>(),
            py::arg("Qf"), py::arg("Q"), py::arg("R"))
@@ -80,8 +79,7 @@ void export_py_controllers(py::module& m_sup) {
       .def("cfx", &sia::QuadraticCost::cfx, py::arg("x"))
       .def("cfxx", &sia::QuadraticCost::cfxx, py::arg("x"));
 
-  py::class_<sia::FunctionalCost, sia::DifferentiableCost, sia::CostFunction>(
-      m, "FunctionalCost")
+  py::class_<sia::FunctionalCost, sia::DifferentiableCost>(m, "FunctionalCost")
       .def(py::init<sia::TerminalCostFunction, sia::RunningCostFunction>(),
            py::arg("terminal_cost"), py::arg("running_cost"))
       .def("c", &sia::FunctionalCost::c, py::arg("x"), py::arg("u"),

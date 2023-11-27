@@ -432,7 +432,7 @@ void export_py_belief(py::module& m_sup) {
            py::arg("hp_indices") = std::vector<std::size_t>{},
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
            py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
-           py::arg("options") = sia::GradientDescent::Options())
+           py::arg("options") = sia::GD::Options())
       .def("inputDim", &sia::GPR::inputDim)
       .def("outputDim", &sia::GPR::outputDim)
       .def("numSamples", &sia::GPR::numSamples)
@@ -463,7 +463,7 @@ void export_py_belief(py::module& m_sup) {
            py::arg("hp_indices") = std::vector<std::size_t>{},
            py::arg("hp_min") = sia::GPR::DEFAULT_HP_MIN,
            py::arg("hp_max") = sia::GPR::DEFAULT_HP_MAX,
-           py::arg("options") = sia::GradientDescent::Options())
+           py::arg("options") = sia::GD::Options())
       .def("inputDim", &sia::GPC::inputDim)
       .def("outputDim", &sia::GPC::outputDim)
       .def("numSamples", &sia::GPC::numSamples)
